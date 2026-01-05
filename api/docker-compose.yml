@@ -79,7 +79,7 @@ services:
         condition: service_completed_successfully
     environment:
       ENV: docker
-      DB_URL: postgres://user:password@db_test:5432/food_planner_test?sslmode=disable
+      TEST_DB_URL: postgres://user:password@db_test:5432/food_planner_test?sslmode=disable
     command: ["go", "test", "./internal/...", "-v"]
 
 volumes:
