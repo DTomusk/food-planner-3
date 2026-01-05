@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"food-planner/internal/config"
+	"food-planner/internal/gql"
 	"log"
 
 	_ "github.com/lib/pq"
@@ -25,4 +26,7 @@ func main() {
 		log.Fatalf("Failed to ping database: %v", err)
 	}
 	log.Println("Successfully connected to the database")
+
+	log.Printf("Starting server on port %s", cfg.ServerPort)
+	gql.RunServer(cfg.ServerPort)
 }

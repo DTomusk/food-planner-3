@@ -9,6 +9,7 @@ import (
 
 type Config struct {
 	DatabaseURL string
+	ServerPort  string
 }
 
 func Load() (*Config, error) {
@@ -23,7 +24,13 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("DB_URL not set in environment")
 	}
 
+	port := os.Getenv("SERVER_PORT")
+	if port == "" {
+		return nil, fmt.Errorf("SERVER_PORT not set in environment")
+	}
+
 	return &Config{
 		DatabaseURL: db_url,
+		ServerPort:  port,
 	}, nil
 }
