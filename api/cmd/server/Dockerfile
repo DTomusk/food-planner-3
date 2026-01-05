@@ -13,7 +13,13 @@ COPY . .
 # Build the application
 RUN go build -o /bin/food-planner-api ./cmd/server
 
-# Stage 2: Create the final image
+
+# -------- test image --------
+FROM builder AS test
+CMD ["go", "test", "./internal/...", "-v"]
+
+# -------- production image --------
+
 FROM alpine:3.22.2
 
 ENV ENV=docker
