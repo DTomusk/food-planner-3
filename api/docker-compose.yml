@@ -1,0 +1,45 @@
+services:
+  db: 
+    image: postgres:18.1
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: food_planner
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d food_planner"]
+      interval: 10s
+      retries: 5
+
+  migrate:
+    image: migrate/migrate:v4.19.1
+    depends_on:
+      db:
+        condition: service_healthy
+    command: [
+      "-path", "/migrations",
+      "-database", "postgres://user:password@db:5432/food_planner?sslmode=disable",
+      "up"
+    ]
+    volumes:
+      - ./migrations:/migrations
+
+  api:
+    build:
+      context: .
+      dockerfile: ./cmd/server/Dockerfile
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./.env
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  db_data:
