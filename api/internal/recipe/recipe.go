@@ -13,11 +13,11 @@ type Recipe struct {
 	Name string
 }
 
-func NewRecipe(name string) (Recipe, error) {
+func NewRecipe(name string) (*Recipe, error) {
 	if name == "" {
-		return Recipe{}, ErrEmptyName
+		return nil, ErrEmptyName
 	}
-	return Recipe{
+	return &Recipe{
 		ID:   uuid.New(),
 		Name: name,
 	}, nil

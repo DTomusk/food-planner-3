@@ -1,0 +1,16 @@
+type Recipe {
+  id: ID!
+  name: String!
+}
+
+type Query {
+  recipes: [Recipe!]!
+}
+
+input NewRecipe {
+  name: String!
+}
+
+type Mutation {
+  createRecipe(input: NewRecipe!): Recipe!
+}
