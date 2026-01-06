@@ -1,10 +1,11 @@
 package gql
 
 import (
-	"food-planner/internal/gql/graph"
 	"food-planner/internal/gql/graph/generated"
 	"log"
 	"net/http"
+
+	"food-planner/internal/gql/graph/resolver"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
@@ -15,7 +16,7 @@ import (
 )
 
 func RunServer(port string) {
-	srv := handler.New(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}}))
+	srv := handler.New(generated.NewExecutableSchema(generated.Config{Resolvers: &resolver.Resolver{}}))
 
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
