@@ -1,6 +1,9 @@
 package resolver
 
-import "food-planner/internal/recipe"
+import (
+	"food-planner/internal/db"
+	"food-planner/internal/recipe"
+)
 
 // This file will not be regenerated automatically.
 //
@@ -8,5 +11,6 @@ import "food-planner/internal/recipe"
 // here.
 
 type Resolver struct {
+	DB         db.DBTX
 	RecipeRepo *recipe.Repo
 }

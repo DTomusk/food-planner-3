@@ -19,11 +19,19 @@ func (r *mutationResolver) CreateRecipe(ctx context.Context, input model.NewReci
 
 // Recipes is the resolver for the recipes field.
 func (r *queryResolver) Recipes(ctx context.Context) ([]*model.Recipe, error) {
-	recipe := &model.Recipe{
-		ID:   "1",
-		Name: "Sample Recipe",
+	recipes, err := r.RecipeRepo.GetAllRecipes(ctx, r.DB)
+	if err != nil {
+		return nil, err
 	}
-	return []*model.Recipe{recipe}, nil
+	var recipeModels []*model.Recipe
+	for _, recipe := range recipes {
+		recipeModel := model.Recipe{
+			ID:   recipe.ID.String(),
+			Name: recipe.Name,
+		}
+		recipeModels = append(recipeModels, &recipeModel)
+	}
+	return recipeModels, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.

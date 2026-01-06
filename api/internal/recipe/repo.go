@@ -22,3 +22,21 @@ func (r *Repo) GetRecipeByID(id string, ctx context.Context, db db.DBTX) (Recipe
 	err := row.Scan(&recipe.ID, &recipe.Name)
 	return recipe, err
 }
+
+func (r *Repo) GetAllRecipes(ctx context.Context, db db.DBTX) ([]Recipe, error) {
+	rows, err := db.QueryContext(ctx, "SELECT id, name FROM recipes")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var recipes []Recipe
+	for rows.Next() {
+		var recipe Recipe
+		if err := rows.Scan(&recipe.ID, &recipe.Name); err != nil {
+			return nil, err
+		}
+		recipes = append(recipes, recipe)
+	}
+	return recipes, nil
+}
