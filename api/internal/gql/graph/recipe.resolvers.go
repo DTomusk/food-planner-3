@@ -11,14 +11,14 @@ import (
 	"food-planner/internal/gql/graph/model"
 )
 
-// CreateTodo is the resolver for the createTodo field.
-func (r *mutationResolver) CreateTodo(ctx context.Context, input model.NewTodo) (*model.Todo, error) {
-	panic(fmt.Errorf("not implemented: CreateTodo - createTodo"))
+// CreateRecipe is the resolver for the createRecipe field.
+func (r *mutationResolver) CreateRecipe(ctx context.Context, input model.NewRecipe) (*model.Recipe, error) {
+	panic(fmt.Errorf("not implemented: CreateRecipe - createRecipe"))
 }
 
-// Todos is the resolver for the todos field.
-func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
-	panic(fmt.Errorf("not implemented: Todos - todos"))
+// Recipes is the resolver for the recipes field.
+func (r *queryResolver) Recipes(ctx context.Context) ([]*model.Recipe, error) {
+	panic(fmt.Errorf("not implemented: Recipes - recipes"))
 }
 
 // Mutation returns MutationResolver implementation.
