@@ -39,12 +39,16 @@ func main() {
 	log.Printf("Starting server on port %s", cfg.ServerPort)
 
 	recipeRepo := recipe.NewRepo()
+
+	recipeService := recipe.NewService(recipeRepo)
+
 	srv := handler.New(
 		generated.NewExecutableSchema(
 			generated.Config{
 				Resolvers: &resolver.Resolver{
-					DB:         db,
-					RecipeRepo: recipeRepo,
+					DB:            db,
+					RecipeRepo:    recipeRepo,
+					RecipeService: recipeService,
 				},
 			},
 		),

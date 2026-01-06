@@ -14,7 +14,15 @@ import (
 
 // CreateRecipe is the resolver for the createRecipe field.
 func (r *mutationResolver) CreateRecipe(ctx context.Context, input model.NewRecipe) (*model.Recipe, error) {
-	panic(fmt.Errorf("not implemented: CreateRecipe - createRecipe"))
+	recipe, err := r.RecipeService.CreateRecipe(input.Name, ctx, r.DB)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create recipe: %w", err)
+	}
+	recipeModel := &model.Recipe{
+		ID:   recipe.ID.String(),
+		Name: recipe.Name,
+	}
+	return recipeModel, nil
 }
 
 // Recipes is the resolver for the recipes field.

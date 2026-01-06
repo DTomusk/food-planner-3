@@ -11,6 +11,7 @@ import (
 // here.
 
 type Resolver struct {
-	DB         db.DBTX
-	RecipeRepo *recipe.Repo
+	DB            db.DBTX
+	RecipeRepo    *recipe.Repo
+	RecipeService *recipe.Service
 }
