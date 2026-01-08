@@ -11,7 +11,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func TestRecipeResolver_CreateRecipe(t *testing.T) {
+func TestRecipeResolver_CreateAndGetRecipe(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		repo := recipe.NewRepo()
 		service := recipe.NewService(repo)
@@ -33,6 +33,18 @@ func TestRecipeResolver_CreateRecipe(t *testing.T) {
 
 		if recipeModel.Name != "Chocolate Cake" {
 			t.Errorf("Expected recipe name %q, got %q", "Chocolate Cake", recipeModel.Name)
+		}
+
+		if recipeModel.ID == "" {
+			t.Errorf("Expected recipe ID to be set, got empty string")
+		}
+
+		dbRecipe, err := repo.GetRecipeByID(recipeModel.ID, context.Background(), tx)
+		if err != nil {
+			t.Fatalf("GetRecipeByID failed: %v", err)
+		}
+		if dbRecipe.Name != "Chocolate Cake" {
+			t.Errorf("Expected DB recipe name %q, got %q", "Chocolate Cake", dbRecipe.Name)
 		}
 	})
 }

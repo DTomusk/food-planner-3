@@ -46,6 +46,7 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
+		Recipe  func(childComplexity int, id string) int
 		Recipes func(childComplexity int) int
 	}
 
@@ -85,6 +86,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.CreateRecipe(childComplexity, args["input"].(model.NewRecipe)), true
+
+	case "Query.recipe":
+		if e.complexity.Query.Recipe == nil {
+			break
+		}
+
+		args, err := ec.field_Query_recipe_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Recipe(childComplexity, args["id"].(string)), true
 
 	case "Query.recipes":
 		if e.complexity.Query.Recipes == nil {
@@ -220,6 +233,7 @@ var sources = []*ast.Source{
 
 type Query {
   recipes: [Recipe!]!
+  recipe(id: ID!): Recipe!
 }
 
 input NewRecipe {

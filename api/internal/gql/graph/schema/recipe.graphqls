@@ -5,6 +5,7 @@ type Recipe {
 
 type Query {
   recipes: [Recipe!]!
+  recipe(id: ID!): Recipe!
 }
 
 input NewRecipe {
