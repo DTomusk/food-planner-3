@@ -233,7 +233,7 @@ var sources = []*ast.Source{
 
 type Query {
   recipes: [Recipe!]!
-  recipe(id: ID!): Recipe!
+  recipe(id: ID!): Recipe
 }
 
 input NewRecipe {

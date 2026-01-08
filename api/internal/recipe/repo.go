@@ -2,6 +2,7 @@ package recipe
 
 import (
 	"context"
+	"database/sql"
 	"food-planner/internal/db"
 )
 
@@ -27,6 +28,12 @@ func (r *Repo) GetRecipeByID(id string, ctx context.Context, db db.DBTX) (*Recip
 	var recipe Recipe
 	row := db.QueryRowContext(ctx, "SELECT id, name FROM recipes WHERE id = $1", id)
 	err := row.Scan(&recipe.ID, &recipe.Name)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
 	return &recipe, err
 }
 

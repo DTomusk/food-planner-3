@@ -1,12 +1,12 @@
 import { graphqlClient } from "../../lib/graphqlClient";
 
 const getRecipes = `
-    query GetRecipes {
+query GetRecipes {
     recipes {
-      name
-      id
+        name
+        id
     }
-  }`;
+}`;
 
     // The query key is used to identify the query in the cache
   // The query function produces a promise that resolves to the data
@@ -17,3 +17,16 @@ export const recipesQuery = {
     queryKey: ['recipes'],
     queryFn: () => graphqlClient.request(getRecipes),
 }
+
+const getRecipe = `
+query GetRecipe($id: ID!) {
+    recipe(id: $id) {
+        name
+        id
+    }
+}`;
+
+export const recipeQuery = (id: string) => ({
+    queryKey: ['recipe', id],
+    queryFn: () => graphqlClient.request(getRecipe, {id}),
+})

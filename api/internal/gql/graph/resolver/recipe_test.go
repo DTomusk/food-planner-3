@@ -43,6 +43,9 @@ func TestRecipeResolver_CreateAndGetRecipe(t *testing.T) {
 		if err != nil {
 			t.Fatalf("GetRecipeByID failed: %v", err)
 		}
+		if dbRecipe == nil {
+			t.Fatalf("Expected to find recipe in DB, got nil")
+		}
 		if dbRecipe.Name != "Chocolate Cake" {
 			t.Errorf("Expected DB recipe name %q, got %q", "Chocolate Cake", dbRecipe.Name)
 		}

@@ -163,9 +163,9 @@ func (ec *executionContext) _Query_recipe(ctx context.Context, field graphql.Col
 			return ec.resolvers.Query().Recipe(ctx, fc.Args["id"].(string))
 		},
 		nil,
-		ec.marshalNRecipe2ᚖfoodᚑplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipe,
+		ec.marshalORecipe2ᚖfoodᚑplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipe,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -497,16 +497,13 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		case "recipe":
 			field := field
 
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
 				res = ec._Query_recipe(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
 				return res
 			}
 
@@ -653,6 +650,13 @@ func (ec *executionContext) marshalNRecipe2ᚖfoodᚑplannerᚋinternalᚋgqlᚋ
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
+		return graphql.Null
+	}
+	return ec._Recipe(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalORecipe2ᚖfoodᚑplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipe(ctx context.Context, sel ast.SelectionSet, v *model.Recipe) graphql.Marshaler {
+	if v == nil {
 		return graphql.Null
 	}
 	return ec._Recipe(ctx, sel, v)
