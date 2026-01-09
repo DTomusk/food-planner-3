@@ -6,7 +6,7 @@ import RecipeCard from "../features/recipes/components/RecipeCard";
 import Page from "../layout/PageWrapper";
 import BackLink from "../components/BackLink";
 import Spinner from "../components/Spinner";
-import ErrorAlert from "../components/ErrorAlert";
+import Alert from "../components/Alert";
 
 export default function RecipePage() {
     const { id } = useParams<{ id: string }>();
@@ -16,13 +16,13 @@ export default function RecipePage() {
         <Page>
             <PageTitle text="Recipe Page" />
             <BackLink />
-            {!id && <ErrorAlert message="No recipe ID provided." />}
+            {!id && <Alert message="No recipe ID provided." />}
             {isLoading && <Spinner />}
-            {error && <ErrorAlert message={(error as Error).message} />}
+            {error && <Alert message={(error as Error).message} />}
             {data?.recipe ? (
                 <RecipeCard recipe={data.recipe} />
             ) : (
-                !isLoading && id && !error && <ErrorAlert message="Recipe not found." />
+                !isLoading && id && !error && <Alert message="Recipe not found." />
             )}
         </Page>
     )

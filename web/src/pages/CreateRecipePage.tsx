@@ -6,7 +6,8 @@ import PageTitle from "../components/PageTitle";
 import { queryClient } from "../app/queryClient";
 import Page from "../layout/PageWrapper";
 import { useState } from "react";
-import ErrorAlert from "../components/ErrorAlert";
+import Alert from "../components/Alert";
+import BackLink from "../components/BackLink";
 
 export default function CreateRecipePage() {
     const [error, setError] = useState<string | null>(null);
@@ -26,7 +27,8 @@ export default function CreateRecipePage() {
     return (
         <Page>
         <PageTitle text="Create Recipe" />
-        {error && <ErrorAlert message={error} />}
+        <BackLink />
+        {error && <Alert message={error} />}
         <RecipeForm
             onSubmit={(values) => mutation.mutate(values)}
             isSubmitting={mutation.isPending}
