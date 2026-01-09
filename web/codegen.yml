@@ -1,0 +1,12 @@
+# Location of schema file(s)
+schema: ../api/internal/gql/graph/schema/**/*.graphqls
+# Location of GraphQL operation files in frontend
+documents: ./src/**/*.graphql
+
+# Output configuration
+generates:
+  # Output file location and plugins to use
+  ./src/lib/graphql.generated.ts:
+    plugins:
+      - typescript
+      - typescript-operations
