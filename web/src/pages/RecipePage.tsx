@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { recipeQuery } from "../features/recipes/queries";
-import Title from "../components/Title";
+import PageTitle from "../components/PageTitle";
 import RecipeCard from "../features/recipes/components/RecipeCard";
+import Page from "../layout/PageWrapper";
 
 export default function RecipePage() {
     const { id } = useParams<{ id: string }>();
@@ -26,11 +27,11 @@ export default function RecipePage() {
     }
 
     return (
-        <>
-            <Title text="Recipe Page" />
+        <Page>
+            <PageTitle text="Recipe Page" />
             {data && (
                 <RecipeCard recipe={data.recipe} />
             )}
-        </>
+        </Page>
     )
 }

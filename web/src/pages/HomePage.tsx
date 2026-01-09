@@ -1,15 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { recipesQuery } from "../features/recipes/queries";
-import Title from "../components/Title";
+import PageTitle from "../components/PageTitle";
 import RecipeList from "../features/recipes/components/RecipeList";
+import Page from "../layout/PageWrapper";
 
 export default function HomePage() {
 // Use query subscribes to a cached query and updates the component when the data changes
   const {data, isLoading, error} = useQuery(recipesQuery);
 
   return (
-    <>
-    <Title text="Home Page" />
+    <Page>
+    <PageTitle text="Home Page" />
     <h2 className="text-2xl font-bold underline">
       Recipes
     </h2>
@@ -18,6 +19,6 @@ export default function HomePage() {
     {data && (
       <RecipeList recipes={data.recipes} />
     )}
-  </>
+  </Page>
   )
 }
