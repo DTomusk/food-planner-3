@@ -8,7 +8,7 @@ type InputFieldProps = {
   placeholder?: string
 }
 
-export function InputField({ label, register, error, id, placeholder }: InputFieldProps) {
+export default function InputField({ label, register, error, id, placeholder }: InputFieldProps) {
   return (
     <div className="mb-4">
       <label htmlFor={id} className="block font-medium mb-1">{label}</label>

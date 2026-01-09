@@ -1,12 +1,6 @@
-import PageTitle from "../components/PageTitle";
-import RecipeList from "../features/recipes/components/RecipeList";
-import Page from "../layout/PageWrapper";
-import Spinner from "../components/Spinner";
-import Alert from "../components/Alert";
-import { useRecipes } from "../features/recipes/hooks/useRecipes";
-import { RecipeForm } from "../features/recipes/components/RecipeForm";
-import type { RecipeFormValues } from "../features/recipes/types";
-import { useCreateRecipe } from "../features/recipes/hooks/useCreateRecipe";
+import { Alert, PageTitle, Spinner } from "../components";
+import { RecipeList, useRecipes, useCreateRecipe, type RecipeFormValues, RecipeForm} from "../features/recipes";
+import { Page } from "../layout";
 
 export default function HomePage() {
   const {data, isLoading, error: fetchError} = useRecipes();
@@ -22,12 +16,10 @@ export default function HomePage() {
             }
         );
     }
+
   return (
     <Page>
     <PageTitle text="Home Page" />
-    <h2 className="text-2xl font-bold underline">
-      Create recipe
-    </h2>
     <RecipeForm
             onSubmit={handleSubmit}
             isSubmitting={isPending}
