@@ -1,3 +1,4 @@
+import type { CreateRecipeMutation } from "../../lib/graphql.generated";
 import { graphqlClient } from "../../lib/graphqlClient";
 
 const CREATE_RECIPE = `
@@ -9,5 +10,5 @@ mutation CreateRecipe($input: NewRecipe!) {
 }`;
 
 export async function createRecipe(input: { name: string }) {
-    return graphqlClient.request(CREATE_RECIPE, { input });
+    return graphqlClient.request<CreateRecipeMutation>(CREATE_RECIPE, { input });
 }
