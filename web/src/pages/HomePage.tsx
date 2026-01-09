@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { recipesQuery } from "../features/recipes/queries";
 import Title from "../components/Title";
+import RecipeList from "../features/recipes/components/RecipeList";
 
 export default function HomePage() {
 // Use query subscribes to a cached query and updates the component when the data changes
@@ -15,11 +16,7 @@ export default function HomePage() {
     {isLoading && <p>Loading...</p>}
     {error && <p>Error: {(error as Error).message}</p>}
     {data && (
-      <ul>
-        {data.recipes.map((recipe: {id: string, name: string}) => (
-          <li key={recipe.id}>{recipe.name}</li>
-        ))}
-      </ul>
+      <RecipeList recipes={data.recipes} />
     )}
   </>
   )
