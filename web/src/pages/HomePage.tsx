@@ -3,24 +3,38 @@ import RecipeList from "../features/recipes/components/RecipeList";
 import Page from "../layout/PageWrapper";
 import Spinner from "../components/Spinner";
 import Alert from "../components/Alert";
-import Button from "../components/Button";
-import { useNavigate } from "react-router-dom";
 import { useRecipes } from "../features/recipes/hooks/useRecipes";
+import { RecipeForm } from "../features/recipes/components/RecipeForm";
+import type { RecipeFormValues } from "../features/recipes/types";
+import { useCreateRecipe } from "../features/recipes/hooks/useCreateRecipe";
 
 export default function HomePage() {
-// Use query subscribes to a cached query and updates the component when the data changes
-  const {data, isLoading, error} = useRecipes();
-  const navigate = useNavigate();
+  const {data, isLoading, error: fetchError} = useRecipes();
+  const { mutate, isPending, error: createError } = useCreateRecipe();
 
+    const handleSubmit = (values: RecipeFormValues) => {
+        mutate(
+            { input: { name: values.name } },
+            {
+              onSuccess: () => {
+                alert("Recipe created successfully!");
+              }
+            }
+        );
+    }
   return (
     <Page>
     <PageTitle text="Home Page" />
     <h2 className="text-2xl font-bold underline">
       Recipes
     </h2>
-    <Button text="Create New Recipe" onClick={() => navigate("/recipe/create")} />
+    <RecipeForm
+            onSubmit={handleSubmit}
+            isSubmitting={isPending}
+        />
     {isLoading && <Spinner/>}
-    {error && <Alert message={(error as Error).message} />}
+    {fetchError && <Alert message={(fetchError as Error).message} />}
+    {createError && <Alert message={(createError as Error).message} />}
     {data && (
       <RecipeList recipes={data.recipes} />
     )}

@@ -8,6 +8,11 @@ interface RecipeListProps {
 
 export default function RecipeList({ recipes }: RecipeListProps) {
     const navigate = useNavigate();
+
+    if (recipes.length === 0) {
+        return <p>No recipes found.</p>;
+    }
+
     return (
         <ul className="space-y-2">
         {recipes.map((recipe: {id: string, name: string}) => (
