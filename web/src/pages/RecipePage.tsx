@@ -4,33 +4,25 @@ import { recipeQuery } from "../features/recipes/queries";
 import PageTitle from "../components/PageTitle";
 import RecipeCard from "../features/recipes/components/RecipeCard";
 import Page from "../layout/PageWrapper";
+import BackLink from "../components/BackLink";
+import Spinner from "../components/Spinner";
+import ErrorAlert from "../components/ErrorAlert";
 
 export default function RecipePage() {
     const { id } = useParams<{ id: string }>();
-
-    if (!id) {
-        return <p>No recipe ID provided.</p>;
-    }
-
-    const { data, isLoading, error } = useQuery(recipeQuery(id));
-
-    if (isLoading) {
-        return <p>Loading...</p>;
-    }
-
-    if (error) {
-        return <p>Error: {(error as Error).message}</p>;
-    }
-
-    if (!data.recipe) {
-        return <p>Recipe not found.</p>;
-    }
+    const { data, isLoading, error } = useQuery(recipeQuery(id!));
 
     return (
         <Page>
             <PageTitle text="Recipe Page" />
-            {data && (
+            <BackLink />
+            {!id && <ErrorAlert message="No recipe ID provided." />}
+            {isLoading && <Spinner />}
+            {error && <ErrorAlert message={(error as Error).message} />}
+            {data?.recipe ? (
                 <RecipeCard recipe={data.recipe} />
+            ) : (
+                !isLoading && id && !error && <ErrorAlert message="Recipe not found." />
             )}
         </Page>
     )
