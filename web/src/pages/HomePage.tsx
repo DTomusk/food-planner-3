@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { recipesQuery } from "../features/recipes/queries";
+import Title from "../components/Title";
 
 export default function HomePage() {
 // Use query subscribes to a cached query and updates the component when the data changes
@@ -7,9 +8,7 @@ export default function HomePage() {
 
   return (
     <>
-    <h1 className="text-3xl font-bold underline">
-      Hello World!
-    </h1>
+    <Title text="Home Page" />
     <h2 className="text-2xl font-bold underline">
       Recipes
     </h2>

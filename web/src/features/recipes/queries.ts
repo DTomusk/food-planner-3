@@ -1,6 +1,6 @@
 import { graphqlClient } from "../../lib/graphqlClient";
 
-const getRecipes = `
+const GET_RECIPES = `
 query GetRecipes {
     recipes {
         name
@@ -15,10 +15,10 @@ export const recipesQuery = {
     // Two queries with the same key will share the same cache entry
     // You can partially invalidate or refetch queries by their keys
     queryKey: ['recipes'],
-    queryFn: () => graphqlClient.request(getRecipes),
+    queryFn: () => graphqlClient.request(GET_RECIPES),
 }
 
-const getRecipe = `
+const GET_RECIPE = `
 query GetRecipe($id: ID!) {
     recipe(id: $id) {
         name
@@ -28,5 +28,5 @@ query GetRecipe($id: ID!) {
 
 export const recipeQuery = (id: string) => ({
     queryKey: ['recipe', id],
-    queryFn: () => graphqlClient.request(getRecipe, {id}),
+    queryFn: () => graphqlClient.request(GET_RECIPE, {id}),
 })
