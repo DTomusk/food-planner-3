@@ -1,5 +1,8 @@
 import { useForm } from "react-hook-form";
 import type { RecipeFormValues } from "../types";
+import Form from "../../../components/FormWrapper";
+import { InputField } from "../../../components/FormInputField";
+import SubmitButton from "../../../components/FormSubmitButton";
 
 type RecipeFormProps = {
   onSubmit: (values: RecipeFormValues) => void;
@@ -17,18 +20,17 @@ export function RecipeForm({
   } = useForm<RecipeFormValues>();
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <div>
-        <input
-          {...register("name", { required: "Name is required" })}
-          placeholder="Recipe name"
-        />
-        {errors.name && <p>{errors.name.message}</p>}
-      </div>
-
-      <button type="submit" disabled={isSubmitting}>
+    <Form onSubmit={handleSubmit(onSubmit)}>
+      <InputField
+        label="Recipe Name"
+        id="name"
+        register={register("name", { required: "Name is required" })}
+        error={errors.name}
+        placeholder="Recipe name"
+      />
+      <SubmitButton disabled={isSubmitting}>
         Create
-      </button>
-    </form>
+      </SubmitButton>
+    </Form>
   );
 }

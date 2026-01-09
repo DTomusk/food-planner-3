@@ -26,12 +26,15 @@ export default function HomePage() {
     <Page>
     <PageTitle text="Home Page" />
     <h2 className="text-2xl font-bold underline">
-      Recipes
+      Create recipe
     </h2>
     <RecipeForm
             onSubmit={handleSubmit}
             isSubmitting={isPending}
         />
+    <h2 className="text-2xl font-bold underline">
+      Recipes
+    </h2>
     {isLoading && <Spinner/>}
     {fetchError && <Alert message={(fetchError as Error).message} />}
     {createError && <Alert message={(createError as Error).message} />}
