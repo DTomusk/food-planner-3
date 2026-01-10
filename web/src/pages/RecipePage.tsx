@@ -1,7 +1,7 @@
 import { useParams } from "react-router-dom";
-import {Alert, BackLink, PageTitle, Spinner } from "../components";
-import { RecipeCard, useRecipe } from "../features/recipes";
-import { Page } from "../layout";
+import {Alert, BackLink, PageTitle, Spinner } from "@/components";
+import { RecipeCard, useRecipe } from "@/features/recipes";
+import { Page } from "@/layout";
 
 export default function RecipePage() {
     const { id } = useParams<{ id: string }>();

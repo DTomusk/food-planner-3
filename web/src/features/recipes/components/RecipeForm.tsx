@@ -1,6 +1,6 @@
 import { useForm } from "react-hook-form";
 import type { RecipeFormValues } from "../types";
-import { Form, FormTitle, FormInputField, FormSubmitButton } from "../../../components/";
+import { Form, FormTitle, FormInputField, FormSubmitButton } from "@/components/";
 
 type RecipeFormProps = {
   onSubmit: (values: RecipeFormValues) => void;

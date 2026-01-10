@@ -1,6 +1,6 @@
-import { Alert, PageTitle, Spinner } from "../components";
-import { RecipeList, useRecipes, useCreateRecipe, type RecipeFormValues, RecipeForm} from "../features/recipes";
-import { Page } from "../layout";
+import { Alert, PageTitle, Spinner } from "@/components";
+import { RecipeList, useRecipes, useCreateRecipe, type RecipeFormValues, RecipeForm} from "@/features/recipes";
+import { Page } from "@/layout";
 
 export default function HomePage() {
   const {data, isLoading, error: fetchError} = useRecipes();
