@@ -1,3 +1,4 @@
+import { recipeStrings } from "../strings";
 import type { Recipe } from "../types"
 import RecipeCard from "./RecipeCard"
 import { useNavigate } from "react-router-dom"
@@ -10,7 +11,7 @@ export default function RecipeList({ recipes }: RecipeListProps) {
     const navigate = useNavigate();
 
     if (recipes.length === 0) {
-        return <p>No recipes found.</p>;
+        return <p>{recipeStrings.errors.noRecipesFound}</p>;
     }
 
     return (

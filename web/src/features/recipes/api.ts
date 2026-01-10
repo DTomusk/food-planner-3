@@ -1,5 +1,5 @@
-import type { GetRecipeQueryVariables, GetRecipeQuery, GetRecipesQuery, CreateRecipeMutation, CreateRecipeMutationVariables } from "../../lib/graphql.generated"
-import { graphqlClient } from "../../lib/graphqlClient"
+import type { GetRecipeQueryVariables, GetRecipeQuery, GetRecipesQuery, CreateRecipeMutation, CreateRecipeMutationVariables } from "@/lib/graphql.generated"
+import { graphqlClient } from "@/lib/graphqlClient"
 
 export const recipesApi = {
     getAll: () => {
