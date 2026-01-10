@@ -1,0 +1,6 @@
+query GetRecipes {
+    recipes {
+        name
+        id
+    }
+}

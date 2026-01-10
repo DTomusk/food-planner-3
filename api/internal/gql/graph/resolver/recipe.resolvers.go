@@ -42,6 +42,22 @@ func (r *queryResolver) Recipes(ctx context.Context) ([]*model.Recipe, error) {
 	return recipeModels, nil
 }
 
+// Recipe is the resolver for the recipe field.
+func (r *queryResolver) Recipe(ctx context.Context, id string) (*model.Recipe, error) {
+	recipe, err := r.RecipeRepo.GetRecipeByID(id, ctx, r.DB)
+	if err != nil {
+		return nil, err
+	}
+	if recipe == nil {
+		return nil, nil
+	}
+	recipeModel := &model.Recipe{
+		ID:   recipe.ID.String(),
+		Name: recipe.Name,
+	}
+	return recipeModel, nil
+}
+
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 

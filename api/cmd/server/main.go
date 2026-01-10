@@ -15,6 +15,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
 	_ "github.com/lib/pq"
+	"github.com/rs/cors"
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
@@ -69,5 +70,24 @@ func main() {
 	http.Handle("/query", srv)
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", cfg.ServerPort)
-	log.Fatal(http.ListenAndServe(":"+cfg.ServerPort, nil))
+
+	c := cors.New(cors.Options{
+		AllowedOrigins: []string{
+			"http://localhost:5173", // Vite
+		},
+		AllowedMethods: []string{
+			http.MethodGet,
+			http.MethodPost,
+			http.MethodOptions,
+		},
+		AllowedHeaders: []string{
+			"Content-Type",
+			"Authorization",
+		},
+		AllowCredentials: true,
+	})
+
+	handler := c.Handler(http.DefaultServeMux)
+
+	log.Fatal(http.ListenAndServe(":"+cfg.ServerPort, handler))
 }
