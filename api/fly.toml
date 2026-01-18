@@ -7,7 +7,6 @@ app = 'food-smash-api-rough-field-3881'
 primary_region = 'lhr'
 
 [build]
-  context = "api"
   dockerfile = 'cmd/server/Dockerfile'
 
   [build.args]
