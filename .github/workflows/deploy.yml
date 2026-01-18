@@ -21,6 +21,13 @@ jobs:
 
             - name: Set up Fly.io CLI
               uses: superfly/flyctl-actions/setup-flyctl@v1
+
+            - name: Debug workspace
+              run: |
+                pwd
+                ls -la
+                ls -la api
+
               
             - name: Deploy to Fly.io
               env:
