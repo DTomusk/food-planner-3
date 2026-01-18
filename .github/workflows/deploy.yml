@@ -5,7 +5,7 @@ on:
         branches:
           - '**'
         paths:
-          - 'api/**'
+          - '**'
 jobs:
     deploy:
         name: Deploy API
