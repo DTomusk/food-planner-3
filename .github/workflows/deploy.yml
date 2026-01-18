@@ -3,9 +3,9 @@ name: Deploy to fly.io
 on:
     push:
         branches:
-          - '**'
+          - 'main'
         paths:
-          - '**'
+          - './api/**'
 jobs:
     deploy:
         name: Deploy API
