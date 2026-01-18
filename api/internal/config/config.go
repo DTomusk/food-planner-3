@@ -8,8 +8,9 @@ import (
 )
 
 type Config struct {
-	DatabaseURL string
-	ServerPort  string
+	DatabaseURL       string
+	ServerPort        string
+	CorsAllowedOrigin string
 }
 
 func Load() (*Config, error) {
@@ -29,8 +30,14 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("SERVER_PORT not set in environment")
 	}
 
+	corsOrigin := os.Getenv("CORS_ALLOWED_ORIGIN")
+	if corsOrigin == "" {
+		return nil, fmt.Errorf("CORS_ALLOWED_ORIGIN not set in environment")
+	}
+
 	return &Config{
-		DatabaseURL: db_url,
-		ServerPort:  port,
+		DatabaseURL:       db_url,
+		ServerPort:        port,
+		CorsAllowedOrigin: corsOrigin,
 	}, nil
 }
