@@ -1,0 +1,48 @@
+name: Backend tests
+
+on: 
+    pull_request:
+        paths:
+          - 'api/**'
+    push:
+        branches:
+          - main
+        paths:
+          - 'api/**'
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+
+        steps: 
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Start Postgres
+              run: |
+                docker run -d --name db_test \
+                -e POSTGRES_USER=user \
+                -e POSTGRES_PASSWORD=password \
+                -e POSTGRES_DB=food_planner_test \
+                -p 5432:5432 \
+                postgres:18.1
+
+            - name: Wait for Postgres
+              run: |
+                until docker exec db_test pg_isready -U user -d food_planner_test; do sleep 1; done
+
+            - name: Run migrations
+              run: |
+                docker run --rm --network host \
+                -v ${{ github.workspace }}/api/migrations:/migrations \
+                migrate/migrate:v4.19.1 \
+                -path /migrations \
+                -database postgres://user:password@localhost:5432/food_planner_test?sslmode=disable up
+            
+            - name: Run tests
+              run: |
+                docker build --target test -t api_test -f api/cmd/server/Dockerfile ./api
+                docker run --rm --network host -e TEST_DB_URL=postgres://user:password@localhost:5432/food_planner_test?sslmode=disable api_test go test ./... -v
+
+            - name: Tear down Postgres
+              run: docker rm -f db_test

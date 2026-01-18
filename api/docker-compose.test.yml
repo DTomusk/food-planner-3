@@ -1,45 +1,41 @@
 services:
-  db: 
+  db_test:
     image: postgres:18.1
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: food_planner
+      POSTGRES_DB: food_planner_test
     ports:
-      - "5432:5432"
-    volumes:
-      - food_planner_db_data:/var/lib/postgresql
+      - "5433:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d food_planner"]
+      test: ["CMD-SHELL", "pg_isready -U user -d food_planner_test"]
       interval: 10s
       retries: 5
 
-  migrate:
+  migrate_test:
     image: migrate/migrate:v4.19.1
     depends_on:
-      db:
+      db_test:
         condition: service_healthy
     command: [
       "-path", "/migrations",
-      "-database", "postgres://user:password@db:5432/food_planner?sslmode=disable",
+      "-database", "postgres://user:password@db_test:5432/food_planner_test?sslmode=disable",
       "up"
     ]
     volumes:
       - ./migrations:/migrations
 
-  api:
+  test_runner:
     build:
       context: .
       dockerfile: ./cmd/server/Dockerfile
-    ports:
-      - "8080:8080"
-    env_file:
-      - ./.env
+      target: test
     depends_on:
-      db:
+      db_test:
         condition: service_healthy
-      migrate:
+      migrate_test:
         condition: service_completed_successfully
-
-volumes:
-  food_planner_db_data:
+    environment:
+      ENV: docker
+      TEST_DB_URL: postgres://user:password@db_test:5432/food_planner_test?sslmode=disable
+    command: ["go", "test", "./internal/...", "-v"]
