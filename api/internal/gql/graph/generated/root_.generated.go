@@ -41,11 +41,20 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	AuthPayload struct {
+		Jwt  func(childComplexity int) int
+		User func(childComplexity int) int
+	}
+
 	Mutation struct {
 		CreateRecipe func(childComplexity int, input model.NewRecipe) int
+		Empty        func(childComplexity int) int
+		Signin       func(childComplexity int, input model.SignInInput) int
+		Signup       func(childComplexity int, input model.SignUpInput) int
 	}
 
 	Query struct {
+		Empty   func(childComplexity int) int
 		Recipe  func(childComplexity int, id string) int
 		Recipes func(childComplexity int) int
 	}
@@ -53,6 +62,11 @@ type ComplexityRoot struct {
 	Recipe struct {
 		ID   func(childComplexity int) int
 		Name func(childComplexity int) int
+	}
+
+	User struct {
+		Email func(childComplexity int) int
+		ID    func(childComplexity int) int
 	}
 }
 
@@ -75,6 +89,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 	_ = ec
 	switch typeName + "." + field {
 
+	case "AuthPayload.jwt":
+		if e.complexity.AuthPayload.Jwt == nil {
+			break
+		}
+
+		return e.complexity.AuthPayload.Jwt(childComplexity), true
+
+	case "AuthPayload.user":
+		if e.complexity.AuthPayload.User == nil {
+			break
+		}
+
+		return e.complexity.AuthPayload.User(childComplexity), true
+
 	case "Mutation.createRecipe":
 		if e.complexity.Mutation.CreateRecipe == nil {
 			break
@@ -86,6 +114,44 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.CreateRecipe(childComplexity, args["input"].(model.NewRecipe)), true
+
+	case "Mutation._empty":
+		if e.complexity.Mutation.Empty == nil {
+			break
+		}
+
+		return e.complexity.Mutation.Empty(childComplexity), true
+
+	case "Mutation.signin":
+		if e.complexity.Mutation.Signin == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_signin_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.Signin(childComplexity, args["input"].(model.SignInInput)), true
+
+	case "Mutation.signup":
+		if e.complexity.Mutation.Signup == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_signup_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.Signup(childComplexity, args["input"].(model.SignUpInput)), true
+
+	case "Query._empty":
+		if e.complexity.Query.Empty == nil {
+			break
+		}
+
+		return e.complexity.Query.Empty(childComplexity), true
 
 	case "Query.recipe":
 		if e.complexity.Query.Recipe == nil {
@@ -120,6 +186,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Recipe.Name(childComplexity), true
 
+	case "User.email":
+		if e.complexity.User.Email == nil {
+			break
+		}
+
+		return e.complexity.User.Email(childComplexity), true
+
+	case "User.id":
+		if e.complexity.User.ID == nil {
+			break
+		}
+
+		return e.complexity.User.ID(childComplexity), true
+
 	}
 	return 0, false
 }
@@ -129,6 +209,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	ec := executionContext{opCtx, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputNewRecipe,
+		ec.unmarshalInputSignInInput,
+		ec.unmarshalInputSignUpInput,
 	)
 	first := true
 
@@ -226,12 +308,31 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 }
 
 var sources = []*ast.Source{
+	{Name: "../schema/auth.graphqls", Input: `extend type Mutation {
+    signup(input: SignUpInput!): AuthPayload!
+    signin(input: SignInInput!): AuthPayload!
+}
+
+input SignUpInput {
+    email: String!
+    password: String!
+}
+
+input SignInInput {
+    email: String!
+    password: String!
+}
+
+type AuthPayload {
+    jwt: String!
+    user: User!
+}`, BuiltIn: false},
 	{Name: "../schema/recipe.graphqls", Input: `type Recipe {
   id: ID!
   name: String!
 }
 
-type Query {
+extend type Query {
   recipes: [Recipe!]!
   recipe(id: ID!): Recipe
 }
@@ -240,9 +341,26 @@ input NewRecipe {
   name: String!
 }
 
-type Mutation {
+extend type Mutation {
   createRecipe(input: NewRecipe!): Recipe!
 }
 `, BuiltIn: false},
+	{Name: "../schema/schema.graphqls", Input: `schema {
+  query: Query
+  mutation: Mutation
+}
+
+type Query {
+  _empty: String
+}
+
+type Mutation {
+  _empty: String
+}
+`, BuiltIn: false},
+	{Name: "../schema/user.graphqls", Input: `type User {
+    id: ID!
+    email: String!
+}`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)

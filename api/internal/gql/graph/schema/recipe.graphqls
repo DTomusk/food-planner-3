@@ -3,7 +3,7 @@ type Recipe {
   name: String!
 }
 
-type Query {
+extend type Query {
   recipes: [Recipe!]!
   recipe(id: ID!): Recipe
 }
@@ -12,6 +12,6 @@ input NewRecipe {
   name: String!
 }
 
-type Mutation {
+extend type Mutation {
   createRecipe(input: NewRecipe!): Recipe!
 }

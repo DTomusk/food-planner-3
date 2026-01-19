@@ -2,10 +2,12 @@ package main
 
 import (
 	"database/sql"
+	"food-planner/internal/auth"
 	"food-planner/internal/config"
 	"food-planner/internal/gql/graph/generated"
 	"food-planner/internal/gql/graph/resolver"
 	"food-planner/internal/recipe"
+	"food-planner/internal/user"
 	"log"
 	"net/http"
 
@@ -38,13 +40,18 @@ func main() {
 	log.Printf("Starting server on port %s", cfg.ServerPort)
 
 	recipeRepo := recipe.NewRepo()
-
 	recipeService := recipe.NewService(db, recipeRepo)
+
+	userRepo := user.NewUserRepo()
+	userService := user.NewUserService(db, userRepo)
+	jwtService := auth.NewJWTService(cfg.JWTSecret, cfg.JWTExpirationMinutes)
+	authService := auth.NewAuthService(db, userService, jwtService)
 
 	srv := handler.New(
 		generated.NewExecutableSchema(
 			generated.Config{
 				Resolvers: &resolver.Resolver{
+					AuthService:   authService,
 					RecipeService: recipeService,
 				},
 			},

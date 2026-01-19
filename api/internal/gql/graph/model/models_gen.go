@@ -2,6 +2,11 @@
 
 package model
 
+type AuthPayload struct {
+	Jwt  string `json:"jwt"`
+	User *User  `json:"user"`
+}
+
 type Mutation struct {
 }
 
@@ -15,4 +20,19 @@ type Query struct {
 type Recipe struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
+}
+
+type SignInInput struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type SignUpInput struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type User struct {
+	ID    string `json:"id"`
+	Email string `json:"email"`
 }
