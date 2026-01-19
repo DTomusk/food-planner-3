@@ -26,13 +26,12 @@ func (s *UserService) CreateUser(email, passwordHash string, ctx context.Context
 		return nil, ErrEmailInUse
 	}
 	newUser := NewUser(email, passwordHash)
-	err = s.repo.CreateUser(newUser, ctx, s.db)
+	createdUser, err := s.repo.CreateUser(newUser, ctx, s.db)
 	if err != nil {
 		return nil, err
 	}
-	repoUser, err := s.repo.GetUserByID(newUser.ID, ctx, s.db)
-	if err != nil {
-		return nil, err
+	if createdUser == nil {
+		return nil, nil
 	}
-	return repoUser, nil
+	return createdUser, nil
 }

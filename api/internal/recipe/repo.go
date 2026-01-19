@@ -13,15 +13,13 @@ func NewRepo() *Repo {
 }
 
 func (r *Repo) CreateRecipe(recipe *Recipe, ctx context.Context, db db.DBTX) (*Recipe, error) {
-	_, err := db.ExecContext(ctx, "INSERT INTO recipes (id, name) VALUES ($1, $2)", recipe.ID, recipe.Name)
+	var dbRecipe Recipe
+	query := `INSERT INTO recipes (id, name) VALUES ($1, $2) RETURNING id, name`
+	err := db.QueryRowContext(ctx, query, recipe.ID, recipe.Name).Scan(&dbRecipe.ID, &dbRecipe.Name)
 	if err != nil {
 		return nil, err
 	}
-	dbRecipe, err := r.GetRecipeByID(recipe.ID.String(), ctx, db)
-	if err != nil {
-		return nil, err
-	}
-	return dbRecipe, nil
+	return &dbRecipe, nil
 }
 
 func (r *Repo) GetRecipeByID(id string, ctx context.Context, db db.DBTX) (*Recipe, error) {

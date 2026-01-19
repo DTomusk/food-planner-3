@@ -15,6 +15,8 @@ func TestCreateUser_Success(t *testing.T) {
 		user, err := s.CreateUser("test@example.com", "hashedpassword", context.Background())
 		require.NoError(t, err)
 		require.Equal(t, "test@example.com", user.Email)
+		require.NotEmpty(t, user.ID)
+		require.Equal(t, "hashedpassword", user.PasswordHash)
 	})
 }
 

@@ -12,10 +12,14 @@ func NewUserRepo() *userRepo {
 	return &userRepo{}
 }
 
-func (r *userRepo) CreateUser(user *User, ctx context.Context, db db.DBTX) error {
-	query := `INSERT INTO users (id, email, password_hash) VALUES ($1, $2, $3)`
-	_, err := db.ExecContext(ctx, query, user.ID, user.Email, user.PasswordHash)
-	return err
+func (r *userRepo) CreateUser(user *User, ctx context.Context, db db.DBTX) (*User, error) {
+	var newUser User
+	query := `INSERT INTO users (id, email, password_hash) VALUES ($1, $2, $3) RETURNING id, email, password_hash`
+	err := db.QueryRowContext(ctx, query, user.ID, user.Email, user.PasswordHash).Scan(&newUser.ID, &newUser.Email, &newUser.PasswordHash)
+	if err != nil {
+		return nil, err
+	}
+	return &newUser, nil
 }
 
 // Do not return error if no rows
