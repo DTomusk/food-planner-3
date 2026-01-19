@@ -21,13 +21,14 @@ func TestSignUp_Success(t *testing.T) {
 		password := "securepassword"
 
 		// Act
-		user, err := authService.SignUp(email, password, context.Background())
+		user, token, err := authService.SignUp(email, password, context.Background())
 
 		// Assert
 		require.NoError(t, err)
 		require.Equal(t, email, user.Email)
 		require.NotEmpty(t, user.ID)
 		require.NotEqual(t, "securepassword", user.PasswordHash)
+		require.NotEmpty(t, token)
 	})
 }
 
@@ -41,7 +42,7 @@ func TestSignup_InvalidEmail(t *testing.T) {
 		password := "securepassword"
 
 		// Act
-		_, err := authService.SignUp(invalidEmail, password, context.Background())
+		_, _, err := authService.SignUp(invalidEmail, password, context.Background())
 
 		// Assert
 		require.Error(t, err)
@@ -59,7 +60,7 @@ func TestSignup_ShortPassword(t *testing.T) {
 		invalidPassword := "123"
 
 		// Act
-		_, err := authService.SignUp(email, invalidPassword, context.Background())
+		_, _, err := authService.SignUp(email, invalidPassword, context.Background())
 
 		// Assert
 		require.Error(t, err)
@@ -78,7 +79,7 @@ func TestSignup_LongPassword(t *testing.T) {
 		invalidPassword := "12345678901234567890123456789012345678901234567890123456789012345"
 
 		// Act
-		_, err := authService.SignUp(email, invalidPassword, context.Background())
+		_, _, err := authService.SignUp(email, invalidPassword, context.Background())
 
 		// Assert
 		require.Error(t, err)
@@ -96,14 +97,37 @@ func TestSignUp_DuplicateEmail(t *testing.T) {
 		email := "blah@test.com"
 		password := "securepassword"
 
-		_, err := authService.SignUp(email, password, context.Background())
+		_, _, err := authService.SignUp(email, password, context.Background())
 		require.NoError(t, err)
 
 		// Act
-		_, err = authService.SignUp(email, password, context.Background())
-
+		_, _, err = authService.SignUp(email, password, context.Background())
 		// Assert
 		require.Error(t, err)
 		require.Equal(t, ErrEmailAlreadyInUse, err)
+	})
+}
+
+func TestSignIn_Success(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		// Arrange
+		userService := user.NewUserService(tx, user.NewUserRepo())
+		jwtService := NewJWTService("testsecret", 15)
+		authService := NewAuthService(tx, userService, jwtService)
+
+		email := "test@example.com"
+		password := "securepassword"
+
+		createdUser, _, err := authService.SignUp(email, password, context.Background())
+		require.NoError(t, err)
+
+		// Act
+		user, token, err := authService.SignIn(email, password, context.Background())
+
+		// Assert
+		require.NoError(t, err)
+		require.Equal(t, createdUser.ID, user.ID)
+		require.Equal(t, createdUser.Email, user.Email)
+		require.NotEmpty(t, token)
 	})
 }

@@ -20,29 +20,33 @@ func NewAuthService(db db.DBTX, userService *user.UserService, jwtService *JWTSe
 	}
 }
 
-func (s *AuthService) SignUp(email, password string, ctx context.Context) (*user.User, error) {
+func (s *AuthService) SignUp(email, password string, ctx context.Context) (*user.User, string, error) {
 	if err := validateEmail(email); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	if err := validatePassword(password); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	emailUser, err := s.userService.GetUserByEmail(email, ctx)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	if emailUser != nil {
-		return nil, ErrEmailAlreadyInUse
+		return nil, "", ErrEmailAlreadyInUse
 	}
 	hashedPassword, err := hashPassword(password)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	user, err := s.userService.CreateUser(email, hashedPassword, ctx)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return user, nil
+	token, err := s.jwtSerivce.GenerateToken(user.ID)
+	if err != nil {
+		return nil, "", err
+	}
+	return user, token, nil
 }
 
 func (s *AuthService) SignIn(email, password string, ctx context.Context) (*user.User, string, error) {
@@ -53,7 +57,7 @@ func (s *AuthService) SignIn(email, password string, ctx context.Context) (*user
 	if user == nil {
 		return nil, "", ErrInvalidCredentials
 	}
-	err = comparePasswordHash(user.PasswordHash, password)
+	err = comparePasswordHash(password, user.PasswordHash)
 	if err != nil {
 		return nil, "", ErrInvalidCredentials
 	}

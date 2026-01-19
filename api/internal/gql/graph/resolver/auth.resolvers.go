@@ -7,16 +7,35 @@ package resolver
 
 import (
 	"context"
-	"fmt"
 	"food-planner/internal/gql/graph/model"
 )
 
 // Signup is the resolver for the signup field.
 func (r *mutationResolver) Signup(ctx context.Context, input model.SignUpInput) (*model.AuthPayload, error) {
-	panic(fmt.Errorf("not implemented: Signup - signup"))
+	user, token, err := r.AuthService.SignUp(input.Email, input.Password, ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &model.AuthPayload{
+		User: &model.User{
+			ID:    user.ID,
+			Email: user.Email,
+		},
+		Jwt: token,
+	}, nil
 }
 
 // Signin is the resolver for the signin field.
 func (r *mutationResolver) Signin(ctx context.Context, input model.SignInInput) (*model.AuthPayload, error) {
-	panic(fmt.Errorf("not implemented: Signin - signin"))
+	user, token, err := r.AuthService.SignIn(input.Email, input.Password, ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &model.AuthPayload{
+		User: &model.User{
+			ID:    user.ID,
+			Email: user.Email,
+		},
+		Jwt: token,
+	}, nil
 }
