@@ -8,6 +8,7 @@ import (
 	"food-planner/internal/testutil"
 
 	_ "github.com/lib/pq"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCreateAndGetRecipe(t *testing.T) {
@@ -39,8 +40,6 @@ func TestGetRecipe_DoesNotErrorWhenNotFound(t *testing.T) {
 
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		_, err := r.GetRecipeByID("04061e4e-6d4c-41d1-abcf-8b214927e1ed", context.Background(), tx)
-		if err != nil {
-			t.Fatalf("Expected no error when recipe not found, got: %v", err)
-		}
+		require.NoError(t, err)
 	})
 }

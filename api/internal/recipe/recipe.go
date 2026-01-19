@@ -1,12 +1,8 @@
 package recipe
 
 import (
-	"errors"
-
 	"github.com/google/uuid"
 )
-
-var ErrEmptyName = errors.New("recipe name cannot be empty")
 
 type Recipe struct {
 	ID   uuid.UUID

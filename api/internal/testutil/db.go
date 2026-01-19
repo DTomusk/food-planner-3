@@ -5,6 +5,8 @@ import (
 	"log"
 	"os"
 	"sync"
+
+	_ "github.com/lib/pq"
 )
 
 var (
