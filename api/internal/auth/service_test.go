@@ -131,3 +131,44 @@ func TestSignIn_Success(t *testing.T) {
 		require.NotEmpty(t, token)
 	})
 }
+
+func TestSignIn_NoUser(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		// Arrange
+		userService := user.NewUserService(tx, user.NewUserRepo())
+		jwtService := NewJWTService("testsecret", 15)
+		authService := NewAuthService(tx, userService, jwtService)
+
+		email := "test@example.com"
+		password := "wrongpassword"
+
+		// Act
+		_, _, err := authService.SignIn(email, password, context.Background())
+
+		// Assert
+		require.Error(t, err)
+		require.Equal(t, ErrInvalidCredentials, err)
+	})
+}
+
+func TestSignIn_WrongPassword(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		// Arrange
+		userService := user.NewUserService(tx, user.NewUserRepo())
+		jwtService := NewJWTService("testsecret", 15)
+		authService := NewAuthService(tx, userService, jwtService)
+		email := "example@test.com"
+		correctPassword := "correctpassword"
+
+		_, _, err := authService.SignUp(email, correctPassword, context.Background())
+		require.NoError(t, err)
+
+		// Act
+		wrongPassword := "wrongpassword"
+		_, _, err = authService.SignIn(email, wrongPassword, context.Background())
+
+		// Assert
+		require.Error(t, err)
+		require.Equal(t, ErrInvalidCredentials, err)
+	})
+}
