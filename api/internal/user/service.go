@@ -1,4 +1,4 @@
-package users
+package user
 
 import (
 	"context"
@@ -34,4 +34,8 @@ func (s *UserService) CreateUser(email, passwordHash string, ctx context.Context
 		return nil, nil
 	}
 	return createdUser, nil
+}
+
+func (s *UserService) GetUserByEmail(email string, ctx context.Context) (*User, error) {
+	return s.repo.GetUserByEmail(email, ctx, s.db)
 }
