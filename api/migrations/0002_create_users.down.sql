@@ -1,7 +1,3 @@
-CREATE TABLE users (
-    id UUID PRIMARY KEY,
-    email TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL
-);
+ALTER TABLE recipes DROP COLUMN user_id;
 
-ALTER TABLE recipes ADD COLUMN user_id UUID REFERENCES users(id);
+DROP TABLE users;

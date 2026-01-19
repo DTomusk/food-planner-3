@@ -14,10 +14,8 @@ import (
 func TestRecipeResolver_CreateAndGetRecipe(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		repo := recipe.NewRepo()
-		service := recipe.NewService(repo)
+		service := recipe.NewService(tx, repo)
 		r := &Resolver{
-			DB:            tx,
-			RecipeRepo:    repo,
 			RecipeService: service,
 		}
 		mutationResolver := &mutationResolver{r}

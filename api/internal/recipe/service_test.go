@@ -8,10 +8,9 @@ import (
 )
 
 func TestCreateRecipe(t *testing.T) {
-	s := NewService(NewRepo())
-
 	testutil.WithTx(t, func(tx *sql.Tx) {
-		recipe, err := s.CreateRecipe("Vanilla Ice Cream", context.Background(), tx)
+		s := NewService(tx, NewRepo())
+		recipe, err := s.CreateRecipe("Vanilla Ice Cream", context.Background())
 		if err != nil {
 			t.Fatalf("Failed to create recipe: %v", err)
 		}

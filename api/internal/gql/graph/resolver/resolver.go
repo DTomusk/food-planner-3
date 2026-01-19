@@ -1,7 +1,6 @@
 package resolver
 
 import (
-	"food-planner/internal/db"
 	"food-planner/internal/recipe"
 )
 
@@ -11,7 +10,5 @@ import (
 // here.
 
 type Resolver struct {
-	DB            db.DBTX
-	RecipeRepo    *recipe.Repo
 	RecipeService *recipe.Service
 }

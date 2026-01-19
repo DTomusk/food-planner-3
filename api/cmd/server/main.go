@@ -39,14 +39,12 @@ func main() {
 
 	recipeRepo := recipe.NewRepo()
 
-	recipeService := recipe.NewService(recipeRepo)
+	recipeService := recipe.NewService(db, recipeRepo)
 
 	srv := handler.New(
 		generated.NewExecutableSchema(
 			generated.Config{
 				Resolvers: &resolver.Resolver{
-					DB:            db,
-					RecipeRepo:    recipeRepo,
 					RecipeService: recipeService,
 				},
 			},
