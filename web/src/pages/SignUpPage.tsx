@@ -21,12 +21,12 @@ export default function SignUpPage() {
     return (
         <Page>
             <PageTitle text="Sign Up" />
+            {error && <Alert message={(error as Error).message} />}
             <AuthForm
                 formType="signup"
                 onSubmit={handleSubmit}
                 isSubmitting={isPending}
             />
-            {error && <Alert message={(error as Error).message} />}
         </Page>
     )
 }

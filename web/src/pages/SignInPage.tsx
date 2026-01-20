@@ -20,12 +20,12 @@ export default function SignInPage() {
     return (
         <Page>
             <PageTitle text="Sign In" />
+            {error && <Alert message={(error as Error).message} />}
             <AuthForm
                 formType="signin"
                 onSubmit={handleSubmit}
                 isSubmitting={isPending}
             />
-            {error && <Alert message={(error as Error).message} />}
         </Page>
     );
 }
