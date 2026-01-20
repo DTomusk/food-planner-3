@@ -6,16 +6,16 @@ export default function HomePage() {
   const {data, isLoading, error: fetchError} = useRecipes();
   const { mutate, isPending, error: createError } = useCreateRecipe();
 
-    const handleSubmit = (values: RecipeFormValues) => {
-        mutate(
-            { input: { name: values.name } },
-            {
-              onSuccess: () => {
-                alert("Recipe created successfully!");
-              }
+  const handleSubmit = (values: RecipeFormValues) => {
+      mutate(
+          { input: { name: values.name } },
+          {
+            onSuccess: () => {
+              alert("Recipe created successfully!");
             }
-        );
-    }
+          }
+      );
+  }
 
   return (
     <Page>
