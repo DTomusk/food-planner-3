@@ -2,10 +2,13 @@ package main
 
 import (
 	"database/sql"
-	"food-planner/internal/config"
-	"food-planner/internal/gql/graph/generated"
-	"food-planner/internal/gql/graph/resolver"
-	"food-planner/internal/recipe"
+	"foodplanner/internal/auth"
+	"foodplanner/internal/config"
+	"foodplanner/internal/gql/graph"
+	"foodplanner/internal/gql/graph/directive"
+	"foodplanner/internal/gql/graph/resolver"
+	"foodplanner/internal/recipe"
+	"foodplanner/internal/user"
 	"log"
 	"net/http"
 
@@ -38,16 +41,22 @@ func main() {
 	log.Printf("Starting server on port %s", cfg.ServerPort)
 
 	recipeRepo := recipe.NewRepo()
+	recipeService := recipe.NewService(db, recipeRepo)
 
-	recipeService := recipe.NewService(recipeRepo)
+	userRepo := user.NewUserRepo()
+	userService := user.NewUserService(db, userRepo)
+	jwtService := auth.NewJWTService(cfg.JWTSecret, cfg.JWTExpirationMinutes)
+	authService := auth.NewAuthService(db, userService, jwtService)
 
 	srv := handler.New(
-		generated.NewExecutableSchema(
-			generated.Config{
+		graph.NewExecutableSchema(
+			graph.Config{
 				Resolvers: &resolver.Resolver{
-					DB:            db,
-					RecipeRepo:    recipeRepo,
+					AuthService:   authService,
 					RecipeService: recipeService,
+				},
+				Directives: graph.DirectiveRoot{
+					Auth: directive.AuthDirective,
 				},
 			},
 		),
@@ -65,7 +74,9 @@ func main() {
 	})
 
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	http.Handle("/query", srv)
+
+	authMiddleware := auth.Middleware(jwtService)
+	http.Handle("/query", authMiddleware(srv))
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{

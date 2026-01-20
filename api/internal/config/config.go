@@ -3,14 +3,17 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	DatabaseURL       string
-	ServerPort        string
-	CorsAllowedOrigin string
+	DatabaseURL          string
+	ServerPort           string
+	CorsAllowedOrigin    string
+	JWTSecret            string
+	JWTExpirationMinutes int
 }
 
 func Load() (*Config, error) {
@@ -35,9 +38,26 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("CORS_ALLOWED_ORIGIN not set in environment")
 	}
 
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		return nil, fmt.Errorf("JWT_SECRET not set in environment")
+	}
+
+	jwtExpirationStr := os.Getenv("JWT_EXPIRATION_MINUTES")
+	if jwtExpirationStr == "" {
+		return nil, fmt.Errorf("JWT_EXPIRATION_MINUTES not set in environment")
+	}
+
+	jwtExpirationMinutes, err := strconv.Atoi(jwtExpirationStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid JWT_EXPIRATION_MINUTES: %v", err)
+	}
+
 	return &Config{
-		DatabaseURL:       db_url,
-		ServerPort:        port,
-		CorsAllowedOrigin: corsOrigin,
+		DatabaseURL:          db_url,
+		ServerPort:           port,
+		CorsAllowedOrigin:    corsOrigin,
+		JWTSecret:            jwtSecret,
+		JWTExpirationMinutes: jwtExpirationMinutes,
 	}, nil
 }

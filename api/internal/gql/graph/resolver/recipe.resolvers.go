@@ -8,13 +8,17 @@ package resolver
 import (
 	"context"
 	"fmt"
-	"food-planner/internal/gql/graph/generated"
-	"food-planner/internal/gql/graph/model"
+	"foodplanner/internal/auth"
+	"foodplanner/internal/gql/graph/model"
 )
 
 // CreateRecipe is the resolver for the createRecipe field.
 func (r *mutationResolver) CreateRecipe(ctx context.Context, input model.NewRecipe) (*model.Recipe, error) {
-	recipe, err := r.RecipeService.CreateRecipe(input.Name, ctx, r.DB)
+	_, err := auth.ClaimsFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	recipe, err := r.RecipeService.CreateRecipe(input.Name, ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create recipe: %w", err)
 	}
@@ -27,7 +31,7 @@ func (r *mutationResolver) CreateRecipe(ctx context.Context, input model.NewReci
 
 // Recipes is the resolver for the recipes field.
 func (r *queryResolver) Recipes(ctx context.Context) ([]*model.Recipe, error) {
-	recipes, err := r.RecipeRepo.GetAllRecipes(ctx, r.DB)
+	recipes, err := r.RecipeService.GetAllRecipes(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +48,7 @@ func (r *queryResolver) Recipes(ctx context.Context) ([]*model.Recipe, error) {
 
 // Recipe is the resolver for the recipe field.
 func (r *queryResolver) Recipe(ctx context.Context, id string) (*model.Recipe, error) {
-	recipe, err := r.RecipeRepo.GetRecipeByID(id, ctx, r.DB)
+	recipe, err := r.RecipeService.GetRecipeByID(id, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -57,12 +61,3 @@ func (r *queryResolver) Recipe(ctx context.Context, id string) (*model.Recipe, e
 	}
 	return recipeModel, nil
 }
-
-// Mutation returns generated.MutationResolver implementation.
-func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
-
-// Query returns generated.QueryResolver implementation.
-func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
-
-type mutationResolver struct{ *Resolver }
-type queryResolver struct{ *Resolver }

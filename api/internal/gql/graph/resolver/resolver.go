@@ -1,8 +1,8 @@
 package resolver
 
 import (
-	"food-planner/internal/db"
-	"food-planner/internal/recipe"
+	"foodplanner/internal/auth"
+	"foodplanner/internal/recipe"
 )
 
 // This file will not be regenerated automatically.
@@ -11,7 +11,6 @@ import (
 // here.
 
 type Resolver struct {
-	DB            db.DBTX
-	RecipeRepo    *recipe.Repo
+	AuthService   *auth.AuthService
 	RecipeService *recipe.Service
 }
