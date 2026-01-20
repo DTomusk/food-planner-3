@@ -14,14 +14,33 @@ export type Scalars = {
   Float: { input: number; output: number; }
 };
 
+export type AuthPayload = {
+  __typename?: 'AuthPayload';
+  jwt: Scalars['String']['output'];
+  user: User;
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
+  _empty?: Maybe<Scalars['String']['output']>;
   createRecipe: Recipe;
+  signin: AuthPayload;
+  signup: AuthPayload;
 };
 
 
 export type MutationCreateRecipeArgs = {
   input: NewRecipe;
+};
+
+
+export type MutationSigninArgs = {
+  input: SignInInput;
+};
+
+
+export type MutationSignupArgs = {
+  input: SignUpInput;
 };
 
 export type NewRecipe = {
@@ -30,6 +49,7 @@ export type NewRecipe = {
 
 export type Query = {
   __typename?: 'Query';
+  _empty?: Maybe<Scalars['String']['output']>;
   recipe?: Maybe<Recipe>;
   recipes: Array<Recipe>;
 };
@@ -44,6 +64,36 @@ export type Recipe = {
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
 };
+
+export type SignInInput = {
+  email: Scalars['String']['input'];
+  password: Scalars['String']['input'];
+};
+
+export type SignUpInput = {
+  email: Scalars['String']['input'];
+  password: Scalars['String']['input'];
+};
+
+export type User = {
+  __typename?: 'User';
+  email: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+};
+
+export type SignInMutationVariables = Exact<{
+  input: SignInInput;
+}>;
+
+
+export type SignInMutation = { __typename?: 'Mutation', signin: { __typename?: 'AuthPayload', jwt: string } };
+
+export type SignUpMutationVariables = Exact<{
+  input: SignUpInput;
+}>;
+
+
+export type SignUpMutation = { __typename?: 'Mutation', signup: { __typename?: 'AuthPayload', jwt: string } };
 
 export type CreateRecipeMutationVariables = Exact<{
   input: NewRecipe;
