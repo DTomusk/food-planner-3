@@ -1,6 +1,11 @@
 import { GraphQLClient } from "graphql-request";
+import { getToken } from "./auth/token";
 
-// Knows API location and makes requests
 export const graphqlClient = new GraphQLClient(
-    import.meta.env.VITE_API_URL
+    import.meta.env.VITE_API_URL,
+    {
+        headers: {
+            Authorization: getToken() ? `Bearer ${getToken()}` : "",
+        }
+    }
 );
