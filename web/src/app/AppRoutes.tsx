@@ -6,6 +6,7 @@ import SignUpPage from "@/pages/SignUpPage";
 import NotFound from "@/pages/NotFound";
 import RecipeListingPage from "@/pages/RecipeListingPage";
 import RecipeCreatePage from "@/pages/RecipeCreatePage";
+import ProtectedLayout from "./ProtectedLayout";
 
 function AuthLayout() {
   return (
@@ -25,7 +26,9 @@ export function AppRoutes() {
         <Route path="/" element={<HomePage/>}/>
         <Route path="/recipe" element={<RecipeLayout />}>
           <Route index element={<RecipeListingPage />} />
-          <Route path="create" element={<RecipeCreatePage />} />
+          <Route element={<ProtectedLayout />}>
+            <Route path="create" element={<RecipeCreatePage />} />
+          </Route>
           <Route path=":id" element={<RecipePage />} />
         </Route>
         <Route path="/auth" element={<AuthLayout />}>
