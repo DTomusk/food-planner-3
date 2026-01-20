@@ -1,6 +1,6 @@
 import { useForm } from "react-hook-form";
 import type { RecipeFormValues } from "../types";
-import { Form, FormTitle, FormInputField, FormSubmitButton } from "@/components/";
+import { Form, FormTitle, FormInputField, Button } from "@/components/";
 import { commonStrings } from "@/lib/strings";
 
 type RecipeFormProps = {
@@ -28,9 +28,9 @@ export default function RecipeForm({
         error={errors.name}
         placeholder="Recipe name"
       />
-      <FormSubmitButton disabled={isSubmitting}>
+      <Button disabled={isSubmitting} type="submit" loading={isSubmitting}>
         {commonStrings.forms.create}
-      </FormSubmitButton>
+      </Button>
     </Form>
   );
 }

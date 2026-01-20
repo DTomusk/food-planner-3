@@ -1,5 +1,5 @@
 // Note: separate this if sign in and up diverge
-import { Form, FormInputField, FormSubmitButton, FormTitle } from "@/components";
+import { Button, Form, FormInputField, FormTitle } from "@/components";
 import { useForm } from "react-hook-form";
 
 type AuthFormProps = {
@@ -40,9 +40,9 @@ export default function AuthForm({
                 error={errors.password}
                 placeholder="Password"
             />      
-            <FormSubmitButton disabled={isSubmitting}>
+            <Button disabled={isSubmitting} type="submit" loading={isSubmitting}>
                 {formType === "signin" ? "Sign In" : "Sign Up"}
-            </FormSubmitButton>
+            </Button>
         </Form>
     );
 }
