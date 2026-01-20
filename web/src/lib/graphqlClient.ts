@@ -5,7 +5,7 @@ export const graphqlClient = new GraphQLClient(
     import.meta.env.VITE_API_URL,
     {
         headers: {
-            Authorization: getToken() ? `Bearer ${getToken()}` : "",
+            Authorization: `Bearer ${getToken()}`,
         }
     }
 );
