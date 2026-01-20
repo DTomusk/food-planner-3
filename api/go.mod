@@ -1,4 +1,4 @@
-module food-planner
+module foodplanner
 
 go 1.25.0
 

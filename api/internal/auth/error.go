@@ -8,4 +8,5 @@ var (
 	ErrEmailAlreadyInUse  = errors.New("email already in use")
 	ErrInvalidCredentials = errors.New("invalid credentials")
 	ErrInvalidToken       = errors.New("invalid token")
+	ErrUnauthenticated    = errors.New("unauthenticated")
 )

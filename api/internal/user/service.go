@@ -2,7 +2,7 @@ package user
 
 import (
 	"context"
-	"food-planner/internal/db"
+	"foodplanner/internal/db"
 )
 
 type UserService struct {

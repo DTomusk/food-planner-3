@@ -3,10 +3,10 @@ package resolver
 import (
 	"context"
 	"database/sql"
-	"food-planner/internal/auth"
-	"food-planner/internal/gql/graph/model"
-	"food-planner/internal/testutil"
-	"food-planner/internal/user"
+	"foodplanner/internal/auth"
+	"foodplanner/internal/gql/graph/model"
+	"foodplanner/internal/testutil"
+	"foodplanner/internal/user"
 	"testing"
 
 	"github.com/stretchr/testify/require"

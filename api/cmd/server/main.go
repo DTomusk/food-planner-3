@@ -2,12 +2,13 @@ package main
 
 import (
 	"database/sql"
-	"food-planner/internal/auth"
-	"food-planner/internal/config"
-	"food-planner/internal/gql/graph/generated"
-	"food-planner/internal/gql/graph/resolver"
-	"food-planner/internal/recipe"
-	"food-planner/internal/user"
+	"foodplanner/internal/auth"
+	"foodplanner/internal/config"
+	"foodplanner/internal/gql/graph"
+	"foodplanner/internal/gql/graph/directive"
+	"foodplanner/internal/gql/graph/resolver"
+	"foodplanner/internal/recipe"
+	"foodplanner/internal/user"
 	"log"
 	"net/http"
 
@@ -48,11 +49,14 @@ func main() {
 	authService := auth.NewAuthService(db, userService, jwtService)
 
 	srv := handler.New(
-		generated.NewExecutableSchema(
-			generated.Config{
+		graph.NewExecutableSchema(
+			graph.Config{
 				Resolvers: &resolver.Resolver{
 					AuthService:   authService,
 					RecipeService: recipeService,
+				},
+				Directives: graph.DirectiveRoot{
+					Auth: directive.AuthDirective,
 				},
 			},
 		),
@@ -70,7 +74,9 @@ func main() {
 	})
 
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	http.Handle("/query", srv)
+
+	authMiddleware := auth.Middleware(jwtService)
+	http.Handle("/query", authMiddleware(srv))
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{

@@ -13,5 +13,5 @@ input NewRecipe {
 }
 
 extend type Mutation {
-  createRecipe(input: NewRecipe!): Recipe!
+  createRecipe(input: NewRecipe!): Recipe! @auth
 }

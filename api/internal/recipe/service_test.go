@@ -3,7 +3,7 @@ package recipe
 import (
 	"context"
 	"database/sql"
-	"food-planner/internal/testutil"
+	"foodplanner/internal/testutil"
 	"testing"
 
 	"github.com/stretchr/testify/require"

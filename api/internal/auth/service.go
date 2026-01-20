@@ -2,8 +2,8 @@ package auth
 
 import (
 	"context"
-	"food-planner/internal/db"
-	"food-planner/internal/user"
+	"foodplanner/internal/db"
+	"foodplanner/internal/user"
 )
 
 type AuthService struct {

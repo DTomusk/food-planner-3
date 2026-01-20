@@ -1,8 +1,8 @@
 package resolver
 
 import (
-	"food-planner/internal/auth"
-	"food-planner/internal/recipe"
+	"foodplanner/internal/auth"
+	"foodplanner/internal/recipe"
 )
 
 // This file will not be regenerated automatically.

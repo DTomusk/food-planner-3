@@ -3,8 +3,8 @@ package auth
 import (
 	"context"
 	"database/sql"
-	"food-planner/internal/testutil"
-	"food-planner/internal/user"
+	"foodplanner/internal/testutil"
+	"foodplanner/internal/user"
 	"testing"
 
 	"github.com/stretchr/testify/require"

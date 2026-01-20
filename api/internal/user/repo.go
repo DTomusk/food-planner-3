@@ -3,7 +3,7 @@ package user
 import (
 	"context"
 	"database/sql"
-	"food-planner/internal/db"
+	"foodplanner/internal/db"
 )
 
 type userRepo struct{}

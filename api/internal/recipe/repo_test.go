@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"testing"
 
-	"food-planner/internal/testutil"
+	"foodplanner/internal/testutil"
 
 	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/require"

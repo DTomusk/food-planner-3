@@ -7,7 +7,7 @@ package resolver
 
 import (
 	"context"
-	"food-planner/internal/gql/graph/model"
+	"foodplanner/internal/gql/graph/model"
 )
 
 // Signup is the resolver for the signup field.

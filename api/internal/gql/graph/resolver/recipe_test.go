@@ -3,9 +3,10 @@ package resolver
 import (
 	"context"
 	"database/sql"
-	"food-planner/internal/gql/graph/model"
-	"food-planner/internal/recipe"
-	"food-planner/internal/testutil"
+	"foodplanner/internal/auth"
+	"foodplanner/internal/gql/graph/model"
+	"foodplanner/internal/recipe"
+	"foodplanner/internal/testutil"
 	"testing"
 
 	_ "github.com/lib/pq"
@@ -23,7 +24,10 @@ func TestRecipeResolver_CreateAndGetRecipe(t *testing.T) {
 		input := model.NewRecipe{
 			Name: "Chocolate Cake",
 		}
-		recipeModel, err := mutationResolver.CreateRecipe(context.Background(), input)
+		ctx := context.Background()
+		claims := auth.Claims{UserID: "some-user-id"}
+		ctx = auth.ContextWithClaims(ctx, &claims)
+		recipeModel, err := mutationResolver.CreateRecipe(ctx, input)
 
 		if err != nil {
 			t.Fatalf("CreateRecipe failed: %v", err)
