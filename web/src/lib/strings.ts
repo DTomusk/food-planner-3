@@ -5,5 +5,6 @@ export const commonStrings = {
     auth: {
         signIn: "Sign in",
         signUp: "Sign up",
+        signOut: "Sign out",
     }
 }
