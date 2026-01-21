@@ -10,7 +10,7 @@ export default function RecipePage() {
     return (
         <Page>
             <PageTitle text="Recipe Page" />
-            <BackLink />
+            <BackLink to="/recipe" />
             {!id && <Alert message="No recipe ID provided." />}
             {isLoading && <Spinner />}
             {error && <Alert message={(error as Error).message} />}
