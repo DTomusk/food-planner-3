@@ -17,18 +17,18 @@ func NewService(db db.DBTX, repo *Repo) *Service {
 	}
 }
 
-func (s *Service) CreateRecipe(name string, ctx context.Context) (*Recipe, error) {
+func (s *Service) CreateRecipe(ctx context.Context, name string) (*Recipe, error) {
 	entity, err := NewRecipe(name)
 	if err != nil {
 		return nil, err
 	}
-	return s.Repo.CreateRecipe(entity, ctx, s.db)
+	return s.Repo.CreateRecipe(ctx, s.db, entity)
 }
 
 func (s *Service) GetAllRecipes(ctx context.Context) ([]*Recipe, error) {
 	return s.Repo.GetAllRecipes(ctx, s.db)
 }
 
-func (s *Service) GetRecipeByID(id string, ctx context.Context) (*Recipe, error) {
-	return s.Repo.GetRecipeByID(id, ctx, s.db)
+func (s *Service) GetRecipeByID(ctx context.Context, id string) (*Recipe, error) {
+	return s.Repo.GetRecipeByID(ctx, s.db, id)
 }

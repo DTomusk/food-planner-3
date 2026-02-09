@@ -12,7 +12,7 @@ func NewRepo() *Repo {
 	return &Repo{}
 }
 
-func (r *Repo) CreateRecipe(recipe *Recipe, ctx context.Context, db db.DBTX) (*Recipe, error) {
+func (r *Repo) CreateRecipe(ctx context.Context, db db.DBTX, recipe *Recipe) (*Recipe, error) {
 	var dbRecipe Recipe
 	query := `INSERT INTO recipes (id, name) VALUES ($1, $2) RETURNING id, name`
 	err := db.QueryRowContext(ctx, query, recipe.ID, recipe.Name).Scan(&dbRecipe.ID, &dbRecipe.Name)
@@ -22,7 +22,7 @@ func (r *Repo) CreateRecipe(recipe *Recipe, ctx context.Context, db db.DBTX) (*R
 	return &dbRecipe, nil
 }
 
-func (r *Repo) GetRecipeByID(id string, ctx context.Context, db db.DBTX) (*Recipe, error) {
+func (r *Repo) GetRecipeByID(ctx context.Context, db db.DBTX, id string) (*Recipe, error) {
 	var recipe Recipe
 	row := db.QueryRowContext(ctx, "SELECT id, name FROM recipes WHERE id = $1", id)
 	err := row.Scan(&recipe.ID, &recipe.Name)

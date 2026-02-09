@@ -41,7 +41,7 @@ func TestRecipeResolver_CreateAndGetRecipe(t *testing.T) {
 			t.Errorf("Expected recipe ID to be set, got empty string")
 		}
 
-		dbRecipe, err := repo.GetRecipeByID(recipeModel.ID, context.Background(), tx)
+		dbRecipe, err := repo.GetRecipeByID(context.Background(), tx, recipeModel.ID)
 		if err != nil {
 			t.Fatalf("GetRecipeByID failed: %v", err)
 		}

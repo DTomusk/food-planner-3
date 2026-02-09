@@ -12,7 +12,7 @@ import (
 func TestCreateRecipe(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		s := NewService(tx, NewRepo())
-		recipe, err := s.CreateRecipe("Vanilla Ice Cream", context.Background())
+		recipe, err := s.CreateRecipe(context.Background(), "Vanilla Ice Cream")
 		require.NoError(t, err)
 		require.Equal(t, "Vanilla Ice Cream", recipe.Name)
 	})

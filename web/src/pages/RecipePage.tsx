@@ -1,5 +1,5 @@
 import { useParams } from "react-router-dom";
-import {Alert, BackLink, PageTitle, Spinner } from "@/components";
+import { Alert, BackLink, PageTitle, Spinner } from "@/components";
 import { RecipeCard, useRecipe } from "@/features/recipes";
 import { Page } from "@/layout";
 

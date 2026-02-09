@@ -5,6 +5,18 @@ import (
 )
 
 type Recipe struct {
+	ID          uuid.UUID
+	Name        string
+	Ingredients []IngredientUsage
+}
+
+type IngredientUsage struct {
+	Ingredient Ingredient
+	Quantity   float32
+	Unit       Unit
+}
+
+type Ingredient struct {
 	ID   uuid.UUID
 	Name string
 }
