@@ -3,17 +3,20 @@ package recipe
 import (
 	"context"
 	"foodplanner/internal/db"
+	"foodplanner/internal/ingredient"
 )
 
 type Service struct {
-	db   db.DBTX
-	Repo *Repo
+	db                db.DBTX
+	Repo              *Repo
+	IngredientService *ingredient.IngredientService
 }
 
-func NewService(db db.DBTX, repo *Repo) *Service {
+func NewService(db db.DBTX, repo *Repo, ingredientService *ingredient.IngredientService) *Service {
 	return &Service{
-		db:   db,
-		Repo: repo,
+		db:                db,
+		Repo:              repo,
+		IngredientService: ingredientService,
 	}
 }
 
@@ -29,7 +32,7 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 		}
 		seenIngredients[ingredient.IngredientID] = true
 		// ensure ingredient exists (in future, grab ingredient validation rules)
-		exists, err := s.Repo.IngredientExists(ctx, s.db, ingredient.IngredientID)
+		exists, err := s.IngredientService.Exists(ctx, s.db, ingredient.IngredientID)
 		if err != nil {
 			return nil, err
 		}

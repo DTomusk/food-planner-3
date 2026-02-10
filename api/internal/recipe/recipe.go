@@ -10,11 +10,6 @@ type Recipe struct {
 	Ingredients []*IngredientUsage
 }
 
-type Ingredient struct {
-	ID   uuid.UUID
-	Name string
-}
-
 func NewRecipe(name string, ingredients []*IngredientUsage) (*Recipe, error) {
 	if name == "" {
 		return nil, ErrEmptyName
