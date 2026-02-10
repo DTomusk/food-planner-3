@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"foodplanner/internal/auth"
 	"foodplanner/internal/gql/graph/model"
+	"foodplanner/internal/ingredient"
 	"foodplanner/internal/recipe"
 	"foodplanner/internal/testutil"
 	"testing"
@@ -15,7 +16,8 @@ import (
 func TestRecipeResolver_CreateAndGetRecipe(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		repo := recipe.NewRepo()
-		service := recipe.NewService(tx, repo)
+		ingredientService := ingredient.NewIngredientService(ingredient.NewIngredientRepo())
+		service := recipe.NewService(tx, repo, ingredientService)
 		r := &Resolver{
 			RecipeService: service,
 		}

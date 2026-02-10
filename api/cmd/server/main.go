@@ -7,6 +7,7 @@ import (
 	"foodplanner/internal/gql/graph"
 	"foodplanner/internal/gql/graph/directive"
 	"foodplanner/internal/gql/graph/resolver"
+	"foodplanner/internal/ingredient"
 	"foodplanner/internal/recipe"
 	"foodplanner/internal/user"
 	"log"
@@ -40,8 +41,9 @@ func main() {
 
 	log.Printf("Starting server on port %s", cfg.ServerPort)
 
-	recipeRepo := recipe.NewRepo()
-	recipeService := recipe.NewService(db, recipeRepo)
+	ingredientService := ingredient.NewIngredientService(ingredient.NewIngredientRepo())
+
+	recipeService := recipe.NewService(db, recipe.NewRepo(), ingredientService)
 
 	userRepo := user.NewUserRepo()
 	userService := user.NewUserService(db, userRepo)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"foodplanner/internal/db"
 	"foodplanner/internal/ingredient"
+	"strings"
 )
 
 type Service struct {
@@ -21,35 +22,45 @@ func NewService(db db.DBTX, repo *Repo, ingredientService *ingredient.Ingredient
 }
 
 func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest) (*Recipe, error) {
+	// Basic request validation
+	if len(strings.TrimSpace(request.Name)) == 0 {
+		return nil, ErrEmptyName
+	}
 	if len(request.Ingredients) == 0 {
 		return nil, ErrNoIngredients
 	}
+
+	// Validate ingredients and check for duplicates
 	seenIngredients := make(map[string]bool)
 	ingredientUsages := make([]*IngredientUsage, len(request.Ingredients))
-	for i, ingredient := range request.Ingredients {
-		if seenIngredients[ingredient.IngredientID] {
+	for i, ingredientRequest := range request.Ingredients {
+		if seenIngredients[ingredientRequest.IngredientID] {
 			return nil, ErrDuplicateIngredient
 		}
-		seenIngredients[ingredient.IngredientID] = true
+		seenIngredients[ingredientRequest.IngredientID] = true
 		// ensure ingredient exists (in future, grab ingredient validation rules)
-		exists, err := s.IngredientService.Exists(ctx, s.db, ingredient.IngredientID)
+		exists, err := s.IngredientService.Exists(ctx, s.db, ingredientRequest.IngredientID)
 		if err != nil {
 			return nil, err
 		}
 		if !exists {
 			return nil, ErrIngredientNotFound
 		}
-		usage, err := NewIngredientUsage(ingredient)
+		// TODO: get ingredient rule and validate usage at instantiation
+		usage, err := NewIngredientUsage(ingredientRequest)
 		if err != nil {
 			return nil, err
 		}
 		ingredientUsages[i] = usage
 	}
 
+	// Once we've confirmed all ingredients are valid, we can create the recipe
 	recipe, err := NewRecipe(request.Name, ingredientUsages)
 	if err != nil {
 		return nil, err
 	}
+
+	// Persist recipe
 	return s.Repo.CreateRecipe(ctx, s.db, recipe)
 }
 

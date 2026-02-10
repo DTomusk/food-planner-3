@@ -3,6 +3,7 @@ package recipe
 import (
 	"context"
 	"database/sql"
+	"foodplanner/internal/ingredient"
 	"foodplanner/internal/testutil"
 	"testing"
 
@@ -11,7 +12,7 @@ import (
 
 func TestCreateRecipe(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
-		s := NewService(tx, NewRepo())
+		s := NewService(tx, NewRepo(), ingredient.NewIngredientService(ingredient.NewIngredientRepo()))
 		request := CreateRecipeRequest{Name: "Vanilla Ice Cream"}
 		recipe, err := s.CreateRecipe(context.Background(), request)
 		require.NoError(t, err)
