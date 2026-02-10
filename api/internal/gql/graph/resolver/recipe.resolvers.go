@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"foodplanner/internal/auth"
 	"foodplanner/internal/gql/graph/model"
+	"foodplanner/internal/recipe"
 )
 
 // CreateRecipe is the resolver for the createRecipe field.
@@ -18,7 +19,11 @@ func (r *mutationResolver) CreateRecipe(ctx context.Context, input model.NewReci
 	if err != nil {
 		return nil, err
 	}
-	recipe, err := r.RecipeService.CreateRecipe(ctx, input.Name)
+	// TODO: replace with graphql model with ingredients
+	request := recipe.CreateRecipeRequest{
+		Name: input.Name,
+	}
+	recipe, err := r.RecipeService.CreateRecipe(ctx, request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create recipe: %w", err)
 	}

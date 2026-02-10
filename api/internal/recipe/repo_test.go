@@ -15,7 +15,7 @@ func TestCreateAndGetRecipe(t *testing.T) {
 	r := NewRepo()
 
 	testutil.WithTx(t, func(tx *sql.Tx) {
-		entity, err := NewRecipe("Chocolate Cake")
+		entity, err := NewRecipe("Chocolate Cake", nil)
 		if err != nil {
 			t.Fatalf("Failed to create recipe entity: %v", err)
 		}
