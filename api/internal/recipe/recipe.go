@@ -7,7 +7,7 @@ import (
 type Recipe struct {
 	ID          uuid.UUID
 	Name        string
-	Ingredients []IngredientUsage
+	Ingredients []*IngredientUsage
 }
 
 type Ingredient struct {
@@ -15,7 +15,7 @@ type Ingredient struct {
 	Name string
 }
 
-func NewRecipe(name string, ingredients []IngredientUsage) (*Recipe, error) {
+func NewRecipe(name string, ingredients []*IngredientUsage) (*Recipe, error) {
 	if name == "" {
 		return nil, ErrEmptyName
 	}
