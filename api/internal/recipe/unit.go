@@ -8,6 +8,15 @@ const (
 	Quantum
 )
 
+func (u Unit) IsValid() bool {
+	switch u {
+	case Quantum:
+		return true
+	default:
+		return false
+	}
+}
+
 func (u Unit) String() string {
 	switch u {
 	case Quantum:

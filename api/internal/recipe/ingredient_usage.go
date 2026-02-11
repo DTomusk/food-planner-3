@@ -12,6 +12,9 @@ func NewIngredientUsage(request CreateIngredientUsageRequest) (*IngredientUsage,
 	if request.Quantity <= 0 {
 		return nil, ErrInvalidQuantity
 	}
+	if !Unit(request.Unit).IsValid() {
+		return nil, ErrInvalidUnit
+	}
 	return &IngredientUsage{
 		IngredientID: uuid.MustParse(request.IngredientID),
 		Quantity:     request.Quantity,

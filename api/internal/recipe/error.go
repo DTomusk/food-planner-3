@@ -8,4 +8,5 @@ var (
 	ErrInvalidQuantity     = errors.New("ingredient quantity must be greater than zero")
 	ErrIngredientNotFound  = errors.New("ingredient not found")
 	ErrDuplicateIngredient = errors.New("duplicate ingredient in recipe")
+	ErrInvalidUnit         = errors.New("invalid unit for ingredient usage")
 )
