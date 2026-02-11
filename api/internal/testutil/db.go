@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	db   *sql.DB
-	once sync.Once
+	database *sql.DB
+	once     sync.Once
 )
 
 func GetTestDB() *sql.DB {
@@ -22,14 +22,14 @@ func GetTestDB() *sql.DB {
 		}
 
 		var err error
-		db, err = sql.Open("postgres", db_url)
+		database, err = sql.Open("postgres", db_url)
 		if err != nil {
 			log.Fatalf("Failed to connect to test database: %v", err)
 		}
 
-		if err := db.Ping(); err != nil {
+		if err := database.Ping(); err != nil {
 			log.Fatalf("Failed to ping test database: %v", err)
 		}
 	})
-	return db
+	return database
 }

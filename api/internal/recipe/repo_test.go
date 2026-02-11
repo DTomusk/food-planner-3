@@ -12,23 +12,34 @@ import (
 )
 
 func TestCreateAndGetRecipe(t *testing.T) {
-	r := NewRepo()
-
 	testutil.WithTx(t, func(tx *sql.Tx) {
-		entity, err := NewRecipe("Chocolate Cake", nil)
+		// Arrange
+		r := NewRepo()
+		ingredientUsage, err := NewIngredientUsage(CreateIngredientUsageRequest{
+			IngredientID: "04061e4e-6d4c-41d1-abcf-8b214927e1ed",
+			Quantity:     200,
+			Unit:         1,
+		})
+		if err != nil {
+			t.Fatalf("Failed to create ingredient usage entity: %v", err)
+		}
+		recipe, err := NewRecipe("Chocolate Cake", []*IngredientUsage{ingredientUsage})
 		if err != nil {
 			t.Fatalf("Failed to create recipe entity: %v", err)
 		}
-		_, err = r.CreateRecipe(context.Background(), tx, entity)
+
+		// Act
+		_, err = r.CreateRecipe(context.Background(), tx, recipe)
 		if err != nil {
 			t.Fatalf("Failed to create recipe: %v", err)
 		}
 
-		got, err := r.GetRecipeByID(context.Background(), tx, entity.ID.String())
+		got, err := r.GetRecipeByID(context.Background(), tx, recipe.ID.String())
 		if err != nil {
 			t.Fatalf("Failed to get recipe: %v", err)
 		}
 
+		// Assert
 		if got.Name != "Chocolate Cake" {
 			t.Errorf("Expected name %q, got %q", "Chocolate Cake", got.Name)
 		}
@@ -36,10 +47,15 @@ func TestCreateAndGetRecipe(t *testing.T) {
 }
 
 func TestGetRecipe_DoesNotErrorWhenNotFound(t *testing.T) {
-	r := NewRepo()
-
 	testutil.WithTx(t, func(tx *sql.Tx) {
-		_, err := r.GetRecipeByID(context.Background(), tx, "04061e4e-6d4c-41d1-abcf-8b214927e1ed")
+		// Arrange
+		r := NewRepo()
+
+		// Act
+		recipe, err := r.GetRecipeByID(context.Background(), tx, "04061e4e-6d4c-41d1-abcf-8b214927e1ed")
+
+		// Assert
 		require.NoError(t, err)
+		require.Nil(t, recipe)
 	})
 }

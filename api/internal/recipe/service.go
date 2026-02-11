@@ -2,6 +2,7 @@ package recipe
 
 import (
 	"context"
+	"database/sql"
 	"foodplanner/internal/db"
 	"foodplanner/internal/ingredient"
 	"foodplanner/internal/logging"
@@ -9,14 +10,14 @@ import (
 )
 
 type Service struct {
-	db                db.DBTX
+	txRunner          db.TxRunner
 	Repo              *Repo
 	IngredientService *ingredient.IngredientService
 }
 
-func NewService(db db.DBTX, repo *Repo, ingredientService *ingredient.IngredientService) *Service {
+func NewService(txRunner db.TxRunner, repo *Repo, ingredientService *ingredient.IngredientService) *Service {
 	return &Service{
-		db:                db,
+		txRunner:          txRunner,
 		Repo:              repo,
 		IngredientService: ingredientService,
 	}
@@ -44,7 +45,7 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 		}
 		seenIngredients[ingredientRequest.IngredientID] = true
 		// ensure ingredient exists (in future, grab ingredient validation rules)
-		exists, err := s.IngredientService.Exists(ctx, s.db, ingredientRequest.IngredientID)
+		exists, err := s.IngredientService.Exists(ctx, s.txRunner.DB(), ingredientRequest.IngredientID)
 		if err != nil {
 			logger.Error("Error checking ingredient existence", "ingredient_id", ingredientRequest.IngredientID, "error", err)
 			return nil, err
@@ -69,7 +70,11 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 
 	// Persist recipe
 	// We should use a transaction
-	recipe, err = s.Repo.CreateRecipe(ctx, s.db, recipe)
+	err = s.txRunner.WithTx(ctx, func(tx *sql.Tx) error {
+		var err error
+		recipe, err = s.Repo.CreateRecipe(ctx, tx, recipe)
+		return err
+	})
 	if err != nil {
 		logger.Error("Error persisting recipe", "error", err)
 		return nil, err
@@ -78,9 +83,9 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 }
 
 func (s *Service) GetAllRecipes(ctx context.Context) ([]*Recipe, error) {
-	return s.Repo.GetAllRecipes(ctx, s.db)
+	return s.Repo.GetAllRecipes(ctx, s.txRunner.DB())
 }
 
 func (s *Service) GetRecipeByID(ctx context.Context, id string) (*Recipe, error) {
-	return s.Repo.GetRecipeByID(ctx, s.db, id)
+	return s.Repo.GetRecipeByID(ctx, s.txRunner.DB(), id)
 }

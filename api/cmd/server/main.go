@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"foodplanner/internal/auth"
 	"foodplanner/internal/config"
+	"foodplanner/internal/db"
 	"foodplanner/internal/gql/graph"
 	"foodplanner/internal/gql/graph/directive"
 	"foodplanner/internal/gql/graph/resolver"
@@ -29,26 +30,28 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	db, err := sql.Open("postgres", cfg.DatabaseURL)
+	database, err := sql.Open("postgres", cfg.DatabaseURL)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
-	if err := db.Ping(); err != nil {
+	if err := database.Ping(); err != nil {
 		log.Fatalf("Failed to ping database: %v", err)
 	}
 	log.Println("Successfully connected to the database")
 
 	log.Printf("Starting server on port %s", cfg.ServerPort)
 
+	txRunner := db.NewDBTxRunner(database)
+
 	ingredientService := ingredient.NewIngredientService(ingredient.NewIngredientRepo())
 
-	recipeService := recipe.NewService(db, recipe.NewRepo(), ingredientService)
+	recipeService := recipe.NewService(txRunner, recipe.NewRepo(), ingredientService)
 
 	userRepo := user.NewUserRepo()
-	userService := user.NewUserService(db, userRepo)
+	userService := user.NewUserService(txRunner.DB(), userRepo)
 	jwtService := auth.NewJWTService(cfg.JWTSecret, cfg.JWTExpirationMinutes)
-	authService := auth.NewAuthService(db, userService, jwtService)
+	authService := auth.NewAuthService(txRunner.DB(), userService, jwtService)
 
 	srv := handler.New(
 		graph.NewExecutableSchema(

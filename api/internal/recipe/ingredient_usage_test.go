@@ -36,3 +36,21 @@ func TestNewIngredientUsage_InvalidUnit(t *testing.T) {
 	// Assert
 	require.ErrorIs(t, err, ErrInvalidUnit)
 }
+
+func TestNewIngredientUsage_Success(t *testing.T) {
+	// Arrange
+	request := CreateIngredientUsageRequest{
+		IngredientID: uuid.New().String(),
+		Quantity:     2,
+		Unit:         int(Quantum),
+	}
+
+	// Act
+	usage, err := NewIngredientUsage(request)
+
+	// Assert
+	require.NoError(t, err)
+	require.Equal(t, uuid.MustParse(request.IngredientID), usage.IngredientID)
+	require.Equal(t, request.Quantity, usage.Quantity)
+	require.Equal(t, Quantum, usage.Unit)
+}
