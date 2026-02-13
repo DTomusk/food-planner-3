@@ -37,6 +37,7 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 
 	// Validate ingredients and check for duplicates
 	// There may be cases where we allow duplicate ingredients (e.g. different sections of the same recipe)
+	// But then ingredient usage table would need a new primary key as composite would no longer be unique
 	seenIngredients := make(map[string]bool)
 	ingredientUsages := make([]*IngredientUsage, len(request.Ingredients))
 	for i, ingredientRequest := range request.Ingredients {
@@ -45,7 +46,7 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 		}
 		seenIngredients[ingredientRequest.IngredientID] = true
 		// ensure ingredient exists (in future, grab ingredient validation rules)
-		exists, err := s.IngredientService.Exists(ctx, s.txRunner.DB(), ingredientRequest.IngredientID)
+		exists, err := s.IngredientService.Exists(ctx, ingredientRequest.IngredientID)
 		if err != nil {
 			logger.Error("Error checking ingredient existence", "ingredient_id", ingredientRequest.IngredientID, "error", err)
 			return nil, err

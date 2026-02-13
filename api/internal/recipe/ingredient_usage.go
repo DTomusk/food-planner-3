@@ -1,23 +1,27 @@
 package recipe
 
-import "github.com/google/uuid"
+import (
+	"foodplanner/internal/unit"
+
+	"github.com/google/uuid"
+)
 
 type IngredientUsage struct {
 	IngredientID uuid.UUID
 	Quantity     float32
-	Unit         Unit
+	Unit         unit.Unit
 }
 
 func NewIngredientUsage(request CreateIngredientUsageRequest) (*IngredientUsage, error) {
 	if request.Quantity <= 0 {
 		return nil, ErrInvalidQuantity
 	}
-	if !Unit(request.Unit).IsValid() {
+	if !unit.Unit(request.Unit).IsValid() {
 		return nil, ErrInvalidUnit
 	}
 	return &IngredientUsage{
 		IngredientID: uuid.MustParse(request.IngredientID),
 		Quantity:     request.Quantity,
-		Unit:         Unit(request.Unit),
+		Unit:         unit.Unit(request.Unit),
 	}, nil
 }

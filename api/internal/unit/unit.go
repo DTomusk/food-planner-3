@@ -1,4 +1,4 @@
-package recipe
+package unit
 
 type Unit int
 

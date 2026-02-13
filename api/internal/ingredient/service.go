@@ -6,15 +6,22 @@ import (
 )
 
 type IngredientService struct {
+	db   db.DBTX
 	repo *IngredientRepo
 }
 
-func NewIngredientService(repo *IngredientRepo) *IngredientService {
+func NewIngredientService(db db.DBTX, repo *IngredientRepo) *IngredientService {
 	return &IngredientService{
+		db:   db,
 		repo: repo,
 	}
 }
 
-func (s *IngredientService) Exists(ctx context.Context, db db.DBTX, ingredientID string) (bool, error) {
-	return s.repo.IngredientExists(ctx, db, ingredientID)
+func (s *IngredientService) Exists(ctx context.Context, ingredientID string) (bool, error) {
+	return s.repo.IngredientExists(ctx, s.db, ingredientID)
+}
+
+func (s *IngredientService) SyncIngredientData(ctx context.Context, ingredients []*Ingredient) error {
+	// Validate ingredients and upsert
+	return nil
 }

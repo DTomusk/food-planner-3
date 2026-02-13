@@ -1,6 +1,7 @@
 package recipe
 
 import (
+	"foodplanner/internal/unit"
 	"testing"
 
 	"github.com/google/uuid"
@@ -42,7 +43,7 @@ func TestNewIngredientUsage_Success(t *testing.T) {
 	request := CreateIngredientUsageRequest{
 		IngredientID: uuid.New().String(),
 		Quantity:     2,
-		Unit:         int(Quantum),
+		Unit:         int(unit.Quantum),
 	}
 
 	// Act
@@ -52,5 +53,5 @@ func TestNewIngredientUsage_Success(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, uuid.MustParse(request.IngredientID), usage.IngredientID)
 	require.Equal(t, request.Quantity, usage.Quantity)
-	require.Equal(t, Quantum, usage.Unit)
+	require.Equal(t, unit.Quantum, usage.Unit)
 }
