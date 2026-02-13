@@ -1,0 +1,4 @@
+ingredients:
+  - id: "test_ingredient"
+    name: "Test Ingredient"
+    preferred_unit: 1

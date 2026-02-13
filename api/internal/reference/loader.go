@@ -1,6 +1,7 @@
 package reference
 
 import (
+	"fmt"
 	"log/slog"
 	"os"
 
@@ -31,7 +32,7 @@ func (l *Loader) LoadIngredientData(logger *slog.Logger) ([]*IngredientModel, er
 		return nil, err
 	}
 
-	logger.Info("File ingredient data", "ingredients", fileData.Ingredients)
+	logger.Info("File ingredient data", "ingredients", fmt.Sprintf("%+v", fileData.Ingredients))
 
 	return fileData.Ingredients, nil
 }

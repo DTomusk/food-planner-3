@@ -38,7 +38,7 @@ func (s *SyncService) SyncIngredientData(ctx context.Context) error {
 	domainIngredients := make([]*ingredient.Ingredient, len(fileIngredients))
 
 	for i, fileIngredient := range fileIngredients {
-		domainIngredients[i], err = ingredient.NewIngredient(fileIngredient.Name, fileIngredient.FileKey, fileIngredient.PreferredUnit)
+		domainIngredients[i], err = ingredient.NewIngredient(fileIngredient.Name, fileIngredient.ID, fileIngredient.PreferredUnit)
 		if err != nil {
 			return err
 		}
