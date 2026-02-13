@@ -23,7 +23,7 @@ func (s *SyncService) SyncIngredientData(ctx context.Context) error {
 	logger := logging.FromContext(ctx)
 	logger.Info("Starting ingredient data synchronization")
 
-	fileIngredients, err := s.dataLoader.LoadIngredientData()
+	fileIngredients, err := s.dataLoader.LoadIngredientData(logger)
 	if err != nil {
 		return err
 	}

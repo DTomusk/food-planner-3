@@ -22,7 +22,11 @@ ENV ENV=docker
 
 RUN apk --no-cache add ca-certificates
 
+WORKDIR /app
+
 COPY --from=builder /bin/food-planner-ingredient-sync /usr/local/bin/
+
+COPY --from=builder /app/reference ./reference
 
 #RUN chmod +x /usr/local/bin/food-planner-ingredient-sync
 

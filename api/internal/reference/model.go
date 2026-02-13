@@ -6,3 +6,7 @@ type IngredientModel struct {
 	PreferredUnit int    `yaml:"preferred_unit"`
 	FileKey       string `yaml:"file_key"`
 }
+
+type FileData struct {
+	Ingredients []*IngredientModel `yaml:"ingredients"`
+}
