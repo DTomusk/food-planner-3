@@ -3,6 +3,7 @@ package sync
 import (
 	"context"
 	"foodplanner/internal/ingredient"
+	"foodplanner/internal/logging"
 	"foodplanner/internal/reference"
 )
 
@@ -18,11 +19,21 @@ func NewSyncService(ingredientService *ingredient.IngredientService, referenceSe
 	}
 }
 
-func (s *SyncService) SyncIngredientData() error {
+func (s *SyncService) SyncIngredientData(ctx context.Context) error {
+	logger := logging.FromContext(ctx)
+	logger.Info("Starting ingredient data synchronization")
+
 	fileIngredients, err := s.referenceService.LoadIngredientData()
 	if err != nil {
 		return err
 	}
+
+	if len(fileIngredients) == 0 {
+		logger.Warn("No ingredient data found in reference file")
+		return nil
+	}
+
+	logger.Info("Retrieved reference ingredient data")
 
 	domainIngredients := make([]*ingredient.Ingredient, len(fileIngredients))
 
@@ -33,8 +44,9 @@ func (s *SyncService) SyncIngredientData() error {
 		}
 	}
 
-	if err := s.ingredientService.SyncIngredientData(context.Background(), domainIngredients); err != nil {
+	if err := s.ingredientService.SyncIngredientData(ctx, domainIngredients); err != nil {
 		return err
 	}
+	logger.Info("Successfully synchronized ingredient data")
 	return nil
 }
