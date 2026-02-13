@@ -9,13 +9,13 @@ import (
 
 type SyncService struct {
 	ingredientService *ingredient.IngredientService
-	referenceService  *reference.ReferenceService
+	dataLoader        *reference.Loader
 }
 
-func NewSyncService(ingredientService *ingredient.IngredientService, referenceService *reference.ReferenceService) *SyncService {
+func NewSyncService(ingredientService *ingredient.IngredientService, dataLoader *reference.Loader) *SyncService {
 	return &SyncService{
 		ingredientService: ingredientService,
-		referenceService:  referenceService,
+		dataLoader:        dataLoader,
 	}
 }
 
@@ -23,7 +23,7 @@ func (s *SyncService) SyncIngredientData(ctx context.Context) error {
 	logger := logging.FromContext(ctx)
 	logger.Info("Starting ingredient data synchronization")
 
-	fileIngredients, err := s.referenceService.LoadIngredientData()
+	fileIngredients, err := s.dataLoader.LoadIngredientData()
 	if err != nil {
 		return err
 	}

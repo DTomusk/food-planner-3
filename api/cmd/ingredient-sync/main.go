@@ -40,8 +40,8 @@ func main() {
 	log.Println("Successfully connected to the database")
 
 	ingredientService := ingredient.NewIngredientService(database, ingredient.NewIngredientRepo())
-	referenceService := reference.NewReferenceService()
-	syncService := sync.NewSyncService(ingredientService, referenceService)
+	dataLoader := reference.NewLoader(cfg.IngredientDataFilePath)
+	syncService := sync.NewSyncService(ingredientService, dataLoader)
 
 	if err := syncService.SyncIngredientData(ctx); err != nil {
 		log.Fatalf("Failed to sync ingredient data: %v", err)

@@ -9,11 +9,12 @@ import (
 )
 
 type Config struct {
-	DatabaseURL          string
-	ServerPort           string
-	CorsAllowedOrigin    string
-	JWTSecret            string
-	JWTExpirationMinutes int
+	DatabaseURL            string
+	ServerPort             string
+	CorsAllowedOrigin      string
+	JWTSecret              string
+	JWTExpirationMinutes   int
+	IngredientDataFilePath string
 }
 
 func Load() (*Config, error) {
@@ -53,11 +54,17 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("invalid JWT_EXPIRATION_MINUTES: %v", err)
 	}
 
+	ingredientDataFilePath := os.Getenv("INGREDIENT_DATA_FILE_PATH")
+	if ingredientDataFilePath == "" {
+		return nil, fmt.Errorf("INGREDIENT_DATA_FILE_PATH not set in environment")
+	}
+
 	return &Config{
-		DatabaseURL:          db_url,
-		ServerPort:           port,
-		CorsAllowedOrigin:    corsOrigin,
-		JWTSecret:            jwtSecret,
-		JWTExpirationMinutes: jwtExpirationMinutes,
+		DatabaseURL:            db_url,
+		ServerPort:             port,
+		CorsAllowedOrigin:      corsOrigin,
+		JWTSecret:              jwtSecret,
+		JWTExpirationMinutes:   jwtExpirationMinutes,
+		IngredientDataFilePath: ingredientDataFilePath,
 	}, nil
 }
