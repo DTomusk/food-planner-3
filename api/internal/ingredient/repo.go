@@ -16,3 +16,7 @@ func (r *IngredientRepo) IngredientExists(ctx context.Context, db db.DBTX, ingre
 	err := db.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM ingredients WHERE id = $1)", ingredientID).Scan(&exists)
 	return exists, err
 }
+
+func (r *IngredientRepo) GetAllIngredients(ctx context.Context, db db.DBTX) ([]*Ingredient, error) {
+	return nil, nil
+}

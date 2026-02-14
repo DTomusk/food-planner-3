@@ -1,0 +1,9 @@
+type Ingredient {
+    id: ID!
+    name: String!
+    preferredUnit: Int!
+}
+
+extend type Query {
+    ingredients: [Ingredient!]!
+}

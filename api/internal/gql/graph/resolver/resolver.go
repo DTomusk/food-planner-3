@@ -2,6 +2,7 @@ package resolver
 
 import (
 	"foodplanner/internal/auth"
+	"foodplanner/internal/ingredient"
 	"foodplanner/internal/recipe"
 )
 
@@ -11,6 +12,7 @@ import (
 // here.
 
 type Resolver struct {
-	AuthService   *auth.AuthService
-	RecipeService *recipe.Service
+	AuthService        *auth.AuthService
+	RecipeService      *recipe.Service
+	IngredientsService *ingredient.IngredientService
 }

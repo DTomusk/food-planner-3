@@ -25,3 +25,8 @@ func (s *IngredientService) SyncIngredientData(ctx context.Context, ingredients 
 	// Validate ingredients and upsert
 	return nil
 }
+
+// TODO: remove and replace with paginated (and maybe filtered) search
+func (s *IngredientService) GetAllIngredients(ctx context.Context) ([]*Ingredient, error) {
+	return s.repo.GetAllIngredients(ctx, s.db)
+}
