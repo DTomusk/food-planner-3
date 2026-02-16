@@ -16,7 +16,8 @@ func TestSyncIngredientData(t *testing.T) {
 		ctx := t.Context()
 		filePath := "../../reference/ingredients_test.yaml"
 		loader := reference.NewLoader(filePath)
-		ingredientService := ingredient.NewIngredientService(tx, ingredient.NewIngredientRepo())
+		txRunner := testutil.NewTestTxRunner(tx)
+		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo())
 		service := NewSyncService(ingredientService, loader)
 
 		// Act
@@ -26,5 +27,14 @@ func TestSyncIngredientData(t *testing.T) {
 		require.NoError(t, err)
 
 		// Fetch ingredient via ingredient service to ensure it's populate
+		ingredients, err := ingredientService.GetAllIngredients(ctx)
+		require.NoError(t, err)
+		require.Len(t, ingredients, 1)
+
+		// Copy assertions from loader test
+		testIngredient := *ingredients[0]
+		require.Equal(t, testIngredient.ID, "test_ingredient")
+		require.Equal(t, testIngredient.Name, "Test Ingredient")
+		require.Equal(t, testIngredient.PreferredUnit, 1)
 	})
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"foodplanner/internal/config"
+	"foodplanner/internal/db"
 	"foodplanner/internal/ingredient"
 	"foodplanner/internal/reference"
 	"foodplanner/internal/sync"
@@ -39,7 +40,9 @@ func main() {
 	}
 	log.Println("Successfully connected to the database")
 
-	ingredientService := ingredient.NewIngredientService(database, ingredient.NewIngredientRepo())
+	txRunner := db.NewDBTxRunner(database)
+
+	ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo())
 	dataLoader := reference.NewLoader(cfg.IngredientDataFilePath)
 	syncService := sync.NewSyncService(ingredientService, dataLoader)
 
