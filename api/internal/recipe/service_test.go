@@ -13,7 +13,7 @@ import (
 func TestCreateRecipe(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		txRunner := testutil.NewTestTxRunner(tx)
-		s := NewService(txRunner, NewRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo()))
+		s := NewService(txRunner, NewRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100))
 		request := CreateRecipeRequest{Name: "Vanilla Ice Cream"}
 		recipe, err := s.CreateRecipe(context.Background(), request)
 		require.NoError(t, err)

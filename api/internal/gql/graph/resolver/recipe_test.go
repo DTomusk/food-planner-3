@@ -17,7 +17,7 @@ func TestRecipeResolver_CreateAndGetRecipe(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		repo := recipe.NewRepo()
 		txRunner := testutil.NewTestTxRunner(tx)
-		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo())
+		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100)
 		service := recipe.NewService(txRunner, repo, ingredientService)
 		r := &Resolver{
 			RecipeService: service,

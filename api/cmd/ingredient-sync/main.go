@@ -42,7 +42,7 @@ func main() {
 
 	txRunner := db.NewDBTxRunner(database)
 
-	ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo())
+	ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), cfg.IngredientUpsertBatchSize)
 	dataLoader := reference.NewLoader(cfg.IngredientDataFilePath)
 	syncService := sync.NewSyncService(ingredientService, dataLoader)
 

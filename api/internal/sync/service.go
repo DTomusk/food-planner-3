@@ -44,7 +44,7 @@ func (s *SyncService) SyncIngredientData(ctx context.Context) error {
 		}
 	}
 
-	if err := s.ingredientService.SyncIngredientData(ctx, domainIngredients); err != nil {
+	if err := s.ingredientService.SyncIngredientData(ctx, logger, domainIngredients); err != nil {
 		return err
 	}
 	logger.Info("Successfully synchronized ingredient data")

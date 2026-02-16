@@ -3,6 +3,7 @@ package ingredient
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"foodplanner/internal/db"
 )
 
@@ -40,5 +41,33 @@ func (r *IngredientRepo) GetAllIngredients(ctx context.Context, db db.DBTX) ([]*
 }
 
 func (r *IngredientRepo) UpsertIngredients(ctx context.Context, db db.DBTX, ingredients []*Ingredient) error {
+	if len(ingredients) == 0 {
+		return nil
+	}
+
+	var (
+		query  = "INSERT INTO reference.ingredients (id, name, preferred_unit, file_key) VALUES"
+		args   []any
+		values []string
+	)
+
+	for i, ingredient := range ingredients {
+		start := i*4 + 1
+		values = append(values, fmt.Sprintf("($%d, $%d, $%d, $%d)", start, start+1, start+2, start+3))
+		args = append(args, ingredient.ID, ingredient.Name, ingredient.PreferredUnit, ingredient.FileKey)
+	}
+
+	query += " " + fmt.Sprint(values) + `
+	ON CONFLICT (file_key)
+	DO UPDATE SET
+	name = EXCLUDED.name,
+	preferred_unit = EXCLUDED.preferred_unit;
+	`
+
+	_, err := db.ExecContext(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

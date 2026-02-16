@@ -44,7 +44,7 @@ func main() {
 
 	txRunner := db.NewDBTxRunner(database)
 
-	ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo())
+	ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), cfg.IngredientUpsertBatchSize)
 
 	recipeService := recipe.NewService(txRunner, recipe.NewRepo(), ingredientService)
 

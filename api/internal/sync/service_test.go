@@ -17,7 +17,7 @@ func TestSyncIngredientData(t *testing.T) {
 		filePath := "../../reference/ingredients_test.yaml"
 		loader := reference.NewLoader(filePath)
 		txRunner := testutil.NewTestTxRunner(tx)
-		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo())
+		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100)
 		service := NewSyncService(ingredientService, loader)
 
 		// Act
