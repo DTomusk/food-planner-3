@@ -24,7 +24,7 @@ func TestRecipeResolver_CreateAndGetRecipe(t *testing.T) {
 		}
 		mutationResolver := &mutationResolver{r}
 
-		input := model.NewRecipe{
+		input := model.CreateRecipeInput{
 			Name: "Chocolate Cake",
 		}
 		ctx := context.Background()

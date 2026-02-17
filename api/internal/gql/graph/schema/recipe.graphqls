@@ -1,6 +1,19 @@
 type Recipe {
   id: ID!
   name: String!
+  ingredientUsages: [IngredientUsage!]!
+}
+
+type IngredientUsage {
+  id: ID!
+  ingredient: Ingredient!
+  unit: Unit!
+  quantity: Float!
+}
+
+type Unit {
+  val: Int!
+  name: String!
 }
 
 extend type Query {
@@ -8,10 +21,17 @@ extend type Query {
   recipe(id: ID!): Recipe
 }
 
-input NewRecipe {
+input CreateRecipeInput {
   name: String!
+  ingredientUsages: [CreateIngredientUsageInput!]!
+}
+
+input CreateIngredientUsageInput {
+  ingredientID: ID!
+  unit: Int!
+  quantity: Float!
 }
 
 extend type Mutation {
-  createRecipe(input: NewRecipe!): Recipe! @auth
+  createRecipe(input: CreateRecipeInput!): Recipe! @auth
 }
