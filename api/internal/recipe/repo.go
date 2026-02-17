@@ -16,18 +16,18 @@ func NewRepo() *Repo {
 // Returns recipe fields, ingredient usages can be loaded lazily
 // TODO: use transaction
 func (r *Repo) CreateRecipe(ctx context.Context, tx *sql.Tx, recipe *Recipe) (*Recipe, error) {
-	usageQuery := `INSERT INTO ingredient_usages (recipe_id, ingredient_id, quantity, unit) VALUES ($1, $2, $3, $4)`
-	for _, usage := range recipe.Ingredients {
-		_, err := tx.ExecContext(ctx, usageQuery, recipe.ID, usage.IngredientID, usage.Quantity, usage.Unit)
-		if err != nil {
-			return nil, err
-		}
-	}
 	var dbRecipe Recipe
 	query := `INSERT INTO recipes (id, name) VALUES ($1, $2) RETURNING id, name`
 	err := tx.QueryRowContext(ctx, query, recipe.ID, recipe.Name).Scan(&dbRecipe.ID, &dbRecipe.Name)
 	if err != nil {
 		return nil, err
+	}
+	usageQuery := `INSERT INTO ingredient_usages (id, recipe_id, ingredient_id, quantity, unit) VALUES ($1, $2, $3, $4, $5)`
+	for _, usage := range recipe.Ingredients {
+		_, err := tx.ExecContext(ctx, usageQuery, usage.ID, recipe.ID, usage.IngredientID, usage.Quantity, usage.Unit)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return &dbRecipe, nil
 }

@@ -5,6 +5,7 @@ import (
 	"foodplanner/internal/ingredient"
 	"foodplanner/internal/reference"
 	"foodplanner/internal/testutil"
+	"foodplanner/internal/unit"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -33,8 +34,8 @@ func TestSyncIngredientData(t *testing.T) {
 
 		// Copy assertions from loader test
 		testIngredient := *ingredients[0]
-		require.Equal(t, testIngredient.ID, "test_ingredient")
+		require.Equal(t, testIngredient.FileKey, "test_ingredient")
 		require.Equal(t, testIngredient.Name, "Test Ingredient")
-		require.Equal(t, testIngredient.PreferredUnit, 1)
+		require.Equal(t, testIngredient.PreferredUnit, unit.Quantum)
 	})
 }

@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"foodplanner/internal/db"
+	"log/slog"
+	"strings"
 )
 
 type IngredientRepo struct{}
@@ -15,7 +17,7 @@ func NewIngredientRepo() *IngredientRepo {
 
 func (r *IngredientRepo) IngredientExists(ctx context.Context, db db.DBTX, ingredientID string) (bool, error) {
 	var exists bool
-	err := db.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM ingredients WHERE id = $1)", ingredientID).Scan(&exists)
+	err := db.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM reference.ingredients WHERE id = $1)", ingredientID).Scan(&exists)
 	return exists, err
 }
 
@@ -40,7 +42,7 @@ func (r *IngredientRepo) GetAllIngredients(ctx context.Context, db db.DBTX) ([]*
 	return ingredients, nil
 }
 
-func (r *IngredientRepo) UpsertIngredients(ctx context.Context, db db.DBTX, ingredients []*Ingredient) error {
+func (r *IngredientRepo) UpsertIngredients(ctx context.Context, logger *slog.Logger, db db.DBTX, ingredients []*Ingredient) error {
 	if len(ingredients) == 0 {
 		return nil
 	}
@@ -57,12 +59,14 @@ func (r *IngredientRepo) UpsertIngredients(ctx context.Context, db db.DBTX, ingr
 		args = append(args, ingredient.ID, ingredient.Name, ingredient.PreferredUnit, ingredient.FileKey)
 	}
 
-	query += " " + fmt.Sprint(values) + `
+	query += " " + strings.Join(values, ", ") + `
 	ON CONFLICT (file_key)
 	DO UPDATE SET
 	name = EXCLUDED.name,
 	preferred_unit = EXCLUDED.preferred_unit;
 	`
+
+	logger.Info("Executing ingredient upsert", "numIngredients", len(ingredients), "query", query, "args", args)
 
 	_, err := db.ExecContext(ctx, query, args...)
 	if err != nil {
