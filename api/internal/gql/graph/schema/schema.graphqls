@@ -12,3 +12,9 @@ type Query {
 type Mutation {
   _empty: String
 }
+
+directive @goField(
+  forceResolver: Boolean
+  name: String
+  omittable: Boolean
+) on FIELD_DEFINITION

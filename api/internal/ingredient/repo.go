@@ -5,13 +5,23 @@ import (
 	"database/sql"
 	"fmt"
 	"foodplanner/internal/db"
+	"foodplanner/internal/unit"
 	"strings"
+
+	"github.com/google/uuid"
 )
 
 type IngredientRepo struct{}
 
 func NewIngredientRepo() *IngredientRepo {
 	return &IngredientRepo{}
+}
+
+type IngredientRow struct {
+	ID            uuid.UUID
+	Name          string
+	PreferredUnit int
+	FileKey       string
 }
 
 func (r *IngredientRepo) IngredientExists(ctx context.Context, db db.DBTX, ingredientID string) (bool, error) {
@@ -32,11 +42,22 @@ func (r *IngredientRepo) GetAllIngredients(ctx context.Context, db db.DBTX) ([]*
 
 	var ingredients []*Ingredient
 	for rows.Next() {
-		var ingredient Ingredient
-		if err := rows.Scan(&ingredient.ID, &ingredient.Name, &ingredient.PreferredUnit, &ingredient.FileKey); err != nil {
+		var ingredientRow IngredientRow
+		if err := rows.Scan(&ingredientRow.ID, &ingredientRow.Name, &ingredientRow.PreferredUnit, &ingredientRow.FileKey); err != nil {
 			return nil, err
 		}
-		ingredients = append(ingredients, &ingredient)
+
+		unit := unit.Unit(ingredientRow.PreferredUnit)
+		if !unit.IsValid() {
+			return nil, fmt.Errorf("invalid preferred unit %d for ingredient %s", ingredientRow.PreferredUnit, ingredientRow.ID)
+		}
+
+		ingredients = append(ingredients, &Ingredient{
+			ID:            ingredientRow.ID,
+			Name:          ingredientRow.Name,
+			PreferredUnit: unit,
+			FileKey:       ingredientRow.FileKey,
+		})
 	}
 	return ingredients, nil
 }
@@ -55,7 +76,7 @@ func (r *IngredientRepo) UpsertIngredients(ctx context.Context, db db.DBTX, ingr
 	for i, ingredient := range ingredients {
 		start := i*4 + 1
 		values = append(values, fmt.Sprintf("($%d, $%d, $%d, $%d)", start, start+1, start+2, start+3))
-		args = append(args, ingredient.ID, ingredient.Name, ingredient.PreferredUnit, ingredient.FileKey)
+		args = append(args, ingredient.ID, ingredient.Name, int(ingredient.PreferredUnit), ingredient.FileKey)
 	}
 
 	query += " " + strings.Join(values, ", ") + `

@@ -57,8 +57,9 @@ func main() {
 		graph.NewExecutableSchema(
 			graph.Config{
 				Resolvers: &resolver.Resolver{
-					AuthService:   authService,
-					RecipeService: recipeService,
+					AuthService:        authService,
+					RecipeService:      recipeService,
+					IngredientsService: ingredientService,
 				},
 				Directives: graph.DirectiveRoot{
 					Auth: directive.AuthDirective,

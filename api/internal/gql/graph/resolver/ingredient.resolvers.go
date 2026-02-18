@@ -8,14 +8,19 @@ package resolver
 import (
 	"context"
 	"foodplanner/internal/gql/graph/model"
+	"foodplanner/internal/logging"
 )
 
 // Ingredients is the resolver for the ingredients field.
 func (r *queryResolver) Ingredients(ctx context.Context) ([]*model.Ingredient, error) {
-	ingredients, err := r.IngredientsService.GetAllIngredients(ctx)
+	logger := logging.FromContext(ctx)
+	logger.Info("Fetching all ingredients")
+	ingredients, err := r.IngredientsService.GetAllIngredients(ctx, logger)
 	if err != nil {
+		logger.Error("Failed to fetch ingredients", "error", err)
 		return nil, err
 	}
+	logger.Info("Successfully fetched ingredients", "numIngredients", len(ingredients))
 	var ingredientModels []*model.Ingredient
 	for _, ingredient := range ingredients {
 		ingredientModel := model.Ingredient{

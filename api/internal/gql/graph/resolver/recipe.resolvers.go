@@ -9,6 +9,7 @@ import (
 	"context"
 	"fmt"
 	"foodplanner/internal/auth"
+	"foodplanner/internal/gql/graph"
 	"foodplanner/internal/gql/graph/model"
 	"foodplanner/internal/recipe"
 )
@@ -29,7 +30,6 @@ func (r *mutationResolver) CreateRecipe(ctx context.Context, input model.CreateR
 		}
 	}
 
-	// TODO: replace with graphql model with ingredients
 	request := recipe.CreateRecipeRequest{
 		Name:        input.Name,
 		Ingredients: ingredientUsageRequests,
@@ -77,3 +77,13 @@ func (r *queryResolver) Recipe(ctx context.Context, id string) (*model.Recipe, e
 	}
 	return recipeModel, nil
 }
+
+// IngredientUsages is the resolver for the ingredientUsages field.
+func (r *recipeResolver) IngredientUsages(ctx context.Context, obj *model.Recipe) ([]*model.IngredientUsage, error) {
+	panic(fmt.Errorf("not implemented: IngredientUsages - ingredientUsages"))
+}
+
+// Recipe returns graph.RecipeResolver implementation.
+func (r *Resolver) Recipe() graph.RecipeResolver { return &recipeResolver{r} }
+
+type recipeResolver struct{ *Resolver }

@@ -48,6 +48,12 @@ func (s *IngredientService) SyncIngredientData(ctx context.Context, logger *slog
 }
 
 // TODO: remove and replace with paginated (and maybe filtered) search
-func (s *IngredientService) GetAllIngredients(ctx context.Context) ([]*Ingredient, error) {
-	return s.repo.GetAllIngredients(ctx, s.txRunner.DB())
+func (s *IngredientService) GetAllIngredients(ctx context.Context, logger *slog.Logger) ([]*Ingredient, error) {
+	logger.Info("Fetching all ingredients")
+	ingredients, err := s.repo.GetAllIngredients(ctx, s.txRunner.DB())
+	if err != nil {
+		logger.Error("Failed to fetch ingredients", "error", err)
+		return nil, err
+	}
+	return ingredients, nil
 }

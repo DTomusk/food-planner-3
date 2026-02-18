@@ -3,6 +3,7 @@ package sync
 import (
 	"database/sql"
 	"foodplanner/internal/ingredient"
+	"foodplanner/internal/logging"
 	"foodplanner/internal/reference"
 	"foodplanner/internal/testutil"
 	"foodplanner/internal/unit"
@@ -15,6 +16,7 @@ func TestSyncIngredientData(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
 		ctx := t.Context()
+		logger := logging.FromContext(ctx)
 		filePath := "../../reference/ingredients_test.yaml"
 		loader := reference.NewLoader(filePath)
 		txRunner := testutil.NewTestTxRunner(tx)
@@ -28,7 +30,7 @@ func TestSyncIngredientData(t *testing.T) {
 		require.NoError(t, err)
 
 		// Fetch ingredient via ingredient service to ensure it's populate
-		ingredients, err := ingredientService.GetAllIngredients(ctx)
+		ingredients, err := ingredientService.GetAllIngredients(ctx, logger)
 		require.NoError(t, err)
 		require.Len(t, ingredients, 1)
 

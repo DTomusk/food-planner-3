@@ -1,7 +1,7 @@
 type Recipe {
   id: ID!
   name: String!
-  ingredientUsages: [IngredientUsage!]!
+  ingredientUsages: [IngredientUsage!]! @goField(forceResolver: true)
 }
 
 type IngredientUsage {
