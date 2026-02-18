@@ -32,29 +32,25 @@ func TestCreateAndGetRecipe(t *testing.T) {
 			Quantity:     200,
 			Unit:         1,
 		})
-		if err != nil {
-			t.Fatalf("Failed to create ingredient usage entity: %v", err)
-		}
-		recipe, err := NewRecipe("Chocolate Cake", []*IngredientUsage{ingredientUsage})
-		if err != nil {
-			t.Fatalf("Failed to create recipe entity: %v", err)
-		}
+		require.NoError(t, err, "Failed to create ingredient usage")
+
+		testUser, err := seeds.SeedTestUser(context.Background(), tx)
+		require.NoError(t, err, "Failed to seed test user")
+
+		recipe, err := NewRecipe("Chocolate Cake", testUser.ID, []*IngredientUsage{ingredientUsage})
+		require.NoError(t, err, "Failed to create recipe")
 
 		// Act
 		_, err = r.CreateRecipe(context.Background(), tx, recipe)
-		if err != nil {
-			t.Fatalf("Failed to create recipe: %v", err)
-		}
+		require.NoError(t, err, "Failed to create recipe in database")
 
 		got, err := r.GetRecipeByID(context.Background(), tx, recipe.ID.String())
-		if err != nil {
-			t.Fatalf("Failed to get recipe: %v", err)
-		}
+		require.NoError(t, err, "Failed to get recipe by ID")
 
 		// Assert
-		if got.Name != "Chocolate Cake" {
-			t.Errorf("Expected name %q, got %q", "Chocolate Cake", got.Name)
-		}
+		require.NotNil(t, got, "Expected to find recipe by ID")
+		require.Equal(t, recipe.ID, got.ID, "Expected recipe ID to match")
+		require.Equal(t, got.Name, "Chocolate Cake", "Expected recipe name to match")
 	})
 }
 

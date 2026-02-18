@@ -17,7 +17,7 @@ import (
 // CreateRecipe is the resolver for the createRecipe field.
 func (r *mutationResolver) CreateRecipe(ctx context.Context, input model.CreateRecipeInput) (*model.Recipe, error) {
 	logger := logging.FromContext(ctx)
-	_, err := auth.ClaimsFromContext(ctx)
+	claims, err := auth.ClaimsFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -34,6 +34,7 @@ func (r *mutationResolver) CreateRecipe(ctx context.Context, input model.CreateR
 	request := recipe.CreateRecipeRequest{
 		Name:        input.Name,
 		Ingredients: ingredientUsageRequests,
+		UserID:      claims.UserID,
 	}
 	recipe, err := r.RecipeService.CreateRecipe(ctx, request)
 	if err != nil {

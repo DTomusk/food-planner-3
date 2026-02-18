@@ -7,6 +7,8 @@ import (
 	"foodplanner/internal/ingredient"
 	"foodplanner/internal/logging"
 	"strings"
+
+	"github.com/google/uuid"
 )
 
 type Service struct {
@@ -63,7 +65,13 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 	}
 
 	// Once we've confirmed all ingredients are valid, we can create the recipe
-	recipe, err := NewRecipe(request.Name, ingredientUsages)
+	userID, err := uuid.Parse(request.UserID)
+	if err != nil {
+		logger.Error("Error parsing user ID", "error", err)
+		return nil, err
+	}
+
+	recipe, err := NewRecipe(request.Name, userID, ingredientUsages)
 	if err != nil {
 		logger.Error("Error creating recipe", "error", err)
 		return nil, err

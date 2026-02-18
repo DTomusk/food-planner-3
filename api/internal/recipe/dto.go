@@ -3,6 +3,7 @@ package recipe
 type CreateRecipeRequest struct {
 	Name        string                         `json:"name" validate:"required"`
 	Ingredients []CreateIngredientUsageRequest `json:"ingredients" validate:"required,dive"`
+	UserID      string                         `json:"user_id" validate:"required,uuid4"`
 }
 
 type CreateIngredientUsageRequest struct {
