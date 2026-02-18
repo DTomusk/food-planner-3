@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 type IngredientRepo struct{}
@@ -32,6 +33,42 @@ func (r *IngredientRepo) IngredientExists(ctx context.Context, db db.DBTX, ingre
 
 func (r *IngredientRepo) GetAllIngredients(ctx context.Context, db db.DBTX) ([]*Ingredient, error) {
 	rows, err := db.QueryContext(ctx, "SELECT id, name, preferred_unit, file_key FROM reference.ingredients")
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	defer rows.Close()
+
+	var ingredients []*Ingredient
+	for rows.Next() {
+		var ingredientRow IngredientRow
+		if err := rows.Scan(&ingredientRow.ID, &ingredientRow.Name, &ingredientRow.PreferredUnit, &ingredientRow.FileKey); err != nil {
+			return nil, err
+		}
+
+		unit := unit.Unit(ingredientRow.PreferredUnit)
+		if !unit.IsValid() {
+			return nil, fmt.Errorf("invalid preferred unit %d for ingredient %s", ingredientRow.PreferredUnit, ingredientRow.ID)
+		}
+
+		ingredients = append(ingredients, &Ingredient{
+			ID:            ingredientRow.ID,
+			Name:          ingredientRow.Name,
+			PreferredUnit: unit,
+			FileKey:       ingredientRow.FileKey,
+		})
+	}
+	return ingredients, nil
+}
+
+func (r *IngredientRepo) GetIngredientsByIDs(ctx context.Context, db db.DBTX, ingredientIDs []string) ([]*Ingredient, error) {
+	if len(ingredientIDs) == 0 {
+		return []*Ingredient{}, nil
+	}
+	query := "SELECT id, name, preferred_unit, file_key FROM reference.ingredients WHERE id = ANY($1)"
+	rows, err := db.QueryContext(ctx, query, pq.Array(ingredientIDs))
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil

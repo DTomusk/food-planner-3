@@ -7,15 +7,16 @@ package resolver
 
 import (
 	"context"
-	"fmt"
 	"foodplanner/internal/auth"
 	"foodplanner/internal/gql/graph"
 	"foodplanner/internal/gql/graph/model"
+	"foodplanner/internal/logging"
 	"foodplanner/internal/recipe"
 )
 
 // CreateRecipe is the resolver for the createRecipe field.
 func (r *mutationResolver) CreateRecipe(ctx context.Context, input model.CreateRecipeInput) (*model.Recipe, error) {
+	logger := logging.FromContext(ctx)
 	_, err := auth.ClaimsFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -36,7 +37,8 @@ func (r *mutationResolver) CreateRecipe(ctx context.Context, input model.CreateR
 	}
 	recipe, err := r.RecipeService.CreateRecipe(ctx, request)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create recipe: %w", err)
+		logger.Error("Failed to create recipe", "error", err)
+		return nil, err
 	}
 	recipeModel := &model.Recipe{
 		ID:   recipe.ID.String(),
@@ -47,8 +49,10 @@ func (r *mutationResolver) CreateRecipe(ctx context.Context, input model.CreateR
 
 // Recipes is the resolver for the recipes field.
 func (r *queryResolver) Recipes(ctx context.Context) ([]*model.Recipe, error) {
+	logger := logging.FromContext(ctx)
 	recipes, err := r.RecipeService.GetAllRecipes(ctx)
 	if err != nil {
+		logger.Error("Failed to get all recipes", "error", err)
 		return nil, err
 	}
 	var recipeModels []*model.Recipe
@@ -64,8 +68,10 @@ func (r *queryResolver) Recipes(ctx context.Context) ([]*model.Recipe, error) {
 
 // Recipe is the resolver for the recipe field.
 func (r *queryResolver) Recipe(ctx context.Context, id string) (*model.Recipe, error) {
+	logger := logging.FromContext(ctx).With("recipe_id", id)
 	recipe, err := r.RecipeService.GetRecipeByID(ctx, id)
 	if err != nil {
+		logger.Error("Failed to get recipe by ID", "error", err)
 		return nil, err
 	}
 	if recipe == nil {
@@ -80,10 +86,32 @@ func (r *queryResolver) Recipe(ctx context.Context, id string) (*model.Recipe, e
 
 // IngredientUsages is the resolver for the ingredientUsages field.
 func (r *recipeResolver) IngredientUsages(ctx context.Context, obj *model.Recipe) ([]*model.IngredientUsage, error) {
+	logger := logging.FromContext(ctx).With("recipe_id", obj.ID)
 	ingredientUsages, err := r.RecipeService.GetIngredientUsagesByRecipeID(ctx, obj.ID)
 	if err != nil {
+		logger.Error("Failed to get ingredient usages for recipe", "error", err)
 		return nil, err
 	}
+
+	ingredientIDs := make([]string, len(ingredientUsages))
+	for i, usage := range ingredientUsages {
+		ingredientIDs[i] = usage.IngredientID.String()
+	}
+
+	// Eagerly load ingredients, separate into data loader later
+	ingredients, err := r.IngredientsService.GetIngredientsByIDs(ctx, logger, ingredientIDs)
+	if err != nil {
+		logger.Error("Failed to get ingredients for ingredient usages", "error", err)
+		return nil, err
+	}
+	ingredientMap := make(map[string]*model.Ingredient)
+	for _, ingredient := range ingredients {
+		ingredientMap[ingredient.ID.String()] = &model.Ingredient{
+			ID:   ingredient.ID.String(),
+			Name: ingredient.Name,
+		}
+	}
+
 	var ingredientUsageModels []*model.IngredientUsage
 	for _, usage := range ingredientUsages {
 		usageModel := &model.IngredientUsage{
@@ -93,6 +121,7 @@ func (r *recipeResolver) IngredientUsages(ctx context.Context, obj *model.Recipe
 				Val:  int32(usage.Unit),
 				Name: usage.Unit.String(),
 			},
+			Ingredient: ingredientMap[usage.IngredientID.String()],
 		}
 		ingredientUsageModels = append(ingredientUsageModels, usageModel)
 	}
