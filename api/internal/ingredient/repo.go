@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"foodplanner/internal/db"
-	"log/slog"
 	"strings"
 )
 
@@ -42,7 +41,7 @@ func (r *IngredientRepo) GetAllIngredients(ctx context.Context, db db.DBTX) ([]*
 	return ingredients, nil
 }
 
-func (r *IngredientRepo) UpsertIngredients(ctx context.Context, logger *slog.Logger, db db.DBTX, ingredients []*Ingredient) error {
+func (r *IngredientRepo) UpsertIngredients(ctx context.Context, db db.DBTX, ingredients []*Ingredient) error {
 	if len(ingredients) == 0 {
 		return nil
 	}
@@ -65,8 +64,6 @@ func (r *IngredientRepo) UpsertIngredients(ctx context.Context, logger *slog.Log
 	name = EXCLUDED.name,
 	preferred_unit = EXCLUDED.preferred_unit;
 	`
-
-	logger.Info("Executing ingredient upsert", "numIngredients", len(ingredients), "query", query, "args", args)
 
 	_, err := db.ExecContext(ctx, query, args...)
 	if err != nil {

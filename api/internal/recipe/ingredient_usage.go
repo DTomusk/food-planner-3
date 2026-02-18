@@ -9,7 +9,7 @@ import (
 type IngredientUsage struct {
 	ID           uuid.UUID
 	IngredientID uuid.UUID
-	Quantity     float32
+	Quantity     float64
 	Unit         unit.Unit
 }
 

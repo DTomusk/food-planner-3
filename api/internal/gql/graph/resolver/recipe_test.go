@@ -8,15 +8,21 @@ import (
 	"foodplanner/internal/ingredient"
 	"foodplanner/internal/recipe"
 	"foodplanner/internal/testutil"
+	"foodplanner/internal/testutil/seeds"
 	"testing"
 
 	_ "github.com/lib/pq"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRecipeResolver_CreateAndGetRecipe(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		repo := recipe.NewRepo()
 		txRunner := testutil.NewTestTxRunner(tx)
+
+		testIngredient, err := seeds.SeedTestIngredient(context.Background(), tx, t)
+		require.NoError(t, err, "Failed to seed test ingredient")
+
 		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100)
 		service := recipe.NewService(txRunner, repo, ingredientService)
 		r := &Resolver{
@@ -26,33 +32,26 @@ func TestRecipeResolver_CreateAndGetRecipe(t *testing.T) {
 
 		input := model.CreateRecipeInput{
 			Name: "Chocolate Cake",
+			IngredientUsages: []*model.CreateIngredientUsageInput{
+				{
+					IngredientID: testIngredient.ID.String(),
+					Quantity:     200,
+					Unit:         1,
+				},
+			},
 		}
 		ctx := context.Background()
 		claims := auth.Claims{UserID: "some-user-id"}
 		ctx = auth.ContextWithClaims(ctx, &claims)
 		recipeModel, err := mutationResolver.CreateRecipe(ctx, input)
 
-		if err != nil {
-			t.Fatalf("CreateRecipe failed: %v", err)
-		}
-
-		if recipeModel.Name != "Chocolate Cake" {
-			t.Errorf("Expected recipe name %q, got %q", "Chocolate Cake", recipeModel.Name)
-		}
-
-		if recipeModel.ID == "" {
-			t.Errorf("Expected recipe ID to be set, got empty string")
-		}
+		require.NoError(t, err, "CreateRecipe failed")
+		require.Equal(t, "Chocolate Cake", recipeModel.Name)
 
 		dbRecipe, err := repo.GetRecipeByID(context.Background(), tx, recipeModel.ID)
-		if err != nil {
-			t.Fatalf("GetRecipeByID failed: %v", err)
-		}
-		if dbRecipe == nil {
-			t.Fatalf("Expected to find recipe in DB, got nil")
-		}
-		if dbRecipe.Name != "Chocolate Cake" {
-			t.Errorf("Expected DB recipe name %q, got %q", "Chocolate Cake", dbRecipe.Name)
-		}
+
+		require.NoError(t, err)
+		require.NotNil(t, dbRecipe, "Expected to find recipe in DB, got nil")
+		require.Equal(t, "Chocolate Cake", dbRecipe.Name)
 	})
 }

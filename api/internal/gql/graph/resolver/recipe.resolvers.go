@@ -19,9 +19,20 @@ func (r *mutationResolver) CreateRecipe(ctx context.Context, input model.CreateR
 	if err != nil {
 		return nil, err
 	}
+
+	ingredientUsageRequests := make([]recipe.CreateIngredientUsageRequest, len(input.IngredientUsages))
+	for i, usage := range input.IngredientUsages {
+		ingredientUsageRequests[i] = recipe.CreateIngredientUsageRequest{
+			IngredientID: usage.IngredientID,
+			Quantity:     usage.Quantity,
+			Unit:         int(usage.Unit),
+		}
+	}
+
 	// TODO: replace with graphql model with ingredients
 	request := recipe.CreateRecipeRequest{
-		Name: input.Name,
+		Name:        input.Name,
+		Ingredients: ingredientUsageRequests,
 	}
 	recipe, err := r.RecipeService.CreateRecipe(ctx, request)
 	if err != nil {

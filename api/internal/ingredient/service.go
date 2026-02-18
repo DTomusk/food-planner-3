@@ -37,7 +37,7 @@ func (s *IngredientService) SyncIngredientData(ctx context.Context, logger *slog
 				end = len(ingredients)
 			}
 			batch := ingredients[start:end]
-			if err := s.repo.UpsertIngredients(ctx, logger, tx, batch); err != nil {
+			if err := s.repo.UpsertIngredients(ctx, tx, batch); err != nil {
 				logger.Error("Failed to upsert ingredient batch", "batchNumber", i+1, "totalBatches", numberOfBatches, "error", err)
 				return err
 			}
