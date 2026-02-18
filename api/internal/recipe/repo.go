@@ -68,3 +68,21 @@ func (r *Repo) IngredientExists(ctx context.Context, db db.DBTX, ingredientID st
 	err := db.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM ingredients WHERE id = $1)", ingredientID).Scan(&exists)
 	return exists, err
 }
+
+func (r *Repo) GetIngredientUsagesForRecipe(ctx context.Context, db db.DBTX, recipeID string) ([]*IngredientUsage, error) {
+	rows, err := db.QueryContext(ctx, "SELECT id, ingredient_id, quantity, unit FROM ingredient_usages WHERE recipe_id = $1", recipeID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var usages []*IngredientUsage
+	for rows.Next() {
+		var usage IngredientUsage
+		if err := rows.Scan(&usage.ID, &usage.IngredientID, &usage.Quantity, &usage.Unit); err != nil {
+			return nil, err
+		}
+		usages = append(usages, &usage)
+	}
+	return usages, nil
+}

@@ -80,7 +80,23 @@ func (r *queryResolver) Recipe(ctx context.Context, id string) (*model.Recipe, e
 
 // IngredientUsages is the resolver for the ingredientUsages field.
 func (r *recipeResolver) IngredientUsages(ctx context.Context, obj *model.Recipe) ([]*model.IngredientUsage, error) {
-	panic(fmt.Errorf("not implemented: IngredientUsages - ingredientUsages"))
+	ingredientUsages, err := r.RecipeService.GetIngredientUsagesByRecipeID(ctx, obj.ID)
+	if err != nil {
+		return nil, err
+	}
+	var ingredientUsageModels []*model.IngredientUsage
+	for _, usage := range ingredientUsages {
+		usageModel := &model.IngredientUsage{
+			ID:       usage.ID.String(),
+			Quantity: usage.Quantity,
+			Unit: &model.Unit{
+				Val:  int32(usage.Unit),
+				Name: usage.Unit.String(),
+			},
+		}
+		ingredientUsageModels = append(ingredientUsageModels, usageModel)
+	}
+	return ingredientUsageModels, nil
 }
 
 // Recipe returns graph.RecipeResolver implementation.

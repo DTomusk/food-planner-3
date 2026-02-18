@@ -90,3 +90,7 @@ func (s *Service) GetAllRecipes(ctx context.Context) ([]*Recipe, error) {
 func (s *Service) GetRecipeByID(ctx context.Context, id string) (*Recipe, error) {
 	return s.Repo.GetRecipeByID(ctx, s.txRunner.DB(), id)
 }
+
+func (s *Service) GetIngredientUsagesByRecipeID(ctx context.Context, recipeID string) ([]*IngredientUsage, error) {
+	return s.Repo.GetIngredientUsagesForRecipe(ctx, s.txRunner.DB(), recipeID)
+}
