@@ -49,7 +49,6 @@ func (s *IngredientService) SyncIngredientData(ctx context.Context, logger *slog
 
 // TODO: remove and replace with paginated (and maybe filtered) search
 func (s *IngredientService) GetAllIngredients(ctx context.Context, logger *slog.Logger) ([]*Ingredient, error) {
-	logger.Info("Fetching all ingredients")
 	ingredients, err := s.repo.GetAllIngredients(ctx, s.txRunner.DB())
 	if err != nil {
 		logger.Error("Failed to fetch ingredients", "error", err)
@@ -59,7 +58,6 @@ func (s *IngredientService) GetAllIngredients(ctx context.Context, logger *slog.
 }
 
 func (s *IngredientService) GetIngredientsByIDs(ctx context.Context, logger *slog.Logger, ids []string) ([]*Ingredient, error) {
-	logger.Info("Fetching ingredients by IDs", "numIDs", len(ids))
 	ingredients, err := s.repo.GetIngredientsByIDs(ctx, s.txRunner.DB(), ids)
 	if err != nil {
 		logger.Error("Failed to fetch ingredients by IDs", "error", err)
