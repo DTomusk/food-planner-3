@@ -21,7 +21,7 @@ type CreateRecipeInput struct {
 type Ingredient struct {
 	ID            string `json:"id"`
 	Name          string `json:"name"`
-	PreferredUnit int32  `json:"preferredUnit"`
+	PreferredUnit *Unit  `json:"preferredUnit"`
 }
 
 type IngredientUsage struct {

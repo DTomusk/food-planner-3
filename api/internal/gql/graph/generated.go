@@ -672,7 +672,7 @@ func (ec *executionContext) _Ingredient_preferredUnit(ctx context.Context, field
 			return obj.PreferredUnit, nil
 		},
 		nil,
-		ec.marshalNInt2int32,
+		ec.marshalNUnit2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐUnit,
 		true,
 		true,
 	)
@@ -685,7 +685,13 @@ func (ec *executionContext) fieldContext_Ingredient_preferredUnit(_ context.Cont
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
+			switch field.Name {
+			case "val":
+				return ec.fieldContext_Unit_val(ctx, field)
+			case "name":
+				return ec.fieldContext_Unit_name(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Unit", field.Name)
 		},
 	}
 	return fc, nil

@@ -1,7 +1,7 @@
 type Ingredient {
     id: ID!
     name: String!
-    preferredUnit: Int!
+    preferredUnit: Unit!
 }
 
 extend type Query {
