@@ -39,3 +39,7 @@ func (s *UserService) CreateUser(email, passwordHash string, ctx context.Context
 func (s *UserService) GetUserByEmail(email string, ctx context.Context) (*User, error) {
 	return s.repo.GetUserByEmail(email, ctx, s.db)
 }
+
+func (s *UserService) GetUserByID(ctx context.Context, id string) (*User, error) {
+	return s.repo.GetUserByID(id, ctx, s.db)
+}

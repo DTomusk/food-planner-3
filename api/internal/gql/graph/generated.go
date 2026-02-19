@@ -85,6 +85,7 @@ type ComplexityRoot struct {
 		ID               func(childComplexity int) int
 		IngredientUsages func(childComplexity int) int
 		Name             func(childComplexity int) int
+		User             func(childComplexity int) int
 	}
 
 	Unit struct {
@@ -112,6 +113,7 @@ type QueryResolver interface {
 }
 type RecipeResolver interface {
 	IngredientUsages(ctx context.Context, obj *model.Recipe) ([]*model.IngredientUsage, error)
+	User(ctx context.Context, obj *model.Recipe) (*model.User, error)
 }
 
 type executableSchema struct {
@@ -278,6 +280,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Recipe.Name(childComplexity), true
+	case "Recipe.user":
+		if e.complexity.Recipe.User == nil {
+			break
+		}
+
+		return e.complexity.Recipe.User(childComplexity), true
 
 	case "Unit.name":
 		if e.complexity.Unit.Name == nil {
@@ -998,6 +1006,8 @@ func (ec *executionContext) fieldContext_Mutation_createRecipe(ctx context.Conte
 				return ec.fieldContext_Recipe_name(ctx, field)
 			case "ingredientUsages":
 				return ec.fieldContext_Recipe_ingredientUsages(ctx, field)
+			case "user":
+				return ec.fieldContext_Recipe_user(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Recipe", field.Name)
 		},
@@ -1112,6 +1122,8 @@ func (ec *executionContext) fieldContext_Query_recipes(_ context.Context, field 
 				return ec.fieldContext_Recipe_name(ctx, field)
 			case "ingredientUsages":
 				return ec.fieldContext_Recipe_ingredientUsages(ctx, field)
+			case "user":
+				return ec.fieldContext_Recipe_user(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Recipe", field.Name)
 		},
@@ -1150,6 +1162,8 @@ func (ec *executionContext) fieldContext_Query_recipe(ctx context.Context, field
 				return ec.fieldContext_Recipe_name(ctx, field)
 			case "ingredientUsages":
 				return ec.fieldContext_Recipe_ingredientUsages(ctx, field)
+			case "user":
+				return ec.fieldContext_Recipe_user(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Recipe", field.Name)
 		},
@@ -1368,6 +1382,41 @@ func (ec *executionContext) fieldContext_Recipe_ingredientUsages(_ context.Conte
 				return ec.fieldContext_IngredientUsage_quantity(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type IngredientUsage", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Recipe_user(ctx context.Context, field graphql.CollectedField, obj *model.Recipe) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Recipe_user,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Recipe().User(ctx, obj)
+		},
+		nil,
+		ec.marshalNUser2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐUser,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Recipe_user(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Recipe",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
 	}
 	return fc, nil
@@ -3489,6 +3538,42 @@ func (ec *executionContext) _Recipe(ctx context.Context, sel ast.SelectionSet, o
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "user":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Recipe_user(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4238,6 +4323,10 @@ func (ec *executionContext) marshalNUnit2ᚖfoodplannerᚋinternalᚋgqlᚋgraph
 		return graphql.Null
 	}
 	return ec._Unit(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNUser2foodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v model.User) graphql.Marshaler {
+	return ec._User(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNUser2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {

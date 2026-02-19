@@ -41,6 +41,7 @@ type Recipe struct {
 	ID               string             `json:"id"`
 	Name             string             `json:"name"`
 	IngredientUsages []*IngredientUsage `json:"ingredientUsages"`
+	User             *User              `json:"user"`
 }
 
 type SignInInput struct {

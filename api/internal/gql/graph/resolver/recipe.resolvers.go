@@ -7,6 +7,7 @@ package resolver
 
 import (
 	"context"
+	"fmt"
 	"foodplanner/internal/auth"
 	"foodplanner/internal/gql/graph"
 	"foodplanner/internal/gql/graph/model"
@@ -127,6 +128,21 @@ func (r *recipeResolver) IngredientUsages(ctx context.Context, obj *model.Recipe
 		ingredientUsageModels = append(ingredientUsageModels, usageModel)
 	}
 	return ingredientUsageModels, nil
+}
+
+// User is the resolver for the user field.
+func (r *recipeResolver) User(ctx context.Context, obj *model.Recipe) (*model.User, error) {
+	user, err := r.UserService.GetUserByID(ctx, obj.User.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user for recipe: %w", err)
+	}
+	if user == nil {
+		return nil, fmt.Errorf("user not found for recipe")
+	}
+	return &model.User{
+		ID:    user.ID.String(),
+		Email: user.Email,
+	}, nil
 }
 
 // Recipe returns graph.RecipeResolver implementation.

@@ -4,6 +4,7 @@ import (
 	"foodplanner/internal/auth"
 	"foodplanner/internal/ingredient"
 	"foodplanner/internal/recipe"
+	"foodplanner/internal/user"
 )
 
 // This file will not be regenerated automatically.
@@ -13,6 +14,7 @@ import (
 
 type Resolver struct {
 	AuthService        *auth.AuthService
-	RecipeService      *recipe.Service
 	IngredientsService *ingredient.IngredientService
+	RecipeService      *recipe.Service
+	UserService        *user.UserService
 }
