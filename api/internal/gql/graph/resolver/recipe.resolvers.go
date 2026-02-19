@@ -132,7 +132,15 @@ func (r *recipeResolver) IngredientUsages(ctx context.Context, obj *model.Recipe
 
 // User is the resolver for the user field.
 func (r *recipeResolver) User(ctx context.Context, obj *model.Recipe) (*model.User, error) {
-	user, err := r.UserService.GetUserByID(ctx, obj.User.ID)
+	// Called twice, could eager load user when loading recipe if we
+	recipe, err := r.RecipeService.GetRecipeByID(ctx, obj.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get recipe for user resolver: %w", err)
+	}
+	if recipe == nil {
+		return nil, fmt.Errorf("recipe not found for user resolver")
+	}
+	user, err := r.UserService.GetUserByID(ctx, recipe.UserID.String())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user for recipe: %w", err)
 	}
