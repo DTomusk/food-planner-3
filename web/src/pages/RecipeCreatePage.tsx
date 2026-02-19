@@ -7,7 +7,8 @@ export default function RecipeCreatePage() {
 
     const handleSubmit = (values: RecipeFormValues) => {
       mutate(
-          { input: { name: values.name } },
+        // TODO: add ingredient usages
+          { input: { name: values.name, ingredientUsages: [] } },
           {
             onSuccess: () => {
               alert("Recipe created successfully!");
