@@ -19,9 +19,13 @@ func TestRecipeResolver_CreateAndGetRecipe(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		repo := recipe.NewRepo()
 		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
 
-		testIngredient, err := seeds.SeedTestIngredient(context.Background(), tx, t)
+		testIngredient, err := seeds.SeedTestIngredient(ctx, tx)
 		require.NoError(t, err, "Failed to seed test ingredient")
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err, "Failed to seed test user")
 
 		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100)
 		service := recipe.NewService(txRunner, repo, ingredientService)
@@ -40,15 +44,14 @@ func TestRecipeResolver_CreateAndGetRecipe(t *testing.T) {
 				},
 			},
 		}
-		ctx := context.Background()
-		claims := auth.Claims{UserID: "some-user-id"}
+		claims := auth.Claims{UserID: testUser.ID.String()}
 		ctx = auth.ContextWithClaims(ctx, &claims)
 		recipeModel, err := mutationResolver.CreateRecipe(ctx, input)
 
 		require.NoError(t, err, "CreateRecipe failed")
 		require.Equal(t, "Chocolate Cake", recipeModel.Name)
 
-		dbRecipe, err := repo.GetRecipeByID(context.Background(), tx, recipeModel.ID)
+		dbRecipe, err := repo.GetRecipeByID(ctx, tx, recipeModel.ID)
 
 		require.NoError(t, err)
 		require.NotNil(t, dbRecipe, "Expected to find recipe in DB, got nil")

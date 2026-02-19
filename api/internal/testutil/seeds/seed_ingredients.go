@@ -4,10 +4,8 @@ import (
 	"context"
 	"foodplanner/internal/db"
 	"foodplanner/internal/ingredient"
-	"testing"
 
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
 )
 
 func InsertIngredient(ctx context.Context, db db.DBTX, ingredient *ingredient.Ingredient) error {
@@ -19,7 +17,7 @@ func InsertIngredient(ctx context.Context, db db.DBTX, ingredient *ingredient.In
 	return err
 }
 
-func SeedTestIngredient(ctx context.Context, db db.DBTX, t *testing.T) (*ingredient.Ingredient, error) {
+func SeedTestIngredient(ctx context.Context, db db.DBTX) (*ingredient.Ingredient, error) {
 	ingredientID := uuid.New()
 	testIngredient := ingredient.Ingredient{
 		ID:            ingredientID,
@@ -28,6 +26,8 @@ func SeedTestIngredient(ctx context.Context, db db.DBTX, t *testing.T) (*ingredi
 		PreferredUnit: 1,
 	}
 	err := InsertIngredient(context.Background(), db, &testIngredient)
-	require.NoError(t, err, "Failed to seed test ingredient")
+	if err != nil {
+		return nil, err
+	}
 	return &testIngredient, nil
 }

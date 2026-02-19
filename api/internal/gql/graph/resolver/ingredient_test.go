@@ -15,7 +15,8 @@ func TestIngredientResolver_GetAllIngredients(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		txRunner := testutil.NewTestTxRunner(tx)
 
-		testIngredient, err := seeds.SeedTestIngredient(context.Background(), tx, t)
+		ctx := context.Background()
+		testIngredient, err := seeds.SeedTestIngredient(ctx, tx)
 		require.NoError(t, err, "Failed to seed test ingredient")
 
 		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100)
@@ -25,7 +26,6 @@ func TestIngredientResolver_GetAllIngredients(t *testing.T) {
 		}
 		queryResolver := &queryResolver{r}
 
-		ctx := context.Background()
 		ingredients, err := queryResolver.Ingredients(ctx)
 		require.NoError(t, err, "GetAllIngredients failed")
 		require.Len(t, ingredients, 1)

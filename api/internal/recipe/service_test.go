@@ -15,6 +15,7 @@ import (
 func TestCreateRecipe(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
 
 		ingredientID := uuid.New()
 		testIngredient := ingredient.Ingredient{
@@ -23,8 +24,11 @@ func TestCreateRecipe(t *testing.T) {
 			Name:          "Test Ingredient",
 			PreferredUnit: 1,
 		}
-		err := seeds.InsertIngredient(context.Background(), tx, &testIngredient)
+		err := seeds.InsertIngredient(ctx, tx, &testIngredient)
 		require.NoError(t, err, "Failed to seed test ingredient")
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err, "Failed to seed test user")
 
 		s := NewService(txRunner, NewRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100))
 		ingredientRequest := CreateIngredientUsageRequest{
@@ -35,8 +39,9 @@ func TestCreateRecipe(t *testing.T) {
 		request := CreateRecipeRequest{
 			Name:        "Vanilla Ice Cream",
 			Ingredients: []CreateIngredientUsageRequest{ingredientRequest},
+			UserID:      testUser.ID.String(),
 		}
-		recipe, err := s.CreateRecipe(context.Background(), request)
+		recipe, err := s.CreateRecipe(ctx, request)
 		require.NoError(t, err)
 		require.Equal(t, "Vanilla Ice Cream", recipe.Name)
 	})

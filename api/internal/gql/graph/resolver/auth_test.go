@@ -28,7 +28,8 @@ func TestAuthResolver_SignUp(t *testing.T) {
 		}
 
 		// Act
-		authPayload, err := mutationResolver.Signup(context.Background(), input)
+		ctx := context.Background()
+		authPayload, err := mutationResolver.Signup(ctx, input)
 
 		// Assert
 		require.NoError(t, err)
@@ -50,7 +51,8 @@ func TestAuthResolver_SignIn(t *testing.T) {
 		mutationResolver := &mutationResolver{r}
 
 		// First, create a user to sign in
-		createdUser, _, err := authService.SignUp("test@example.com", "securepassword", context.Background())
+		ctx := context.Background()
+		createdUser, _, err := authService.SignUp("test@example.com", "securepassword", ctx)
 		require.NoError(t, err)
 
 		input := model.SignInInput{
@@ -59,12 +61,12 @@ func TestAuthResolver_SignIn(t *testing.T) {
 		}
 
 		// Act
-		authPayload, err := mutationResolver.Signin(context.Background(), input)
+		authPayload, err := mutationResolver.Signin(ctx, input)
 
 		// Assert
 		require.NoError(t, err)
 		require.Equal(t, createdUser.Email, authPayload.User.Email)
-		require.Equal(t, createdUser.ID, authPayload.User.ID)
+		require.Equal(t, createdUser.ID.String(), authPayload.User.ID)
 		require.NotEmpty(t, authPayload.Jwt)
 	})
 }
