@@ -60,6 +60,7 @@ func main() {
 					AuthService:        authService,
 					RecipeService:      recipeService,
 					IngredientsService: ingredientService,
+					UserService:        userService,
 				},
 				Directives: graph.DirectiveRoot{
 					Auth: directive.AuthDirective,
