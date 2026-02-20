@@ -1,7 +1,9 @@
-import { useFieldArray, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import type { RecipeFormValues } from "../types";
 import { Form, FormTitle, FormInputField, Button } from "@/components/";
 import { commonStrings } from "@/lib/strings";
+import IngredientSection from "./IngredientSection";
+import FormSection from "@/components/FormSection";
 
 type RecipeFormProps = {
   onSubmit: (values: RecipeFormValues) => void;
@@ -26,48 +28,20 @@ export default function RecipeForm({
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
-    name: "ingredientUsages",
-    control,
-  });
-
   return (
     <Form onSubmit={handleSubmit(onSubmit)}>
       <FormTitle text="Create Recipe" />
-      <FormInputField
-        label="Recipe name"
-        id="name"
-        register={register("name", { required: "Name is required" })}
-        error={errors.name}
-        placeholder="Recipe name"
-      />
+      <FormSection title="Recipe Details">
+        <FormInputField
+          label="Recipe name"
+          id="name"
+          register={register("name", { required: "Name is required" })}
+          error={errors.name}
+          placeholder="Recipe name"
+        />
+      </FormSection>      
 
-      {fields.map((field, index) => (
-        <div key={field.id}>
-          <select {...register(`ingredientUsages.${index}.ingredientId`, { required: "Ingredient is required" })}>
-            <option value="">Select ingredient</option>
-            {ingredients.map((ingredient) => (
-              <option key={ingredient.id} value={ingredient.id}>
-                {ingredient.name}
-              </option>
-            ))}
-          </select>
-          <input
-            type="number"
-            {...register(`ingredientUsages.${index}.quantity`, { required: "Quantity is required", min: 0 })}
-          />
-
-          {fields.length > 1 && (
-            <Button type="button" onClick={() => remove(index)}>
-              Remove
-            </Button>
-          )}
-        </div>
-      ))}
-
-      <Button type="button" onClick={() => append({ ingredientId: "", quantity: 0 })}>
-        Add Ingredient
-      </Button>
+      <IngredientSection control={control} register={register} errors={errors} ingredients={ingredients} />
 
       <Button disabled={isSubmitting} type="submit" loading={isSubmitting}>
         {commonStrings.forms.create}
