@@ -10,6 +10,7 @@ export const graphqlClient = new GraphQLClient(
                 request.headers = {
                     ...request.headers,
                     Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
                 };
             }
             return request;
