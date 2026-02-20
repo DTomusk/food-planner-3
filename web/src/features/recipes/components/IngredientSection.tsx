@@ -2,6 +2,7 @@ import { useFieldArray, type Control, type FieldErrors, type UseFormRegister } f
 import type { RecipeFormValues } from "../types";
 import Button from "@/components/Button";
 import FormSection from "@/components/FormSection";
+import Input from "@/components/Input";
 
 interface IngredientSectionProps {
   control: Control<RecipeFormValues>;
@@ -28,8 +29,7 @@ export default function IngredientSection({ control, register, errors, ingredien
                     </option>
                     ))}
                 </select>
-                <input
-                    type="number"
+                <Input type="number"
                     {...register(`ingredientUsages.${index}.quantity`, { required: "Quantity is required", min: 0 })}
                 />
 
