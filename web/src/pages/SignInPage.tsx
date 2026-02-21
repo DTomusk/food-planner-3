@@ -1,5 +1,5 @@
 import { Alert, PageTitle } from "@/components";
-import Link from "@/components/Link";
+import Link from "@/components/ui/Link";
 import AuthForm from "@/features/auth/components/AuthForm";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useSignIn } from "@/features/auth/hooks/useSignIn";

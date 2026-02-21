@@ -1,8 +1,8 @@
 import { useFieldArray, type Control, type FieldErrors, type UseFormRegister } from "react-hook-form";
 import type { RecipeFormValues } from "../types";
-import Button from "@/components/Button";
-import FormSection from "@/components/FormSection";
-import Input from "@/components/Input";
+import Button from "@/components/ui/Button";
+import FormSection from "@/components/form/FormSection";
+import IngredientSelector from "./IngredientSelector";
 
 interface IngredientSectionProps {
   control: Control<RecipeFormValues>;
@@ -20,25 +20,15 @@ export default function IngredientSection({ control, register, errors, ingredien
     return (
         <FormSection title="Ingredients">
             {fields.map((field, index) => (
-                <div key={field.id}>
-                <select {...register(`ingredientUsages.${index}.ingredientId`, { required: "Ingredient is required" })}>
-                    <option value="">Select ingredient</option>
-                    {ingredients.map((ingredient) => (
-                    <option key={ingredient.id} value={ingredient.id}>
-                        {ingredient.name}
-                    </option>
-                    ))}
-                </select>
-                <Input type="number"
-                    {...register(`ingredientUsages.${index}.quantity`, { required: "Quantity is required", min: 0 })}
+                <IngredientSelector 
+                    key={field.id}
+                    index={index}
+                    control={control}
+                    register={register}
+                    ingredients={ingredients}
+                    remove={remove}
+                    canRemove={fields.length > 1}
                 />
-
-                {fields.length > 1 && (
-                    <Button type="button" onClick={() => remove(index)}>
-                    Remove
-                    </Button>
-                )}
-                </div>
             ))}
 
             <Button type="button" onClick={() => append({ ingredientId: "", quantity: 0 })}>
