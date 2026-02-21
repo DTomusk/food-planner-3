@@ -20,7 +20,7 @@ export default function Button({ children, onClick, disabled, type = "button", v
         disabled={disabled || loading} 
         type={type} 
         className={`
-            px-4 py-2
+            px-4 py-2 text-sm font-medium
             ${variants[variant]}
             ${disabled || loading ? "opacity-50 cursor-not-allowed" : ""}
         `}>

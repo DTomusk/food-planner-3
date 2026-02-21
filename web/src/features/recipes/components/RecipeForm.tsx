@@ -22,7 +22,7 @@ export default function RecipeForm({
     register,
     control,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isValid },
   } = useForm<RecipeFormValues>({
     defaultValues: {
       name: "",
@@ -33,15 +33,19 @@ export default function RecipeForm({
   return (
     <Form onSubmit={handleSubmit(onSubmit)}>
       <FormTitle text="Create Recipe" />
-      <FormSection title="Recipe Details">
+      <FormSection>
         <FormField htmlFor="name" label="Recipe name" error={errors.name?.message}>
-          <Input type="text" placeholder="Recipe name" {...register("name", { required: "Name is required" })} />
+          <Input type="text" placeholder="Recipe name" 
+          {...register("name", 
+          { required: "Please add a name",
+              minLength: { value: 3, message: "Name must be at least 3 characters" },
+           })} />
         </FormField>
       </FormSection>      
 
       <IngredientSection control={control} register={register} errors={errors} ingredients={ingredients} />
 
-      <Button disabled={isSubmitting} type="submit" loading={isSubmitting}>
+      <Button disabled={isSubmitting || !isValid} type="submit" loading={isSubmitting}>
         {commonStrings.forms.create}
       </Button>
     </Form>

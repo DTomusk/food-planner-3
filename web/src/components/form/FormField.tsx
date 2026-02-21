@@ -25,9 +25,7 @@ export default function FormField({
 
       {children}
 
-      {error && (
-        <FormInputError message={error} />
-      )}
+      <FormInputError message={error} />
     </div>
   );
 }
