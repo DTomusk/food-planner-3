@@ -28,6 +28,7 @@ export default function IngredientSection({ control, register, errors, ingredien
                     ingredients={ingredients}
                     remove={remove}
                     canRemove={fields.length > 1}
+                    errors={errors}
                 />
             ))}
 
