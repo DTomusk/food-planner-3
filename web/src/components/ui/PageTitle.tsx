@@ -1,3 +1,3 @@
 export default function PageTitle({ text }: { text: string }) {
-    return <h1 className="text-3xl font-bold underline">{text}</h1>;
+    return <h1 className="text-6xl font-bold text-center">{text}</h1>;
 }

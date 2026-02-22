@@ -9,13 +9,15 @@ export default function RecipePage() {
 
     return (
         <Page>
-            <PageTitle text="Recipe Page" />
             <BackLink to="/recipe" />
             {!id && <Alert message="No recipe ID provided." />}
             {isLoading && <Spinner />}
             {error && <Alert message={(error as Error).message} />}
             {data ? (
-                <RecipeCard recipe={data} />
+                <>
+                    <PageTitle text={data ? data.name : "Recipe Page"} />
+                    <RecipeCard recipe={data} />
+                </>
             ) : (
                 !isLoading && id && !error && <Alert message="Recipe not found." />
             )}
