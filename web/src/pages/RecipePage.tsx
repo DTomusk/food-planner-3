@@ -1,6 +1,6 @@
 import { useParams } from "react-router-dom";
 import { Alert, BackLink, PageTitle, Spinner } from "@/components";
-import { RecipeCard, useRecipe } from "@/features/recipes";
+import { RecipeDetail, useRecipe } from "@/features/recipes";
 import { Page } from "@/layout";
 
 export default function RecipePage() {
@@ -16,7 +16,7 @@ export default function RecipePage() {
             {data ? (
                 <>
                     <PageTitle text={data ? data.name : "Recipe Page"} />
-                    <RecipeCard recipe={data} />
+                    <RecipeDetail recipe={data} />
                 </>
             ) : (
                 !isLoading && id && !error && <Alert message="Recipe not found." />
