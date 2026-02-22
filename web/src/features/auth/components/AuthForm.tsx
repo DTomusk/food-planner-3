@@ -1,5 +1,5 @@
 // Note: separate this if sign in and up diverge
-import { Button, Form, FormTitle } from "@/components";
+import { Button, Form } from "@/components";
 import FormField from "@/components/form/FormField";
 import Input from "@/components/ui/Input";
 import { commonStrings } from "@/lib/strings";
@@ -23,7 +23,6 @@ export default function AuthForm({
     } = useForm<{ email: string; password: string }>();
     return (
         <Form onSubmit={handleSubmit(onSubmit)}>
-            <FormTitle text={formType === "signin" ? commonStrings.auth.signIn : commonStrings.auth.signUp} />
             <FormField htmlFor="email" label="Email" error={errors.email?.message}>
                 <Input type="email" placeholder="Email" {...register("email", { required: "Email is required" })} />
             </FormField>
