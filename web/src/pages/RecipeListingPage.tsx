@@ -5,7 +5,7 @@ import { Page } from "@/layout";
 import { useNavigate } from "react-router-dom";
 
 export default function RecipeListingPage() {
-    const {data, isLoading, error} = useRecipes();
+    const { data, isLoading, error } = useRecipes();
     const { isAuthenticated } = useAuth();
     
     const navigate = useNavigate();

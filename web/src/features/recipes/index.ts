@@ -1,5 +1,4 @@
 // Components
-export { default as RecipeCard } from "./components/RecipeCard";
 export { default as RecipeForm } from "./components/RecipeForm";
 export { default as RecipeDetail } from "./components/RecipeDetail";
 export { default as RecipeListingCard } from "./components/RecipeListingCard";

@@ -1,10 +1,10 @@
 import { recipeStrings } from "../strings";
-import type { Recipe } from "../types"
-import RecipeCard from "./RecipeCard"
+import type { RecipeSummary } from "../types"
 import { useNavigate } from "react-router-dom"
+import RecipeListingCard from "./RecipeListingCard";
 
 interface RecipeListProps {
-    recipes: Array<Recipe>
+    recipes: Array<RecipeSummary>;
 }
 
 export default function RecipeList({ recipes }: RecipeListProps) {
@@ -18,7 +18,7 @@ export default function RecipeList({ recipes }: RecipeListProps) {
         <ul className="space-y-2">
         {recipes.map((recipe: {id: string, name: string}) => (
           <li key={recipe.id}>
-            <RecipeCard recipe={recipe} onClick={() => navigate(`/recipe/${recipe.id}`)}/>
+            <RecipeListingCard recipe={recipe} onClick={() => navigate(`/recipe/${recipe.id}`)}/>
           </li>
         ))}
       </ul>

@@ -1,7 +1,7 @@
-import type { Recipe } from "../types";
+import type { RecipeSummary } from "../types";
 
 interface RecipeListingCardProps {
-    recipe: Recipe;
+    recipe: RecipeSummary;
     onClick?: () => void;
 }
 

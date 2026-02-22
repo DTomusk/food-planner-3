@@ -2,12 +2,19 @@ import { useQuery } from "@tanstack/react-query";
 import { GetRecipeDocument, type GetRecipeQuery } from "../../../lib/graphql.generated";
 import type { ClientError } from "graphql-request";
 import { graphqlClient } from "@/lib/graphqlClient";
+import { mapRecipe } from "../mappers/recipeMapper";
+import type { Recipe } from "../types";
 
 export function useRecipe(id: string) {
-    return useQuery<GetRecipeQuery, ClientError, GetRecipeQuery["recipe"]>({
+    return useQuery<GetRecipeQuery, ClientError, Recipe>({
         queryKey: ["recipe", id],
         queryFn: () => graphqlClient.request(GetRecipeDocument, { id }),
         enabled: Boolean(id),
-        select: (data) => data.recipe,
+        select: (data) => {
+            if (!data.recipe) {
+                throw new Error("Recipe not found");
+            }
+
+            return mapRecipe(data.recipe);},
     });
 }
