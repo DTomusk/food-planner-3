@@ -12,7 +12,7 @@ const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
                 ref={ref}
                 type={type}
                 className={clsx(
-                    "inline-flex items-center justify-center rounded-md p-2",
+                    "inline-flex items-center justify-center rounded-md p-2 cursor-pointer hover:scale-110 hover:rotate-360 duration-300 transition-transform",
                     variant === "primary" && "bg-blue-500 text-white",
                     variant === "secondary" && "bg-gray-500 text-white",
                     variant === "danger" && "bg-red-500 text-white",
