@@ -1,6 +1,7 @@
 import { Alert, Button, PageTitle, Spinner } from "@/components";
 import Container from "@/components/layout/Container";
 import Stack from "@/components/layout/Stack";
+import SectionTitle from "@/components/ui/SectionTitle";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { RecipeList, useRecipes } from "@/features/recipes";
 import { Page } from "@/layout";
@@ -23,7 +24,10 @@ export default function RecipeListingPage() {
             {isLoading && <Spinner/>}
             {error && <Alert message={(error as Error).message} />}
             {data && (
-                <RecipeList recipes={data.recipes} />
+                <>
+                    <SectionTitle text="Top recipes" />
+                    <RecipeList recipes={data.recipes} />
+                </>
             )}
                 </Stack>
             </Container>
