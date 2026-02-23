@@ -8,7 +8,10 @@ export function mapRecipe(
         id: gqlRecipe.id,
         name: gqlRecipe.name,
         // TODO: add proper formatting later
-        ingredients: gqlRecipe.ingredientUsages.map((iu) => iu.quantity + " " + iu.unit.name + " " + iu.ingredient.name),
+        ingredients: gqlRecipe.ingredientUsages.map((iu) => ({
+            name: iu.ingredient.name,
+            formattedQuantity: iu.quantity + " " + iu.unit.name
+        })),
         user: gqlRecipe.user.id,
     }
 }

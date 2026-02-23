@@ -1,9 +1,14 @@
 export type Recipe = {
     id: string;
     name: string;
-    ingredients: string[];
+    ingredients: Ingredients[];
     user: string;
 };
+
+export type Ingredients = {
+    name: string;
+    formattedQuantity: string;
+}
 
 export type RecipeSummary = {
     id: string;

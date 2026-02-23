@@ -1,2 +1,3 @@
 export { default as AppLayout } from "./AppLayout";
 export { default as Page } from "./PageWrapper";
+export { default as Section } from "./SectionWrapper";
