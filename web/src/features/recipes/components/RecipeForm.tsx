@@ -1,6 +1,6 @@
 import { useForm } from "react-hook-form";
 import type { RecipeFormValues } from "../types";
-import { Form, FormTitle, Button } from "@/components/";
+import { Form, Button } from "@/components/";
 import { commonStrings } from "@/lib/strings";
 import IngredientSection from "./IngredientSection";
 import FormSection from "@/components/form/FormSection";
@@ -32,7 +32,6 @@ export default function RecipeForm({
 
   return (
     <Form onSubmit={handleSubmit(onSubmit)}>
-      <FormTitle text="Create Recipe" />
       <FormSection>
         <FormField htmlFor="name" label="Recipe name" error={errors.name?.message}>
           <Input type="text" placeholder="Recipe name" 

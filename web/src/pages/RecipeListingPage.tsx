@@ -1,4 +1,6 @@
 import { Alert, Button, PageTitle, Spinner } from "@/components";
+import Container from "@/components/layout/Container";
+import Stack from "@/components/layout/Stack";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { RecipeList, useRecipes } from "@/features/recipes";
 import { Page } from "@/layout";
@@ -12,6 +14,8 @@ export default function RecipeListingPage() {
     return (
         <Page>
             <PageTitle text="Recipes" />
+            <Container size="md">
+                <Stack space="lg">
             {!isAuthenticated && <Alert type="info" message="Please sign in to add a new recipe." />}
             {isAuthenticated && <Button onClick={() => navigate("/recipe/create")}>
                 Add New Recipe
@@ -19,8 +23,10 @@ export default function RecipeListingPage() {
             {isLoading && <Spinner/>}
             {error && <Alert message={(error as Error).message} />}
             {data && (
-            <RecipeList recipes={data.recipes} />
+                <RecipeList recipes={data.recipes} />
             )}
+                </Stack>
+            </Container>
         </Page>
     );
 }
