@@ -2,10 +2,10 @@ package recipe
 
 type RecipeSource struct {
 	Type         SourceType
-	URL          string
-	BookTitle    string
-	BookPage     int
-	Instructions string
+	URL          *string
+	BookTitle    *string
+	BookPage     *int32
+	Instructions *string
 }
 
 type SourceType int
@@ -24,11 +24,11 @@ func NewURLSource(url string) (*RecipeSource, error) {
 	}
 	return &RecipeSource{
 		Type: URL,
-		URL:  url,
+		URL:  &url,
 	}, nil
 }
 
-func NewBookReferenceSource(bookTitle string, bookPage int) (*RecipeSource, error) {
+func NewBookReferenceSource(bookTitle string, bookPage int32) (*RecipeSource, error) {
 	if bookTitle == "" {
 		return nil, ErrEmptyBookTitle
 	}
@@ -37,8 +37,8 @@ func NewBookReferenceSource(bookTitle string, bookPage int) (*RecipeSource, erro
 	}
 	return &RecipeSource{
 		Type:      BookReference,
-		BookTitle: bookTitle,
-		BookPage:  bookPage,
+		BookTitle: &bookTitle,
+		BookPage:  &bookPage,
 	}, nil
 }
 
@@ -48,6 +48,6 @@ func NewOriginalSource(instructions string) (*RecipeSource, error) {
 	}
 	return &RecipeSource{
 		Type:         Original,
-		Instructions: instructions,
+		Instructions: &instructions,
 	}, nil
 }

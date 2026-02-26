@@ -6,6 +6,7 @@ type Recipe {
   prepMins: Int!
   cookMins: Int!
   portions: Int!
+  source: RecipeSource! @goField(forceResolver: true)
 }
 
 type IngredientUsage {

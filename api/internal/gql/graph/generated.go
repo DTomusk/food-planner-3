@@ -88,6 +88,7 @@ type ComplexityRoot struct {
 		Name             func(childComplexity int) int
 		Portions         func(childComplexity int) int
 		PrepMins         func(childComplexity int) int
+		Source           func(childComplexity int) int
 		User             func(childComplexity int) int
 	}
 
@@ -126,6 +127,8 @@ type QueryResolver interface {
 type RecipeResolver interface {
 	IngredientUsages(ctx context.Context, obj *model.Recipe) ([]*model.IngredientUsage, error)
 	User(ctx context.Context, obj *model.Recipe) (*model.User, error)
+
+	Source(ctx context.Context, obj *model.Recipe) (*model.RecipeSource, error)
 }
 
 type executableSchema struct {
@@ -310,6 +313,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Recipe.PrepMins(childComplexity), true
+	case "Recipe.source":
+		if e.complexity.Recipe.Source == nil {
+			break
+		}
+
+		return e.complexity.Recipe.Source(childComplexity), true
 	case "Recipe.user":
 		if e.complexity.Recipe.User == nil {
 			break
@@ -1086,6 +1095,8 @@ func (ec *executionContext) fieldContext_Mutation_createRecipe(ctx context.Conte
 				return ec.fieldContext_Recipe_cookMins(ctx, field)
 			case "portions":
 				return ec.fieldContext_Recipe_portions(ctx, field)
+			case "source":
+				return ec.fieldContext_Recipe_source(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Recipe", field.Name)
 		},
@@ -1208,6 +1219,8 @@ func (ec *executionContext) fieldContext_Query_recipes(_ context.Context, field 
 				return ec.fieldContext_Recipe_cookMins(ctx, field)
 			case "portions":
 				return ec.fieldContext_Recipe_portions(ctx, field)
+			case "source":
+				return ec.fieldContext_Recipe_source(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Recipe", field.Name)
 		},
@@ -1254,6 +1267,8 @@ func (ec *executionContext) fieldContext_Query_recipe(ctx context.Context, field
 				return ec.fieldContext_Recipe_cookMins(ctx, field)
 			case "portions":
 				return ec.fieldContext_Recipe_portions(ctx, field)
+			case "source":
+				return ec.fieldContext_Recipe_source(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Recipe", field.Name)
 		},
@@ -1594,6 +1609,47 @@ func (ec *executionContext) fieldContext_Recipe_portions(_ context.Context, fiel
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Recipe_source(ctx context.Context, field graphql.CollectedField, obj *model.Recipe) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Recipe_source,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Recipe().Source(ctx, obj)
+		},
+		nil,
+		ec.marshalNRecipeSource2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipeSource,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Recipe_source(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Recipe",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "type":
+				return ec.fieldContext_RecipeSource_type(ctx, field)
+			case "url":
+				return ec.fieldContext_RecipeSource_url(ctx, field)
+			case "bookTitle":
+				return ec.fieldContext_RecipeSource_bookTitle(ctx, field)
+			case "bookPage":
+				return ec.fieldContext_RecipeSource_bookPage(ctx, field)
+			case "instructions":
+				return ec.fieldContext_RecipeSource_instructions(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RecipeSource", field.Name)
 		},
 	}
 	return fc, nil
@@ -4023,6 +4079,42 @@ func (ec *executionContext) _Recipe(ctx context.Context, sel ast.SelectionSet, o
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "source":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Recipe_source(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4793,6 +4885,20 @@ func (ec *executionContext) marshalNRecipe2ᚖfoodplannerᚋinternalᚋgqlᚋgra
 		return graphql.Null
 	}
 	return ec._Recipe(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNRecipeSource2foodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipeSource(ctx context.Context, sel ast.SelectionSet, v model.RecipeSource) graphql.Marshaler {
+	return ec._RecipeSource(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNRecipeSource2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipeSource(ctx context.Context, sel ast.SelectionSet, v *model.RecipeSource) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RecipeSource(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNSignInInput2foodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐSignInInput(ctx context.Context, v any) (model.SignInInput, error) {

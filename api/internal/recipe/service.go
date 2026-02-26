@@ -130,7 +130,7 @@ func (s *Service) validateAndConvertRecipeSource(sourceRequest *CreateRecipeSour
 		if sourceRequest.BookTitle == nil || sourceRequest.BookPage == nil {
 			return nil, ErrMissingBookReference
 		}
-		return NewBookReferenceSource(*sourceRequest.BookTitle, int(*sourceRequest.BookPage))
+		return NewBookReferenceSource(*sourceRequest.BookTitle, *sourceRequest.BookPage)
 	case 3:
 		if sourceRequest.Instructions == nil {
 			return nil, ErrMissingInstructions
@@ -151,4 +151,8 @@ func (s *Service) GetRecipeByID(ctx context.Context, id string) (*Recipe, error)
 
 func (s *Service) GetIngredientUsagesByRecipeID(ctx context.Context, recipeID string) ([]*IngredientUsage, error) {
 	return s.Repo.GetIngredientUsagesForRecipe(ctx, s.txRunner.DB(), recipeID)
+}
+
+func (s *Service) GetRecipeSourceByRecipeID(ctx context.Context, recipeID string) (*RecipeSource, error) {
+	return nil, nil
 }

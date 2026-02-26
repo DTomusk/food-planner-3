@@ -39,7 +39,7 @@ func TestCreateAndGetRecipe(t *testing.T) {
 
 		source := &RecipeSource{
 			Type: URL,
-			URL:  "https://example.com/pancakes",
+			URL:  testutil.PtrString("https://example.com/pancakes"),
 		}
 
 		recipe, err := NewRecipe(

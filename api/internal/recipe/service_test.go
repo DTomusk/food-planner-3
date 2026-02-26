@@ -12,10 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func ptrString(s string) *string {
-	return &s
-}
-
 func TestCreateRecipe(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
@@ -44,7 +40,7 @@ func TestCreateRecipe(t *testing.T) {
 
 		source := CreateRecipeSourceRequest{
 			Type: 1,
-			URL:  ptrString("https://example.com/pancakes"),
+			URL:  testutil.PtrString("https://example.com/pancakes"),
 		}
 
 		request := CreateRecipeRequest{

@@ -32,21 +32,6 @@ func (r *mutationResolver) CreateRecipe(ctx context.Context, input model.CreateR
 		}
 	}
 
-	logger.Info("Source request details")
-	logger.Info(fmt.Sprintf("Source type: %d", input.RecipeSource.Type))
-	if input.RecipeSource.URL != nil {
-		logger.Info(fmt.Sprintf("Source URL: %s", *input.RecipeSource.URL))
-	}
-	if input.RecipeSource.BookTitle != nil {
-		logger.Info(fmt.Sprintf("Source Book Title: %s", *input.RecipeSource.BookTitle))
-	}
-	if input.RecipeSource.BookPage != nil {
-		logger.Info(fmt.Sprintf("Source Book Page: %d", *input.RecipeSource.BookPage))
-	}
-	if input.RecipeSource.Instructions != nil {
-		logger.Info(fmt.Sprintf("Source Instructions: %s", *input.RecipeSource.Instructions))
-	}
-
 	recipeSourceRequest := recipe.CreateRecipeSourceRequest{
 		Type:         int(input.RecipeSource.Type),
 		URL:          input.RecipeSource.URL,
@@ -187,6 +172,24 @@ func (r *recipeResolver) User(ctx context.Context, obj *model.Recipe) (*model.Us
 	return &model.User{
 		ID:    user.ID.String(),
 		Email: user.Email,
+	}, nil
+}
+
+// Source is the resolver for the source field.
+func (r *recipeResolver) Source(ctx context.Context, obj *model.Recipe) (*model.RecipeSource, error) {
+	recipeSource, err := r.RecipeService.GetRecipeSourceByRecipeID(ctx, obj.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get recipe source for recipe: %w", err)
+	}
+	if recipeSource == nil {
+		return nil, nil
+	}
+	return &model.RecipeSource{
+		Type:         int32(recipeSource.Type),
+		URL:          recipeSource.URL,
+		BookTitle:    recipeSource.BookTitle,
+		BookPage:     recipeSource.BookPage,
+		Instructions: recipeSource.Instructions,
 	}, nil
 }
 

@@ -57,6 +57,7 @@ type Recipe struct {
 	PrepMins         int32              `json:"prepMins"`
 	CookMins         int32              `json:"cookMins"`
 	Portions         int32              `json:"portions"`
+	Source           *RecipeSource      `json:"source"`
 }
 
 type RecipeSource struct {

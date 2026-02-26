@@ -16,7 +16,7 @@ func TestNewURLSource(t *testing.T) {
 	// Assert
 	require.NoError(t, err)
 	require.Equal(t, URL, source.Type)
-	require.Equal(t, url, source.URL)
+	require.Equal(t, url, *source.URL)
 }
 
 func TestNewURLSource_EmptyURL(t *testing.T) {
@@ -32,7 +32,7 @@ func TestNewURLSource_EmptyURL(t *testing.T) {
 func TestNewBookReferenceSource(t *testing.T) {
 	// Arrange
 	bookTitle := "Pee pee poo poo book"
-	bookPage := 4
+	bookPage := int32(4)
 
 	// Act
 	source, err := NewBookReferenceSource(bookTitle, bookPage)
@@ -40,13 +40,13 @@ func TestNewBookReferenceSource(t *testing.T) {
 	// Assert
 	require.NoError(t, err)
 	require.Equal(t, BookReference, source.Type)
-	require.Equal(t, bookTitle, source.BookTitle)
-	require.Equal(t, bookPage, source.BookPage)
+	require.Equal(t, bookTitle, *source.BookTitle)
+	require.Equal(t, bookPage, *source.BookPage)
 }
 
 func TestNewBookReferenceSource_EmptyBookTitle(t *testing.T) {
 	// Act
-	source, err := NewBookReferenceSource("", 4)
+	source, err := NewBookReferenceSource("", int32(4))
 
 	// Assert
 	require.Error(t, err)
@@ -56,7 +56,7 @@ func TestNewBookReferenceSource_EmptyBookTitle(t *testing.T) {
 
 func TestNewBookReferenceSource_InvalidBookPage(t *testing.T) {
 	// Act
-	source, err := NewBookReferenceSource("Pee pee poo poo book", 0)
+	source, err := NewBookReferenceSource("Pee pee poo poo book", int32(0))
 
 	// Assert
 	require.Error(t, err)
@@ -74,7 +74,7 @@ func TestNewOriginalSource(t *testing.T) {
 	// Assert
 	require.NoError(t, err)
 	require.Equal(t, Original, source.Type)
-	require.Equal(t, instructions, source.Instructions)
+	require.Equal(t, instructions, *source.Instructions)
 }
 
 func TestNewOriginalSource_EmptyInstructions(t *testing.T) {

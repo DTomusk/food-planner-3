@@ -1,6 +1,7 @@
 package recipe
 
 import (
+	"foodplanner/internal/testutil"
 	"testing"
 
 	"github.com/google/uuid"
@@ -17,7 +18,7 @@ func TestInstantiateRecipe(t *testing.T) {
 	}
 	source := &RecipeSource{
 		Type: URL,
-		URL:  "https://example.com/pancakes",
+		URL:  testutil.PtrString("https://example.com/pancakes"),
 	}
 	recipe, err := NewRecipe(name, userID, []*IngredientUsage{ingredientUsage}, 10, 20, 4, source)
 	require.NoError(t, err)
@@ -37,7 +38,7 @@ func TestEmptyRecipeName(t *testing.T) {
 	}
 	source := &RecipeSource{
 		Type: URL,
-		URL:  "https://example.com/pancakes",
+		URL:  testutil.PtrString("https://example.com/pancakes"),
 	}
 	_, err := NewRecipe("", userID, []*IngredientUsage{ingredientUsage}, 10, 20, 4, source)
 	require.Error(t, err)
@@ -49,7 +50,7 @@ func TestNoIngredients(t *testing.T) {
 	userID := uuid.New()
 	source := &RecipeSource{
 		Type: URL,
-		URL:  "https://example.com/pancakes",
+		URL:  testutil.PtrString("https://example.com/pancakes"),
 	}
 	_, err := NewRecipe(name, userID, []*IngredientUsage{}, 10, 20, 4, source)
 	require.Error(t, err)
@@ -66,7 +67,7 @@ func TestNegativePrepMins(t *testing.T) {
 	}
 	source := &RecipeSource{
 		Type: URL,
-		URL:  "https://example.com/pancakes",
+		URL:  testutil.PtrString("https://example.com/pancakes"),
 	}
 	_, err := NewRecipe(name, userID, []*IngredientUsage{ingredientUsage}, -5, 20, 4, source)
 	require.Error(t, err)
@@ -83,7 +84,7 @@ func TestNegativeCookMins(t *testing.T) {
 	}
 	source := &RecipeSource{
 		Type: URL,
-		URL:  "https://example.com/pancakes",
+		URL:  testutil.PtrString("https://example.com/pancakes"),
 	}
 	_, err := NewRecipe(name, userID, []*IngredientUsage{ingredientUsage}, 10, -5, 4, source)
 	require.Error(t, err)
@@ -100,7 +101,7 @@ func TestInvalidPortions(t *testing.T) {
 	}
 	source := &RecipeSource{
 		Type: URL,
-		URL:  "https://example.com/pancakes",
+		URL:  testutil.PtrString("https://example.com/pancakes"),
 	}
 	_, err := NewRecipe(name, userID, []*IngredientUsage{ingredientUsage}, 10, 20, 0, source)
 	require.Error(t, err)
