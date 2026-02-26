@@ -47,14 +47,19 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 			return nil, ErrDuplicateIngredient
 		}
 		seenIngredients[ingredientRequest.IngredientID] = true
-		// ensure ingredient exists (in future, grab ingredient validation rules)
-		exists, err := s.IngredientService.Exists(ctx, ingredientRequest.IngredientID)
+		// Ensure ingredient exists and get preferred unit for validation
+		// TODO: could batch this to reduce queries
+		ingredients, err := s.IngredientService.GetIngredientsByIDs(ctx, logger, []string{ingredientRequest.IngredientID})
 		if err != nil {
 			logger.Error("Error checking ingredient existence", "ingredient_id", ingredientRequest.IngredientID, "error", err)
 			return nil, err
 		}
-		if !exists {
+		if len(ingredients) == 0 {
 			return nil, ErrIngredientNotFound
+		}
+		selectedIngredient := ingredients[0]
+		if ingredientRequest.Unit != int(selectedIngredient.PreferredUnit) {
+			return nil, ErrInvalidUnit
 		}
 		// TODO: get ingredient rule and validate usage at instantiation
 		usage, err := NewIngredientUsage(ingredientRequest)
