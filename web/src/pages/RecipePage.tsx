@@ -8,6 +8,7 @@ import SectionTitle from "@/components/ui/SectionTitle";
 import Container from "@/components/layout/Container";
 import Stack from "@/components/layout/Stack";
 import { useEffect, useState } from "react";
+import { extractErrorMessage } from "@/lib/errors";
 
 export default function RecipePage() {
     const { id } = useParams<{ id: string }>();
@@ -30,7 +31,7 @@ export default function RecipePage() {
                     <Container size="sm">
                         {!id && <Alert message="No recipe ID provided." />}
                         {isLoading && <Spinner />}
-                        {error && <Alert message={(error as Error).message} />}
+                        {error && <Alert message={extractErrorMessage(error)} closable />}
                         {successMessage && <Alert message={successMessage} type="success" closable duration={3000} onClose={() => setSuccessMessage(undefined)} />}
                     </Container>
                     {recipe ? (

@@ -1,7 +1,9 @@
 import { Alert, BackLink, PageTitle } from "@/components";
+import Container from "@/components/layout/Container";
 import { useIngredients } from "@/features/ingredients/hooks/useIngredients";
 import { RecipeForm, useCreateRecipe, type RecipeFormValues } from "@/features/recipes";
 import { Page } from "@/layout";
+import { extractErrorMessage } from "@/lib/errors";
 import { commonStrings } from "@/lib/strings";
 import { useNavigate } from "react-router-dom";
 
@@ -39,7 +41,7 @@ export default function RecipeCreatePage() {
         <Page>
             <BackLink to="/recipe" />
             <PageTitle text={commonStrings.recipe.create} />
-            {error && <Alert message={(error as Error).message} />}
+            {error && <Container><Alert message={extractErrorMessage(error)} closable /></Container>}
             <RecipeForm onSubmit={handleSubmit} isSubmitting={isPending} ingredients={ingredientsData?.ingredients || []} />
         </Page>
     );

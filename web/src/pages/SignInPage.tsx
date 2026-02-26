@@ -5,6 +5,7 @@ import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useSignIn } from "@/features/auth/hooks/useSignIn";
 import Page from "@/layout/PageWrapper";
 import { commonStrings } from "@/lib";
+import { extractErrorMessage } from "@/lib/errors";
 import { useNavigate } from "react-router-dom";
 
 export default function SignInPage() {
@@ -30,7 +31,7 @@ export default function SignInPage() {
     return (
         <Page>
             <PageTitle text={commonStrings.auth.signIn} />
-            {error && <Alert message={(error as Error).message} />}
+            {error && <Alert message={extractErrorMessage(error)} closable />}
             <p className="text-center">Don't have an account yet? <Link onClick={() => navigate("/auth/signup")} text={commonStrings.auth.signUp}/></p>
             <AuthForm
                 formType="signin"
