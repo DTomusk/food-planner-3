@@ -28,4 +28,9 @@ export type RecipeFormValues = {
     prepMins: number;
     cookMins: number;
     portions: number;
+    sourceType: number;
+    url?: string;
+    bookTitle?: string;
+    bookPage?: number;
+    instructions?: string;
 };
