@@ -13,5 +13,8 @@ export function mapRecipe(
             formattedQuantity: iu.quantity + " " + iu.unit.name
         })),
         user: gqlRecipe.user.id,
+        prepMins: gqlRecipe.prepMins,
+        cookMins: gqlRecipe.cookMins,
+        portions: gqlRecipe.portions
     }
 }

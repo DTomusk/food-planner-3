@@ -3,6 +3,9 @@ export type Recipe = {
     name: string;
     ingredients: Ingredients[];
     user: string;
+    prepMins: number;
+    cookMins: number;
+    portions: number;
 };
 
 export type Ingredients = {
