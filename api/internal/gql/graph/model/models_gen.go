@@ -19,6 +19,15 @@ type CreateRecipeInput struct {
 	PrepMins         int32                         `json:"prepMins"`
 	CookMins         int32                         `json:"cookMins"`
 	Portions         int32                         `json:"portions"`
+	RecipeSource     *CreateRecipeSourceInput      `json:"recipeSource"`
+}
+
+type CreateRecipeSourceInput struct {
+	Type         int32   `json:"type"`
+	URL          *string `json:"url,omitempty"`
+	BookTitle    *string `json:"bookTitle,omitempty"`
+	BookPage     *int32  `json:"bookPage,omitempty"`
+	Instructions *string `json:"instructions,omitempty"`
 }
 
 type Ingredient struct {
@@ -48,6 +57,15 @@ type Recipe struct {
 	PrepMins         int32              `json:"prepMins"`
 	CookMins         int32              `json:"cookMins"`
 	Portions         int32              `json:"portions"`
+	Source           *RecipeSource      `json:"source"`
+}
+
+type RecipeSource struct {
+	Type         int32   `json:"type"`
+	URL          *string `json:"url,omitempty"`
+	BookTitle    *string `json:"bookTitle,omitempty"`
+	BookPage     *int32  `json:"bookPage,omitempty"`
+	Instructions *string `json:"instructions,omitempty"`
 }
 
 type SignInInput struct {

@@ -1,5 +1,5 @@
 export default function FormSectionTitle({ title }: { title: string }) {
     return (
-        <h2 className="text-lg font-medium">{title}</h2>
+        <h2 className="text-2xl font-bold mb-4">{title}</h2>
     );
 }

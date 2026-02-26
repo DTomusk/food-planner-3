@@ -6,11 +6,20 @@ export type Recipe = {
     prepMins: number;
     cookMins: number;
     portions: number;
+    source: RecipeSource;
 };
 
 export type Ingredients = {
     name: string;
     formattedQuantity: string;
+}
+
+export type RecipeSource = {
+    type: number;
+    url?: string;
+    bookTitle?: string;
+    bookPage?: number;
+    instructions?: string;
 }
 
 export type RecipeSummary = {
@@ -28,4 +37,9 @@ export type RecipeFormValues = {
     prepMins: number;
     cookMins: number;
     portions: number;
+    sourceType: number;
+    url?: string;
+    bookTitle?: string;
+    bookPage?: number;
+    instructions?: string;
 };

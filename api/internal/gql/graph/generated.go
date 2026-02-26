@@ -88,7 +88,16 @@ type ComplexityRoot struct {
 		Name             func(childComplexity int) int
 		Portions         func(childComplexity int) int
 		PrepMins         func(childComplexity int) int
+		Source           func(childComplexity int) int
 		User             func(childComplexity int) int
+	}
+
+	RecipeSource struct {
+		BookPage     func(childComplexity int) int
+		BookTitle    func(childComplexity int) int
+		Instructions func(childComplexity int) int
+		Type         func(childComplexity int) int
+		URL          func(childComplexity int) int
 	}
 
 	Unit struct {
@@ -118,6 +127,8 @@ type QueryResolver interface {
 type RecipeResolver interface {
 	IngredientUsages(ctx context.Context, obj *model.Recipe) ([]*model.IngredientUsage, error)
 	User(ctx context.Context, obj *model.Recipe) (*model.User, error)
+
+	Source(ctx context.Context, obj *model.Recipe) (*model.RecipeSource, error)
 }
 
 type executableSchema struct {
@@ -302,12 +313,49 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Recipe.PrepMins(childComplexity), true
+	case "Recipe.source":
+		if e.complexity.Recipe.Source == nil {
+			break
+		}
+
+		return e.complexity.Recipe.Source(childComplexity), true
 	case "Recipe.user":
 		if e.complexity.Recipe.User == nil {
 			break
 		}
 
 		return e.complexity.Recipe.User(childComplexity), true
+
+	case "RecipeSource.bookPage":
+		if e.complexity.RecipeSource.BookPage == nil {
+			break
+		}
+
+		return e.complexity.RecipeSource.BookPage(childComplexity), true
+	case "RecipeSource.bookTitle":
+		if e.complexity.RecipeSource.BookTitle == nil {
+			break
+		}
+
+		return e.complexity.RecipeSource.BookTitle(childComplexity), true
+	case "RecipeSource.instructions":
+		if e.complexity.RecipeSource.Instructions == nil {
+			break
+		}
+
+		return e.complexity.RecipeSource.Instructions(childComplexity), true
+	case "RecipeSource.type":
+		if e.complexity.RecipeSource.Type == nil {
+			break
+		}
+
+		return e.complexity.RecipeSource.Type(childComplexity), true
+	case "RecipeSource.url":
+		if e.complexity.RecipeSource.URL == nil {
+			break
+		}
+
+		return e.complexity.RecipeSource.URL(childComplexity), true
 
 	case "Unit.name":
 		if e.complexity.Unit.Name == nil {
@@ -351,6 +399,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputCreateIngredientUsageInput,
 		ec.unmarshalInputCreateRecipeInput,
+		ec.unmarshalInputCreateRecipeSourceInput,
 		ec.unmarshalInputSignInInput,
 		ec.unmarshalInputSignUpInput,
 	)
@@ -1046,6 +1095,8 @@ func (ec *executionContext) fieldContext_Mutation_createRecipe(ctx context.Conte
 				return ec.fieldContext_Recipe_cookMins(ctx, field)
 			case "portions":
 				return ec.fieldContext_Recipe_portions(ctx, field)
+			case "source":
+				return ec.fieldContext_Recipe_source(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Recipe", field.Name)
 		},
@@ -1168,6 +1219,8 @@ func (ec *executionContext) fieldContext_Query_recipes(_ context.Context, field 
 				return ec.fieldContext_Recipe_cookMins(ctx, field)
 			case "portions":
 				return ec.fieldContext_Recipe_portions(ctx, field)
+			case "source":
+				return ec.fieldContext_Recipe_source(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Recipe", field.Name)
 		},
@@ -1214,6 +1267,8 @@ func (ec *executionContext) fieldContext_Query_recipe(ctx context.Context, field
 				return ec.fieldContext_Recipe_cookMins(ctx, field)
 			case "portions":
 				return ec.fieldContext_Recipe_portions(ctx, field)
+			case "source":
+				return ec.fieldContext_Recipe_source(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Recipe", field.Name)
 		},
@@ -1554,6 +1609,192 @@ func (ec *executionContext) fieldContext_Recipe_portions(_ context.Context, fiel
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Recipe_source(ctx context.Context, field graphql.CollectedField, obj *model.Recipe) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Recipe_source,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Recipe().Source(ctx, obj)
+		},
+		nil,
+		ec.marshalNRecipeSource2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipeSource,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Recipe_source(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Recipe",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "type":
+				return ec.fieldContext_RecipeSource_type(ctx, field)
+			case "url":
+				return ec.fieldContext_RecipeSource_url(ctx, field)
+			case "bookTitle":
+				return ec.fieldContext_RecipeSource_bookTitle(ctx, field)
+			case "bookPage":
+				return ec.fieldContext_RecipeSource_bookPage(ctx, field)
+			case "instructions":
+				return ec.fieldContext_RecipeSource_instructions(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RecipeSource", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RecipeSource_type(ctx context.Context, field graphql.CollectedField, obj *model.RecipeSource) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RecipeSource_type,
+		func(ctx context.Context) (any, error) {
+			return obj.Type, nil
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RecipeSource_type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RecipeSource",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RecipeSource_url(ctx context.Context, field graphql.CollectedField, obj *model.RecipeSource) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RecipeSource_url,
+		func(ctx context.Context) (any, error) {
+			return obj.URL, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RecipeSource_url(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RecipeSource",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RecipeSource_bookTitle(ctx context.Context, field graphql.CollectedField, obj *model.RecipeSource) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RecipeSource_bookTitle,
+		func(ctx context.Context) (any, error) {
+			return obj.BookTitle, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RecipeSource_bookTitle(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RecipeSource",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RecipeSource_bookPage(ctx context.Context, field graphql.CollectedField, obj *model.RecipeSource) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RecipeSource_bookPage,
+		func(ctx context.Context) (any, error) {
+			return obj.BookPage, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint32,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RecipeSource_bookPage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RecipeSource",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RecipeSource_instructions(ctx context.Context, field graphql.CollectedField, obj *model.RecipeSource) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RecipeSource_instructions,
+		func(ctx context.Context) (any, error) {
+			return obj.Instructions, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RecipeSource_instructions(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RecipeSource",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -3198,7 +3439,7 @@ func (ec *executionContext) unmarshalInputCreateRecipeInput(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "ingredientUsages", "prepMins", "cookMins", "portions"}
+	fieldsInOrder := [...]string{"name", "ingredientUsages", "prepMins", "cookMins", "portions", "recipeSource"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -3240,6 +3481,68 @@ func (ec *executionContext) unmarshalInputCreateRecipeInput(ctx context.Context,
 				return it, err
 			}
 			it.Portions = data
+		case "recipeSource":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("recipeSource"))
+			data, err := ec.unmarshalNCreateRecipeSourceInput2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐCreateRecipeSourceInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RecipeSource = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputCreateRecipeSourceInput(ctx context.Context, obj any) (model.CreateRecipeSourceInput, error) {
+	var it model.CreateRecipeSourceInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"type", "url", "bookTitle", "bookPage", "instructions"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "type":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
+			data, err := ec.unmarshalNInt2int32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Type = data
+		case "url":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.URL = data
+		case "bookTitle":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("bookTitle"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BookTitle = data
+		case "bookPage":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("bookPage"))
+			data, err := ec.unmarshalOInt2ᚖint32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BookPage = data
+		case "instructions":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("instructions"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Instructions = data
 		}
 	}
 
@@ -3776,6 +4079,89 @@ func (ec *executionContext) _Recipe(ctx context.Context, sel ast.SelectionSet, o
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "source":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Recipe_source(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var recipeSourceImplementors = []string{"RecipeSource"}
+
+func (ec *executionContext) _RecipeSource(ctx context.Context, sel ast.SelectionSet, obj *model.RecipeSource) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, recipeSourceImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RecipeSource")
+		case "type":
+			out.Values[i] = ec._RecipeSource_type(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "url":
+			out.Values[i] = ec._RecipeSource_url(ctx, field, obj)
+		case "bookTitle":
+			out.Values[i] = ec._RecipeSource_bookTitle(ctx, field, obj)
+		case "bookPage":
+			out.Values[i] = ec._RecipeSource_bookPage(ctx, field, obj)
+		case "instructions":
+			out.Values[i] = ec._RecipeSource_instructions(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4282,6 +4668,11 @@ func (ec *executionContext) unmarshalNCreateRecipeInput2foodplannerᚋinternal�
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNCreateRecipeSourceInput2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐCreateRecipeSourceInput(ctx context.Context, v any) (*model.CreateRecipeSourceInput, error) {
+	res, err := ec.unmarshalInputCreateRecipeSourceInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v any) (float64, error) {
 	res, err := graphql.UnmarshalFloatContext(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -4494,6 +4885,20 @@ func (ec *executionContext) marshalNRecipe2ᚖfoodplannerᚋinternalᚋgqlᚋgra
 		return graphql.Null
 	}
 	return ec._Recipe(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNRecipeSource2foodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipeSource(ctx context.Context, sel ast.SelectionSet, v model.RecipeSource) graphql.Marshaler {
+	return ec._RecipeSource(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNRecipeSource2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipeSource(ctx context.Context, sel ast.SelectionSet, v *model.RecipeSource) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RecipeSource(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNSignInInput2foodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐSignInInput(ctx context.Context, v any) (model.SignInInput, error) {
@@ -4826,6 +5231,24 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	_ = sel
 	_ = ctx
 	res := graphql.MarshalBoolean(*v)
+	return res
+}
+
+func (ec *executionContext) unmarshalOInt2ᚖint32(ctx context.Context, v any) (*int32, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalInt32(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOInt2ᚖint32(ctx context.Context, sel ast.SelectionSet, v *int32) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalInt32(*v)
 	return res
 }
 

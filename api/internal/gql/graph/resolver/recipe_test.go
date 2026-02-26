@@ -16,6 +16,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func ptrString(s string) *string {
+	return &s
+}
+
+func ptrInt32(i int32) *int32 {
+	return &i
+}
+
 func TestRecipeResolver_CreateAndGetRecipe(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		repo := recipe.NewRepo()
@@ -47,6 +55,10 @@ func TestRecipeResolver_CreateAndGetRecipe(t *testing.T) {
 			PrepMins: 30,
 			CookMins: 60,
 			Portions: 2,
+			RecipeSource: &model.CreateRecipeSourceInput{
+				Type: 1,
+				URL:  ptrString("https://example.com/chocolate-cake"),
+			},
 		}
 		claims := auth.Claims{UserID: testUser.ID.String()}
 		ctx = auth.ContextWithClaims(ctx, &claims)
@@ -99,6 +111,11 @@ func TestRecipeResolver_CreateAndGetRecipe_WithResolver(t *testing.T) {
 			PrepMins: 30,
 			CookMins: 60,
 			Portions: 2,
+			RecipeSource: &model.CreateRecipeSourceInput{
+				Type:      2,
+				BookTitle: ptrString("Blah blah"),
+				BookPage:  ptrInt32(42),
+			},
 		}
 		claims := auth.Claims{UserID: testUser.ID.String()}
 		ctx = auth.ContextWithClaims(ctx, &claims)
@@ -132,5 +149,12 @@ func TestRecipeResolver_CreateAndGetRecipe_WithResolver(t *testing.T) {
 		require.NoError(t, err, "Failed to fetch user with resolver")
 		require.NotNil(t, user, "Expected to fetch user with resolver, got nil")
 		require.Equal(t, testUser.ID.String(), user.ID, "User ID mismatch")
+
+		recipeSource, err := recipeResolver.Source(ctx, fetchedRecipe)
+		require.NoError(t, err, "Failed to fetch recipe source with resolver")
+		require.NotNil(t, recipeSource, "Expected to fetch recipe source with resolver, got nil")
+		require.Equal(t, int32(2), recipeSource.Type, "Recipe source type mismatch")
+		require.Equal(t, "Blah blah", *recipeSource.BookTitle, "Recipe source book title mismatch")
+		require.Equal(t, int32(42), *recipeSource.BookPage, "Recipe source book page mismatch")
 	})
 }

@@ -7,10 +7,19 @@ type CreateRecipeRequest struct {
 	PrepMins    int                            `json:"prep_mins" validate:"required,gte=0"`
 	CookMins    int                            `json:"cook_mins" validate:"required,gte=0"`
 	Portions    int                            `json:"portions" validate:"required,gt=0"`
+	Source      CreateRecipeSourceRequest      `json:"source" validate:"required,dive"`
 }
 
 type CreateIngredientUsageRequest struct {
 	IngredientID string  `json:"ingredient_id" validate:"required,uuid4"`
 	Quantity     float64 `json:"quantity" validate:"required,gt=0"`
 	Unit         int     `json:"unit" validate:"required"`
+}
+
+type CreateRecipeSourceRequest struct {
+	Type         int     `json:"type" validate:"required"`
+	URL          *string `json:"url,omitempty"`
+	BookTitle    *string `json:"book_title,omitempty"`
+	BookPage     *int32  `json:"book_page,omitempty"`
+	Instructions *string `json:"instructions,omitempty"`
 }

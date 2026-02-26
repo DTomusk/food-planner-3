@@ -17,5 +17,12 @@ query GetRecipe($id: ID!) {
         prepMins
         cookMins
         portions
+        source {
+            type
+            url
+            bookTitle
+            bookPage
+            instructions
+        }
     }
 }
