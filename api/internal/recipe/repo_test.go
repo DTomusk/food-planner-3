@@ -37,7 +37,14 @@ func TestCreateAndGetRecipe(t *testing.T) {
 		testUser, err := seeds.SeedTestUser(context.Background(), tx)
 		require.NoError(t, err, "Failed to seed test user")
 
-		recipe, err := NewRecipe("Chocolate Cake", testUser.ID, []*IngredientUsage{ingredientUsage})
+		recipe, err := NewRecipe(
+			"Chocolate Cake",
+			testUser.ID,
+			[]*IngredientUsage{ingredientUsage},
+			30,
+			60,
+			8,
+		)
 		require.NoError(t, err, "Failed to create recipe")
 
 		// Act

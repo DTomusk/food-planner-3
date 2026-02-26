@@ -17,8 +17,8 @@ func NewRepo() *Repo {
 // TODO: use transaction
 func (r *Repo) CreateRecipe(ctx context.Context, tx *sql.Tx, recipe *Recipe) (*Recipe, error) {
 	var dbRecipe Recipe
-	query := `INSERT INTO recipes (id, user_id, name) VALUES ($1, $2, $3) RETURNING id, user_id, name`
-	err := tx.QueryRowContext(ctx, query, recipe.ID, recipe.UserID, recipe.Name).Scan(&dbRecipe.ID, &dbRecipe.UserID, &dbRecipe.Name)
+	query := `INSERT INTO recipes (id, user_id, name, prep_mins, cook_mins, portions) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, user_id, name, prep_mins, cook_mins, portions`
+	err := tx.QueryRowContext(ctx, query, recipe.ID, recipe.UserID, recipe.Name, recipe.PrepMins, recipe.CookMins, recipe.Portions).Scan(&dbRecipe.ID, &dbRecipe.UserID, &dbRecipe.Name, &dbRecipe.PrepMins, &dbRecipe.CookMins, &dbRecipe.Portions)
 	if err != nil {
 		return nil, err
 	}
@@ -34,19 +34,19 @@ func (r *Repo) CreateRecipe(ctx context.Context, tx *sql.Tx, recipe *Recipe) (*R
 
 func (r *Repo) GetRecipeByID(ctx context.Context, db db.DBTX, id string) (*Recipe, error) {
 	var recipe Recipe
-	row := db.QueryRowContext(ctx, "SELECT id, user_id, name FROM recipes WHERE id = $1", id)
-	err := row.Scan(&recipe.ID, &recipe.UserID, &recipe.Name)
+	row := db.QueryRowContext(ctx, "SELECT id, user_id, name, prep_mins, cook_mins, portions FROM recipes WHERE id = $1", id)
+	err := row.Scan(&recipe.ID, &recipe.UserID, &recipe.Name, &recipe.PrepMins, &recipe.CookMins, &recipe.Portions)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
 		return nil, err
 	}
-	return &recipe, err
+	return &recipe, nil
 }
 
 func (r *Repo) GetAllRecipes(ctx context.Context, db db.DBTX) ([]*Recipe, error) {
-	rows, err := db.QueryContext(ctx, "SELECT id, user_id, name FROM recipes")
+	rows, err := db.QueryContext(ctx, "SELECT id, user_id, name, prep_mins, cook_mins, portions FROM recipes")
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func (r *Repo) GetAllRecipes(ctx context.Context, db db.DBTX) ([]*Recipe, error)
 	var recipes []*Recipe
 	for rows.Next() {
 		var recipe Recipe
-		if err := rows.Scan(&recipe.ID, &recipe.UserID, &recipe.Name); err != nil {
+		if err := rows.Scan(&recipe.ID, &recipe.UserID, &recipe.Name, &recipe.PrepMins, &recipe.CookMins, &recipe.Portions); err != nil {
 			return nil, err
 		}
 		recipes = append(recipes, &recipe)

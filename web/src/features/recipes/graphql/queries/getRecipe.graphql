@@ -14,5 +14,8 @@ query GetRecipe($id: ID!) {
                 name
             }
         }
+        prepMins
+        cookMins
+        portions
     }
 }

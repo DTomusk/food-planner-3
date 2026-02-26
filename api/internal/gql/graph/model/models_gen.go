@@ -16,6 +16,9 @@ type CreateIngredientUsageInput struct {
 type CreateRecipeInput struct {
 	Name             string                        `json:"name"`
 	IngredientUsages []*CreateIngredientUsageInput `json:"ingredientUsages"`
+	PrepMins         int32                         `json:"prepMins"`
+	CookMins         int32                         `json:"cookMins"`
+	Portions         int32                         `json:"portions"`
 }
 
 type Ingredient struct {
@@ -42,6 +45,9 @@ type Recipe struct {
 	Name             string             `json:"name"`
 	IngredientUsages []*IngredientUsage `json:"ingredientUsages"`
 	User             *User              `json:"user"`
+	PrepMins         int32              `json:"prepMins"`
+	CookMins         int32              `json:"cookMins"`
+	Portions         int32              `json:"portions"`
 }
 
 type SignInInput struct {

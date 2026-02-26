@@ -24,6 +24,11 @@ export default function RecipePage() {
                 <>
                 <PageTitle text={recipe ? recipe.name : "Recipe Page"} />
                 <SharedBy userName={recipe.user} />
+                <Stack space="sm">
+                    <div className="text-center">Prep time: {recipe.prepMins} mins</div>
+                    <div className="text-center">Cook time: {recipe.cookMins} mins</div>
+                    <div className="text-center">Portions: {recipe.portions}</div>
+                </Stack>
                 <Container size="xs">
                     <Stack space="lg">
                         <SectionTitle text="Ingredients" />

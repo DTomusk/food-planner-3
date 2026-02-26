@@ -82,9 +82,12 @@ type ComplexityRoot struct {
 	}
 
 	Recipe struct {
+		CookMins         func(childComplexity int) int
 		ID               func(childComplexity int) int
 		IngredientUsages func(childComplexity int) int
 		Name             func(childComplexity int) int
+		Portions         func(childComplexity int) int
+		PrepMins         func(childComplexity int) int
 		User             func(childComplexity int) int
 	}
 
@@ -262,6 +265,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Query.Recipes(childComplexity), true
 
+	case "Recipe.cookMins":
+		if e.complexity.Recipe.CookMins == nil {
+			break
+		}
+
+		return e.complexity.Recipe.CookMins(childComplexity), true
 	case "Recipe.id":
 		if e.complexity.Recipe.ID == nil {
 			break
@@ -280,6 +289,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Recipe.Name(childComplexity), true
+	case "Recipe.portions":
+		if e.complexity.Recipe.Portions == nil {
+			break
+		}
+
+		return e.complexity.Recipe.Portions(childComplexity), true
+	case "Recipe.prepMins":
+		if e.complexity.Recipe.PrepMins == nil {
+			break
+		}
+
+		return e.complexity.Recipe.PrepMins(childComplexity), true
 	case "Recipe.user":
 		if e.complexity.Recipe.User == nil {
 			break
@@ -1008,6 +1029,12 @@ func (ec *executionContext) fieldContext_Mutation_createRecipe(ctx context.Conte
 				return ec.fieldContext_Recipe_ingredientUsages(ctx, field)
 			case "user":
 				return ec.fieldContext_Recipe_user(ctx, field)
+			case "prepMins":
+				return ec.fieldContext_Recipe_prepMins(ctx, field)
+			case "cookMins":
+				return ec.fieldContext_Recipe_cookMins(ctx, field)
+			case "portions":
+				return ec.fieldContext_Recipe_portions(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Recipe", field.Name)
 		},
@@ -1124,6 +1151,12 @@ func (ec *executionContext) fieldContext_Query_recipes(_ context.Context, field 
 				return ec.fieldContext_Recipe_ingredientUsages(ctx, field)
 			case "user":
 				return ec.fieldContext_Recipe_user(ctx, field)
+			case "prepMins":
+				return ec.fieldContext_Recipe_prepMins(ctx, field)
+			case "cookMins":
+				return ec.fieldContext_Recipe_cookMins(ctx, field)
+			case "portions":
+				return ec.fieldContext_Recipe_portions(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Recipe", field.Name)
 		},
@@ -1164,6 +1197,12 @@ func (ec *executionContext) fieldContext_Query_recipe(ctx context.Context, field
 				return ec.fieldContext_Recipe_ingredientUsages(ctx, field)
 			case "user":
 				return ec.fieldContext_Recipe_user(ctx, field)
+			case "prepMins":
+				return ec.fieldContext_Recipe_prepMins(ctx, field)
+			case "cookMins":
+				return ec.fieldContext_Recipe_cookMins(ctx, field)
+			case "portions":
+				return ec.fieldContext_Recipe_portions(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Recipe", field.Name)
 		},
@@ -1417,6 +1456,93 @@ func (ec *executionContext) fieldContext_Recipe_user(_ context.Context, field gr
 				return ec.fieldContext_User_email(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Recipe_prepMins(ctx context.Context, field graphql.CollectedField, obj *model.Recipe) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Recipe_prepMins,
+		func(ctx context.Context) (any, error) {
+			return obj.PrepMins, nil
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Recipe_prepMins(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Recipe",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Recipe_cookMins(ctx context.Context, field graphql.CollectedField, obj *model.Recipe) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Recipe_cookMins,
+		func(ctx context.Context) (any, error) {
+			return obj.CookMins, nil
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Recipe_cookMins(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Recipe",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Recipe_portions(ctx context.Context, field graphql.CollectedField, obj *model.Recipe) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Recipe_portions,
+		func(ctx context.Context) (any, error) {
+			return obj.Portions, nil
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Recipe_portions(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Recipe",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -3032,7 +3158,7 @@ func (ec *executionContext) unmarshalInputCreateRecipeInput(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "ingredientUsages"}
+	fieldsInOrder := [...]string{"name", "ingredientUsages", "prepMins", "cookMins", "portions"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -3053,6 +3179,27 @@ func (ec *executionContext) unmarshalInputCreateRecipeInput(ctx context.Context,
 				return it, err
 			}
 			it.IngredientUsages = data
+		case "prepMins":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("prepMins"))
+			data, err := ec.unmarshalNInt2int32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PrepMins = data
+		case "cookMins":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("cookMins"))
+			data, err := ec.unmarshalNInt2int32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CookMins = data
+		case "portions":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("portions"))
+			data, err := ec.unmarshalNInt2int32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Portions = data
 		}
 	}
 
@@ -3574,6 +3721,21 @@ func (ec *executionContext) _Recipe(ctx context.Context, sel ast.SelectionSet, o
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "prepMins":
+			out.Values[i] = ec._Recipe_prepMins(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "cookMins":
+			out.Values[i] = ec._Recipe_cookMins(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "portions":
+			out.Values[i] = ec._Recipe_portions(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

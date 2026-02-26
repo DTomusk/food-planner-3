@@ -36,6 +36,9 @@ func (r *mutationResolver) CreateRecipe(ctx context.Context, input model.CreateR
 		Name:        input.Name,
 		Ingredients: ingredientUsageRequests,
 		UserID:      claims.UserID,
+		PrepMins:    int(input.PrepMins),
+		CookMins:    int(input.CookMins),
+		Portions:    int(input.Portions),
 	}
 	recipe, err := r.RecipeService.CreateRecipe(ctx, request)
 	if err != nil {
@@ -43,8 +46,11 @@ func (r *mutationResolver) CreateRecipe(ctx context.Context, input model.CreateR
 		return nil, err
 	}
 	recipeModel := &model.Recipe{
-		ID:   recipe.ID.String(),
-		Name: recipe.Name,
+		ID:       recipe.ID.String(),
+		Name:     recipe.Name,
+		PrepMins: int32(recipe.PrepMins),
+		CookMins: int32(recipe.CookMins),
+		Portions: int32(recipe.Portions),
 	}
 	return recipeModel, nil
 }
@@ -60,8 +66,11 @@ func (r *queryResolver) Recipes(ctx context.Context) ([]*model.Recipe, error) {
 	var recipeModels []*model.Recipe
 	for _, recipe := range recipes {
 		recipeModel := model.Recipe{
-			ID:   recipe.ID.String(),
-			Name: recipe.Name,
+			ID:       recipe.ID.String(),
+			Name:     recipe.Name,
+			PrepMins: int32(recipe.PrepMins),
+			CookMins: int32(recipe.CookMins),
+			Portions: int32(recipe.Portions),
 		}
 		recipeModels = append(recipeModels, &recipeModel)
 	}
@@ -80,8 +89,11 @@ func (r *queryResolver) Recipe(ctx context.Context, id string) (*model.Recipe, e
 		return nil, nil
 	}
 	recipeModel := &model.Recipe{
-		ID:   recipe.ID.String(),
-		Name: recipe.Name,
+		ID:       recipe.ID.String(),
+		Name:     recipe.Name,
+		PrepMins: int32(recipe.PrepMins),
+		CookMins: int32(recipe.CookMins),
+		Portions: int32(recipe.Portions),
 	}
 	return recipeModel, nil
 }
