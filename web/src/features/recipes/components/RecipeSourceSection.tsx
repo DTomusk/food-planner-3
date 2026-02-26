@@ -6,6 +6,7 @@ import Input from "@/components/ui/Input";
 import Inline from "@/components/layout/Inline";
 import Stack from "@/components/layout/Stack";
 import SectionHelpText from "@/components/form/SectionHelpText";
+import TextArea from "@/components/ui/TextArea";
 
 interface RecipeFormSectionProps {
   control: Control<RecipeFormValues>;
@@ -23,7 +24,7 @@ export default function RecipeSourceSection({ control, register, errors }: Recip
         <FormSection title="Recipe source">
             {/* Want help text, three radio buttons (one of which has to be selected), and then the corresponding inputs */}
             <SectionHelpText>
-                Plese choose where the recipe comes from. If it's your own, you can add the instructions here. Otherwise, you can reference the site or book the recipe comes from.
+                Please choose where the recipe comes from. If it's your own, you can add the instructions here. Otherwise, you can reference the site or book the recipe comes from.
             </SectionHelpText>
             <Controller
                 name="sourceType"
@@ -77,7 +78,13 @@ export default function RecipeSourceSection({ control, register, errors }: Recip
             )}
             {sourceType === 3 && (
                 <FormField htmlFor="instructions" label="Instructions" error={errors.instructions?.message}>
-                    <Input type="textarea" placeholder="Add the instructions for the recipe" {...register("instructions", { required: "Please add the instructions for the recipe" })} />
+                <TextArea
+                placeholder="Add the instructions for the recipe"
+                {...register("instructions", {
+                    required: "Please add the instructions for the recipe",
+                    minLength: { value: 10, message: "Instructions must be at least 10 characters long" },
+                })}
+                />
                 </FormField>
             )}
         </FormSection>
