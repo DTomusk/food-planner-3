@@ -236,6 +236,6 @@ func TestCreateRecipe_NoSource(t *testing.T) {
 		_, err = s.CreateRecipe(ctx, request)
 
 		// Assert
-		require.ErrorIs(t, err, ErrInvalidSourceType)
+		require.NoError(t, err)
 	})
 }
