@@ -2,3 +2,6 @@ ingredients:
   - id: "egg"
     name: "Egg"
     preferred_unit: 1
+  - id: "flour"
+    name: "Flour"
+    preferred_unit: 2

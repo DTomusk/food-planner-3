@@ -18,6 +18,7 @@ type IngredientUsage {
 type Unit {
   val: Int!
   name: String!
+  symbol: String!
 }
 
 extend type Query {

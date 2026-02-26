@@ -92,8 +92,9 @@ type ComplexityRoot struct {
 	}
 
 	Unit struct {
-		Name func(childComplexity int) int
-		Val  func(childComplexity int) int
+		Name   func(childComplexity int) int
+		Symbol func(childComplexity int) int
+		Val    func(childComplexity int) int
 	}
 
 	User struct {
@@ -314,6 +315,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Unit.Name(childComplexity), true
+	case "Unit.symbol":
+		if e.complexity.Unit.Symbol == nil {
+			break
+		}
+
+		return e.complexity.Unit.Symbol(childComplexity), true
 	case "Unit.val":
 		if e.complexity.Unit.Val == nil {
 			break
@@ -723,6 +730,8 @@ func (ec *executionContext) fieldContext_Ingredient_preferredUnit(_ context.Cont
 				return ec.fieldContext_Unit_val(ctx, field)
 			case "name":
 				return ec.fieldContext_Unit_name(ctx, field)
+			case "symbol":
+				return ec.fieldContext_Unit_symbol(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Unit", field.Name)
 		},
@@ -824,6 +833,8 @@ func (ec *executionContext) fieldContext_IngredientUsage_unit(_ context.Context,
 				return ec.fieldContext_Unit_val(ctx, field)
 			case "name":
 				return ec.fieldContext_Unit_name(ctx, field)
+			case "symbol":
+				return ec.fieldContext_Unit_symbol(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Unit", field.Name)
 		},
@@ -1594,6 +1605,35 @@ func (ec *executionContext) _Unit_name(ctx context.Context, field graphql.Collec
 }
 
 func (ec *executionContext) fieldContext_Unit_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Unit",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Unit_symbol(ctx context.Context, field graphql.CollectedField, obj *model.Unit) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Unit_symbol,
+		func(ctx context.Context) (any, error) {
+			return obj.Symbol, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Unit_symbol(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Unit",
 		Field:      field,
@@ -3777,6 +3817,11 @@ func (ec *executionContext) _Unit(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "name":
 			out.Values[i] = ec._Unit_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "symbol":
+			out.Values[i] = ec._Unit_symbol(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
