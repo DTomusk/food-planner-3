@@ -11,7 +11,7 @@ interface IngredientSelectorProps {
   index: number;
   control: Control<RecipeFormValues>;
   register: UseFormRegister<RecipeFormValues>;
-  ingredients: { id: string; name: string }[];
+  ingredients: { id: string; name: string; preferredUnit: { val: number; name: string; symbol: string } }[];
   remove: (index: number) => void;
   canRemove: boolean;
   errors: any;
@@ -22,6 +22,14 @@ export default function IngredientSelector({ index, control, register, ingredien
         control,
         name: `ingredientUsages.${index}.ingredientId`,
     });
+
+    // Get which ingredient is selected to determine if we should show unit
+    const selectedIngredientObj = ingredients.find((ingredient) => ingredient.id === selectedIngredient);
+
+    // If quantum, then unitless, so no unit select
+    // This is a bit brittle, we could send a flag with the unit to show whether it should be displayed 
+    // But the unitless unit might be the only time we have to do this, so let's keep it like this and see if that changes
+    const isQuantumUnit = selectedIngredientObj?.preferredUnit.val === 1;
 
     const hasSelection = Boolean(selectedIngredient);
 
@@ -55,6 +63,14 @@ export default function IngredientSelector({ index, control, register, ingredien
               validate: (value) => value > 0 || "Must be positive",
             })}
           />
+        </FormField>
+      )}
+
+      {selectedIngredientObj && !isQuantumUnit && (
+        <FormField htmlFor={`ingredientUsages.${index}.unit`} label="Unit">
+          <Select disabled value={selectedIngredientObj.preferredUnit.val}>
+            <option value={selectedIngredientObj.preferredUnit.val}>{selectedIngredientObj.preferredUnit.name}</option>
+          </Select>
         </FormField>
       )}
 
