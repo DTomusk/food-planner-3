@@ -17,6 +17,7 @@ const (
 	Original
 )
 
+// TODO: add stricter validity for URLs
 func NewURLSource(url string) (*RecipeSource, error) {
 	if url == "" {
 		return nil, ErrEmptyURL

@@ -43,12 +43,11 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 		return nil, err
 	}
 
-	recipeSource, err := s.validateAndConvertRecipeSource(ctx, logger, &request.Source)
+	recipeSource, err := s.validateAndConvertRecipeSource(&request.Source)
 	if err != nil {
 		return nil, err
 	}
 
-	// Once we've confirmed all ingredients are valid, we can create the recipe
 	userID, err := uuid.Parse(request.UserID)
 	if err != nil {
 		logger.Error("Error parsing user ID", "error", err)
@@ -117,7 +116,7 @@ func (s *Service) validateAndConvertIngredientUsages(ctx context.Context, logger
 	return ingredientUsages, nil
 }
 
-func (s *Service) validateAndConvertRecipeSource(ctx context.Context, logger *slog.Logger, sourceRequest *CreateRecipeSourceRequest) (*RecipeSource, error) {
+func (s *Service) validateAndConvertRecipeSource(sourceRequest *CreateRecipeSourceRequest) (*RecipeSource, error) {
 	if sourceRequest == nil {
 		return nil, ErrNoSource
 	}
