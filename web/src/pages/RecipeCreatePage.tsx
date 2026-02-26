@@ -24,7 +24,14 @@ export default function RecipeCreatePage() {
             })),
             prepMins: values.prepMins,
             cookMins: values.cookMins,
-            portions: values.portions
+            portions: values.portions,
+            recipeSource: {
+              type: values.sourceType,
+              url: values.sourceType === 1 ? values.url : undefined,
+              bookTitle: values.sourceType === 2 ? values.bookTitle : undefined,
+              bookPage: values.sourceType === 2 ? values.bookPage : undefined,
+              instructions: values.sourceType === 3 ? values.instructions : undefined,
+            }
            }
           },
           {
