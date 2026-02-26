@@ -6,6 +6,7 @@ import (
 	"foodplanner/internal/db"
 	"foodplanner/internal/ingredient"
 	"foodplanner/internal/logging"
+	"log/slog"
 	"strings"
 
 	"github.com/google/uuid"
@@ -37,12 +38,57 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 		return nil, ErrNoIngredients
 	}
 
+	ingredientUsages, err := s.validateAndConvertIngredientUsages(ctx, logger, request.Ingredients)
+	if err != nil {
+		return nil, err
+	}
+
+	recipeSource, err := s.validateAndConvertRecipeSource(ctx, logger, &request.Source)
+	if err != nil {
+		return nil, err
+	}
+
+	// Once we've confirmed all ingredients are valid, we can create the recipe
+	userID, err := uuid.Parse(request.UserID)
+	if err != nil {
+		logger.Error("Error parsing user ID", "error", err)
+		return nil, err
+	}
+
+	recipe, err := NewRecipe(
+		request.Name,
+		userID,
+		ingredientUsages,
+		request.PrepMins,
+		request.CookMins,
+		request.Portions,
+		recipeSource,
+	)
+	if err != nil {
+		logger.Error("Error creating recipe", "error", err)
+		return nil, err
+	}
+
+	// Persist recipe
+	// We should use a transaction
+	err = s.txRunner.WithTx(ctx, func(tx *sql.Tx) error {
+		var err error
+		recipe, err = s.Repo.CreateRecipe(ctx, tx, recipe)
+		return err
+	})
+	if err != nil {
+		logger.Error("Error persisting recipe", "error", err)
+		return nil, err
+	}
+	return recipe, nil
+}
+func (s *Service) validateAndConvertIngredientUsages(ctx context.Context, logger *slog.Logger, ingredientUsageRequests []CreateIngredientUsageRequest) ([]*IngredientUsage, error) {
 	// Validate ingredients and check for duplicates
 	// TODO: There may be cases where we allow duplicate ingredients (e.g. different sections of the same recipe)
 	// But then ingredient usage table would need a new primary key as composite would no longer be unique
 	seenIngredients := make(map[string]bool)
-	ingredientUsages := make([]*IngredientUsage, len(request.Ingredients))
-	for i, ingredientRequest := range request.Ingredients {
+	ingredientUsages := make([]*IngredientUsage, len(ingredientUsageRequests))
+	for i, ingredientRequest := range ingredientUsageRequests {
 		if seenIngredients[ingredientRequest.IngredientID] {
 			return nil, ErrDuplicateIngredient
 		}
@@ -68,39 +114,23 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 		}
 		ingredientUsages[i] = usage
 	}
+	return ingredientUsages, nil
+}
 
-	// Once we've confirmed all ingredients are valid, we can create the recipe
-	userID, err := uuid.Parse(request.UserID)
-	if err != nil {
-		logger.Error("Error parsing user ID", "error", err)
-		return nil, err
+func (s *Service) validateAndConvertRecipeSource(ctx context.Context, logger *slog.Logger, sourceRequest *CreateRecipeSourceRequest) (*RecipeSource, error) {
+	if sourceRequest == nil {
+		return nil, ErrNoSource
 	}
-
-	recipe, err := NewRecipe(
-		request.Name,
-		userID,
-		ingredientUsages,
-		request.PrepMins,
-		request.CookMins,
-		request.Portions,
-	)
-	if err != nil {
-		logger.Error("Error creating recipe", "error", err)
-		return nil, err
+	switch sourceRequest.Type {
+	case URL:
+		return NewURLSource(sourceRequest.URL)
+	case BookReference:
+		return NewBookReferenceSource(sourceRequest.BookTitle, sourceRequest.BookPage)
+	case Original:
+		return NewOriginalSource(sourceRequest.Instructions)
+	default:
+		return nil, ErrInvalidSourceType
 	}
-
-	// Persist recipe
-	// We should use a transaction
-	err = s.txRunner.WithTx(ctx, func(tx *sql.Tx) error {
-		var err error
-		recipe, err = s.Repo.CreateRecipe(ctx, tx, recipe)
-		return err
-	})
-	if err != nil {
-		logger.Error("Error persisting recipe", "error", err)
-		return nil, err
-	}
-	return recipe, nil
 }
 
 func (s *Service) GetAllRecipes(ctx context.Context) ([]*Recipe, error) {

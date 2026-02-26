@@ -15,7 +15,11 @@ func TestInstantiateRecipe(t *testing.T) {
 		Quantity:     200,
 		Unit:         1,
 	}
-	recipe, err := NewRecipe(name, userID, []*IngredientUsage{ingredientUsage}, 10, 20, 4)
+	source := &RecipeSource{
+		Type: URL,
+		URL:  "https://example.com/pancakes",
+	}
+	recipe, err := NewRecipe(name, userID, []*IngredientUsage{ingredientUsage}, 10, 20, 4, source)
 	require.NoError(t, err)
 	require.Equal(t, name, recipe.Name)
 	require.Equal(t, userID, recipe.UserID)
@@ -31,7 +35,11 @@ func TestEmptyRecipeName(t *testing.T) {
 		Quantity:     200,
 		Unit:         1,
 	}
-	_, err := NewRecipe("", userID, []*IngredientUsage{ingredientUsage}, 10, 20, 4)
+	source := &RecipeSource{
+		Type: URL,
+		URL:  "https://example.com/pancakes",
+	}
+	_, err := NewRecipe("", userID, []*IngredientUsage{ingredientUsage}, 10, 20, 4, source)
 	require.Error(t, err)
 	require.Equal(t, ErrEmptyName, err)
 }
@@ -39,7 +47,11 @@ func TestEmptyRecipeName(t *testing.T) {
 func TestNoIngredients(t *testing.T) {
 	name := "Pancakes"
 	userID := uuid.New()
-	_, err := NewRecipe(name, userID, []*IngredientUsage{}, 10, 20, 4)
+	source := &RecipeSource{
+		Type: URL,
+		URL:  "https://example.com/pancakes",
+	}
+	_, err := NewRecipe(name, userID, []*IngredientUsage{}, 10, 20, 4, source)
 	require.Error(t, err)
 	require.Equal(t, ErrNoIngredients, err)
 }
@@ -52,7 +64,11 @@ func TestNegativePrepMins(t *testing.T) {
 		Quantity:     200,
 		Unit:         1,
 	}
-	_, err := NewRecipe(name, userID, []*IngredientUsage{ingredientUsage}, -5, 20, 4)
+	source := &RecipeSource{
+		Type: URL,
+		URL:  "https://example.com/pancakes",
+	}
+	_, err := NewRecipe(name, userID, []*IngredientUsage{ingredientUsage}, -5, 20, 4, source)
 	require.Error(t, err)
 	require.Equal(t, ErrInvalidPrepMins, err)
 }
@@ -65,7 +81,11 @@ func TestNegativeCookMins(t *testing.T) {
 		Quantity:     200,
 		Unit:         1,
 	}
-	_, err := NewRecipe(name, userID, []*IngredientUsage{ingredientUsage}, 10, -5, 4)
+	source := &RecipeSource{
+		Type: URL,
+		URL:  "https://example.com/pancakes",
+	}
+	_, err := NewRecipe(name, userID, []*IngredientUsage{ingredientUsage}, 10, -5, 4, source)
 	require.Error(t, err)
 	require.Equal(t, ErrInvalidCookMins, err)
 }
@@ -78,7 +98,11 @@ func TestInvalidPortions(t *testing.T) {
 		Quantity:     200,
 		Unit:         1,
 	}
-	_, err := NewRecipe(name, userID, []*IngredientUsage{ingredientUsage}, 10, 20, 0)
+	source := &RecipeSource{
+		Type: URL,
+		URL:  "https://example.com/pancakes",
+	}
+	_, err := NewRecipe(name, userID, []*IngredientUsage{ingredientUsage}, 10, 20, 0, source)
 	require.Error(t, err)
 	require.Equal(t, ErrInvalidPortions, err)
 }

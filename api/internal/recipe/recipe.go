@@ -12,9 +12,10 @@ type Recipe struct {
 	PrepMins    int
 	CookMins    int
 	Portions    int
+	Source      *RecipeSource
 }
 
-func NewRecipe(name string, userID uuid.UUID, ingredients []*IngredientUsage, prepMins, cookMins, portions int) (*Recipe, error) {
+func NewRecipe(name string, userID uuid.UUID, ingredients []*IngredientUsage, prepMins, cookMins, portions int, source *RecipeSource) (*Recipe, error) {
 	if name == "" {
 		return nil, ErrEmptyName
 	}
@@ -38,6 +39,7 @@ func NewRecipe(name string, userID uuid.UUID, ingredients []*IngredientUsage, pr
 		PrepMins:    prepMins,
 		CookMins:    cookMins,
 		Portions:    portions,
+		Source:      source,
 	}, nil
 }
 
