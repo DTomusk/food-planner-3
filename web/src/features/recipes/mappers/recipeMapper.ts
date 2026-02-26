@@ -15,6 +15,13 @@ export function mapRecipe(
         user: gqlRecipe.user.id,
         prepMins: gqlRecipe.prepMins,
         cookMins: gqlRecipe.cookMins,
-        portions: gqlRecipe.portions
+        portions: gqlRecipe.portions,
+        source: {
+            type: gqlRecipe.source.type,
+            url: gqlRecipe.source.url || undefined,
+            bookTitle: gqlRecipe.source.bookTitle || undefined,
+            bookPage: gqlRecipe.source.bookPage || undefined,
+            instructions: gqlRecipe.source.instructions || undefined,
+        }
     }
 }

@@ -9,6 +9,7 @@ import Container from "@/components/layout/Container";
 import Stack from "@/components/layout/Stack";
 import { useEffect, useState } from "react";
 import { extractErrorMessage } from "@/lib/errors";
+import MarkdownRenderer from "@/components/ui/MarkdownRenderer";
 
 export default function RecipePage() {
     const { id } = useParams<{ id: string }>();
@@ -47,6 +48,12 @@ export default function RecipePage() {
                         <Stack space="lg">
                             <SectionTitle text="Ingredients" />
                             <IngredientList ingredients={recipe.ingredients} />
+                            {recipe.source.type === 1 && recipe.source.url && (<></>)}
+                            {recipe.source.type === 2 && recipe.source.bookTitle && recipe.source.bookPage && (<></>)}
+                            {recipe.source.instructions && (<>
+                                <SectionTitle text="Instructions" />
+                                <MarkdownRenderer content={recipe.source.instructions} />
+                            </>)}
                         </Stack>
                     </Container>
                     </>
