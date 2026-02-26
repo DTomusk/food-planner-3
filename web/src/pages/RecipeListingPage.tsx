@@ -6,6 +6,7 @@ import SectionTitle from "@/components/ui/SectionTitle";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { RecipeList, useRecipes } from "@/features/recipes";
 import { Page } from "@/layout";
+import { extractErrorMessage } from "@/lib/errors";
 import { commonStrings } from "@/lib/strings";
 import { Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -33,7 +34,7 @@ export default function RecipeListingPage() {
                 </Stack>
             </Inline>}
             {isLoading && <Spinner/>}
-            {error && <Alert message={(error as Error).message} />}
+            {error && <Alert message={extractErrorMessage(error)} closable />}
             {data && (
                 <>
                     <SectionTitle text="Top recipes" />
