@@ -182,7 +182,7 @@ func (r *recipeResolver) Source(ctx context.Context, obj *model.Recipe) (*model.
 		return nil, fmt.Errorf("failed to get recipe source for recipe: %w", err)
 	}
 	if recipeSource == nil {
-		return nil, nil
+		return &model.RecipeSource{Type: 0}, nil
 	}
 	return &model.RecipeSource{
 		Type:         int32(recipeSource.Type),

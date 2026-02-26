@@ -35,6 +35,14 @@ export default function RecipeSourceSection({ control, register, errors }: Recip
                     <label className="flex items-center gap-2">
                         <input
                         type="radio"
+                        checked={field.value === 0}
+                        onChange={() => field.onChange(0)}
+                        />
+                        No source - don't include any source information
+                    </label>  
+                    <label className="flex items-center gap-2">
+                        <input
+                        type="radio"
                         checked={field.value === 1}
                         onChange={() => field.onChange(1)}
                         />

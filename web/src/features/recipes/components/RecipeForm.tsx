@@ -34,7 +34,7 @@ export default function RecipeForm({
       prepMins: 0,
       cookMins: 0,
       portions: 0,
-      sourceType: 1
+      sourceType: 0
     },
   });
 

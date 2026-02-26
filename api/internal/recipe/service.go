@@ -121,6 +121,8 @@ func (s *Service) validateAndConvertRecipeSource(sourceRequest *CreateRecipeSour
 		return nil, ErrNoSource
 	}
 	switch sourceRequest.Type {
+	case 0:
+		return nil, nil
 	case 1:
 		if sourceRequest.URL == nil {
 			return nil, ErrMissingURL

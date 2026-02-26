@@ -29,10 +29,12 @@ func (r *Repo) CreateRecipe(ctx context.Context, tx *sql.Tx, recipe *Recipe) (*R
 			return nil, err
 		}
 	}
-	sourceQuery := `INSERT INTO recipe_sources (recipe_id, type, url, book_title, book_page, instructions) VALUES ($1, $2, $3, $4, $5, $6)`
-	_, err = tx.ExecContext(ctx, sourceQuery, recipe.ID, int(recipe.Source.Type), recipe.Source.URL, recipe.Source.BookTitle, recipe.Source.BookPage, recipe.Source.Instructions)
-	if err != nil {
-		return nil, err
+	if recipe.Source != nil {
+		sourceQuery := `INSERT INTO recipe_sources (recipe_id, type, url, book_title, book_page, instructions) VALUES ($1, $2, $3, $4, $5, $6)`
+		_, err = tx.ExecContext(ctx, sourceQuery, recipe.ID, int(recipe.Source.Type), recipe.Source.URL, recipe.Source.BookTitle, recipe.Source.BookPage, recipe.Source.Instructions)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return &dbRecipe, nil
 }
