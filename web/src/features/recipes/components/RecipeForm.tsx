@@ -23,6 +23,7 @@ export default function RecipeForm({
     register,
     control,
     handleSubmit,
+    setValue,
     formState: { errors, isValid, isSubmitted },
   } = useForm<RecipeFormValues>({
     mode: "onChange",
@@ -57,7 +58,7 @@ export default function RecipeForm({
         </FormField>
       </FormSection>      
 
-      <IngredientSection control={control} register={register} errors={errors} ingredients={ingredients} />
+      <IngredientSection control={control} register={register} errors={errors} ingredients={ingredients} setValue={setValue} />
 
       <Button disabled={isSubmitting || (isSubmitted && !isValid)} type="submit" loading={isSubmitting}>
         {commonStrings.forms.create}

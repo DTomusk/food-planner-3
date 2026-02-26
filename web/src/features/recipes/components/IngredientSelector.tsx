@@ -1,4 +1,4 @@
-import { useWatch, type Control, type UseFormRegister } from "react-hook-form";
+import { useWatch, type Control, type UseFormRegister, type UseFormSetValue } from "react-hook-form";
 import type { RecipeFormValues } from "../types";
 import Input from "@/components/ui/Input";
 import FormField from "@/components/form/FormField";
@@ -6,6 +6,7 @@ import Select from "@/components/ui/Select";
 import IconButton from "@/components/ui/IconButton";
 import { X } from "lucide-react";
 import Inline from "@/components/layout/Inline";
+import { useEffect } from "react";
 
 interface IngredientSelectorProps {
   index: number;
@@ -15,9 +16,10 @@ interface IngredientSelectorProps {
   remove: (index: number) => void;
   canRemove: boolean;
   errors: any;
+  setValue: UseFormSetValue<RecipeFormValues>;
 };
 
-export default function IngredientSelector({ index, control, register, ingredients, remove, canRemove, errors }: IngredientSelectorProps) {
+export default function IngredientSelector({ index, control, register, ingredients, remove, canRemove, errors, setValue }: IngredientSelectorProps) {
     const selectedIngredient = useWatch({
         control,
         name: `ingredientUsages.${index}.ingredientId`,
@@ -32,6 +34,15 @@ export default function IngredientSelector({ index, control, register, ingredien
     const isQuantumUnit = selectedIngredientObj?.preferredUnit.val === 1;
 
     const hasSelection = Boolean(selectedIngredient);
+
+    useEffect(() => {
+      if (selectedIngredientObj) {
+        setValue(
+          `ingredientUsages.${index}.unit`,
+          selectedIngredientObj.preferredUnit.val
+        );
+      }
+    }, [selectedIngredientObj, index, setValue]);
 
     return (
     <Inline>
@@ -73,6 +84,13 @@ export default function IngredientSelector({ index, control, register, ingredien
           </Select>
         </FormField>
       )}
+
+      <input
+        type="hidden"
+        {...register(`ingredientUsages.${index}.unit`, {
+          valueAsNumber: true,
+        })}
+      />
 
       {canRemove && (
         <IconButton type="button" variant="secondary" onClick={() => remove(index)} aria-label="Remove ingredient">

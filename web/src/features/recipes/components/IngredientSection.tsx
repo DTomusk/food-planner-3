@@ -1,4 +1,4 @@
-import { useFieldArray, type Control, type FieldErrors, type UseFormRegister } from "react-hook-form";
+import { useFieldArray, type Control, type FieldErrors, type UseFormRegister, type UseFormSetValue } from "react-hook-form";
 import type { RecipeFormValues } from "../types";
 import Button from "@/components/ui/Button";
 import FormSection from "@/components/form/FormSection";
@@ -8,10 +8,11 @@ interface IngredientSectionProps {
   control: Control<RecipeFormValues>;
   register: UseFormRegister<RecipeFormValues>;
   errors: FieldErrors<RecipeFormValues>;
+  setValue: UseFormSetValue<RecipeFormValues>;
   ingredients: { id: string; name: string, preferredUnit: { val: number; name: string; symbol: string } }[];
 };
 
-export default function IngredientSection({ control, register, errors, ingredients }: IngredientSectionProps) {
+export default function IngredientSection({ control, register, errors, setValue, ingredients }: IngredientSectionProps) {
     const { fields, append, remove } = useFieldArray({
         name: "ingredientUsages",
         control,
@@ -29,6 +30,7 @@ export default function IngredientSection({ control, register, errors, ingredien
                     remove={remove}
                     canRemove={fields.length > 1}
                     errors={errors}
+                    setValue={setValue}
                 />
             ))}
 
