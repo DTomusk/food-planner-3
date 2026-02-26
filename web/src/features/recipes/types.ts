@@ -25,4 +25,7 @@ export type RecipeFormValues = {
         ingredientId: string;
         quantity: number;
     }[];
+    prepMins: number;
+    cookMins: number;
+    portions: number;
 };

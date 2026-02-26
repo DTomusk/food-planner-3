@@ -10,7 +10,6 @@ export default function RecipeCreatePage() {
 
     const handleSubmit = (values: RecipeFormValues) => {
       mutate(
-        // TODO: add ingredient usages
           { input: { 
             name: values.name, 
             ingredientUsages: values.ingredientUsages.map(usage => ({
@@ -18,7 +17,10 @@ export default function RecipeCreatePage() {
               quantity: usage.quantity,
               // Hardcode unit for now
               unit: 1
-            }))
+            })),
+            prepMins: values.prepMins,
+            cookMins: values.cookMins,
+            portions: values.portions
            }
           },
           {
