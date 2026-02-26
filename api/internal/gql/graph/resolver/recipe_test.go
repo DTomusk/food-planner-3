@@ -44,6 +44,9 @@ func TestRecipeResolver_CreateAndGetRecipe(t *testing.T) {
 					Unit:         1,
 				},
 			},
+			PrepMins: 30,
+			CookMins: 60,
+			Portions: 2,
 		}
 		claims := auth.Claims{UserID: testUser.ID.String()}
 		ctx = auth.ContextWithClaims(ctx, &claims)
@@ -57,6 +60,9 @@ func TestRecipeResolver_CreateAndGetRecipe(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, dbRecipe, "Expected to find recipe in DB, got nil")
 		require.Equal(t, "Chocolate Cake", dbRecipe.Name)
+		require.Equal(t, 30, dbRecipe.PrepMins, "Recipe prep minutes mismatch")
+		require.Equal(t, 60, dbRecipe.CookMins, "Recipe cook minutes mismatch")
+		require.Equal(t, 2, dbRecipe.Portions, "Recipe portions mismatch")
 	})
 }
 
@@ -109,9 +115,9 @@ func TestRecipeResolver_CreateAndGetRecipe_WithResolver(t *testing.T) {
 		require.Equal(t, "Chocolate Cake", fetchedRecipe.Name)
 		require.Equal(t, recipeModel.ID, fetchedRecipe.ID, "Recipe ID mismatch")
 		require.Equal(t, "Chocolate Cake", fetchedRecipe.Name, "Recipe name mismatch")
-		require.Equal(t, 30, fetchedRecipe.PrepMins, "Recipe prep minutes mismatch")
-		require.Equal(t, 60, fetchedRecipe.CookMins, "Recipe cook minutes mismatch")
-		require.Equal(t, 2, fetchedRecipe.Portions, "Recipe portions mismatch")
+		require.Equal(t, int32(30), fetchedRecipe.PrepMins, "Recipe prep minutes mismatch")
+		require.Equal(t, int32(60), fetchedRecipe.CookMins, "Recipe cook minutes mismatch")
+		require.Equal(t, int32(2), fetchedRecipe.Portions, "Recipe portions mismatch")
 
 		recipeResolver := &recipeResolver{r}
 		ingredientUsages, err := recipeResolver.IngredientUsages(ctx, fetchedRecipe)
