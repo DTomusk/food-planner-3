@@ -154,5 +154,5 @@ func (s *Service) GetIngredientUsagesByRecipeID(ctx context.Context, recipeID st
 }
 
 func (s *Service) GetRecipeSourceByRecipeID(ctx context.Context, recipeID string) (*RecipeSource, error) {
-	return nil, nil
+	return s.Repo.GetRecipeSourceByRecipeID(ctx, s.txRunner.DB(), recipeID)
 }

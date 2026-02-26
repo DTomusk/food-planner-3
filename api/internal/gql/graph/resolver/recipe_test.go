@@ -149,5 +149,12 @@ func TestRecipeResolver_CreateAndGetRecipe_WithResolver(t *testing.T) {
 		require.NoError(t, err, "Failed to fetch user with resolver")
 		require.NotNil(t, user, "Expected to fetch user with resolver, got nil")
 		require.Equal(t, testUser.ID.String(), user.ID, "User ID mismatch")
+
+		recipeSource, err := recipeResolver.Source(ctx, fetchedRecipe)
+		require.NoError(t, err, "Failed to fetch recipe source with resolver")
+		require.NotNil(t, recipeSource, "Expected to fetch recipe source with resolver, got nil")
+		require.Equal(t, int32(2), recipeSource.Type, "Recipe source type mismatch")
+		require.Equal(t, "Blah blah", *recipeSource.BookTitle, "Recipe source book title mismatch")
+		require.Equal(t, int32(42), *recipeSource.BookPage, "Recipe source book page mismatch")
 	})
 }

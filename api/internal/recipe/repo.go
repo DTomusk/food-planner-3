@@ -29,6 +29,11 @@ func (r *Repo) CreateRecipe(ctx context.Context, tx *sql.Tx, recipe *Recipe) (*R
 			return nil, err
 		}
 	}
+	sourceQuery := `INSERT INTO recipe_sources (recipe_id, type, url, book_title, book_page, instructions) VALUES ($1, $2, $3, $4, $5, $6)`
+	_, err = tx.ExecContext(ctx, sourceQuery, recipe.ID, int(recipe.Source.Type), recipe.Source.URL, recipe.Source.BookTitle, recipe.Source.BookPage, recipe.Source.Instructions)
+	if err != nil {
+		return nil, err
+	}
 	return &dbRecipe, nil
 }
 
@@ -85,4 +90,17 @@ func (r *Repo) GetIngredientUsagesForRecipe(ctx context.Context, db db.DBTX, rec
 		usages = append(usages, &usage)
 	}
 	return usages, nil
+}
+
+func (r *Repo) GetRecipeSourceByRecipeID(ctx context.Context, db db.DBTX, recipeID string) (*RecipeSource, error) {
+	var source RecipeSource
+	row := db.QueryRowContext(ctx, "SELECT type, url, book_title, book_page, instructions FROM recipe_sources WHERE recipe_id = $1", recipeID)
+	err := row.Scan(&source.Type, &source.URL, &source.BookTitle, &source.BookPage, &source.Instructions)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &source, nil
 }
