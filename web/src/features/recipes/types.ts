@@ -18,12 +18,12 @@ export type RecipeSummary = {
     name: string;
 };
 
-// Leave unit for now as we only have one, but add later
 export type RecipeFormValues = {
     name: string;
     ingredientUsages: {
         ingredientId: string;
         quantity: number;
+        unit: number;
     }[];
     prepMins: number;
     cookMins: number;

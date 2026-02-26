@@ -5,6 +5,7 @@ query GetIngredients {
         preferredUnit {
             name
             val
+            symbol
         }
     }
 }

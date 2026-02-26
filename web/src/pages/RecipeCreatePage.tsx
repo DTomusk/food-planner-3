@@ -9,14 +9,14 @@ export default function RecipeCreatePage() {
     const { data: ingredientsData } = useIngredients();
 
     const handleSubmit = (values: RecipeFormValues) => {
+      console.log("Submitting recipe with values:", values);
       mutate(
           { input: { 
             name: values.name, 
             ingredientUsages: values.ingredientUsages.map(usage => ({
               ingredientID: usage.ingredientId,
               quantity: usage.quantity,
-              // Hardcode unit for now
-              unit: 1
+              unit: usage.unit
             })),
             prepMins: values.prepMins,
             cookMins: values.cookMins,

@@ -8,7 +8,7 @@ interface IngredientSectionProps {
   control: Control<RecipeFormValues>;
   register: UseFormRegister<RecipeFormValues>;
   errors: FieldErrors<RecipeFormValues>;
-  ingredients: { id: string; name: string }[];
+  ingredients: { id: string; name: string, preferredUnit: { val: number; name: string; symbol: string } }[];
 };
 
 export default function IngredientSection({ control, register, errors, ingredients }: IngredientSectionProps) {
@@ -32,7 +32,7 @@ export default function IngredientSection({ control, register, errors, ingredien
                 />
             ))}
 
-            <Button type="button" onClick={() => append({ ingredientId: "", quantity: 0 })}>
+            <Button type="button" onClick={() => append({ ingredientId: "", quantity: 0, unit: 1 })}>
                 Add Ingredient
             </Button>
         </FormSection>
