@@ -21,6 +21,14 @@ type Unit {
   symbol: String!
 }
 
+type RecipeSource {
+  type: Int!
+  url: String
+  bookTitle: String
+  bookPage: Int
+  instructions: String
+}
+
 extend type Query {
   recipes: [Recipe!]!
   recipe(id: ID!): Recipe
@@ -32,12 +40,21 @@ input CreateRecipeInput {
   prepMins: Int!
   cookMins: Int!
   portions: Int!
+  recipeSource: CreateRecipeSourceInput!
 }
 
 input CreateIngredientUsageInput {
   ingredientID: ID!
   unit: Int!
   quantity: Float!
+}
+
+input CreateRecipeSourceInput {
+  type: Int!
+  url: String
+  bookTitle: String
+  bookPage: Int
+  instructions: String
 }
 
 extend type Mutation {

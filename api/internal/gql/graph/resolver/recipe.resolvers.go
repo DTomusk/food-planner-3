@@ -32,6 +32,29 @@ func (r *mutationResolver) CreateRecipe(ctx context.Context, input model.CreateR
 		}
 	}
 
+	logger.Info("Source request details")
+	logger.Info(fmt.Sprintf("Source type: %d", input.RecipeSource.Type))
+	if input.RecipeSource.URL != nil {
+		logger.Info(fmt.Sprintf("Source URL: %s", *input.RecipeSource.URL))
+	}
+	if input.RecipeSource.BookTitle != nil {
+		logger.Info(fmt.Sprintf("Source Book Title: %s", *input.RecipeSource.BookTitle))
+	}
+	if input.RecipeSource.BookPage != nil {
+		logger.Info(fmt.Sprintf("Source Book Page: %d", *input.RecipeSource.BookPage))
+	}
+	if input.RecipeSource.Instructions != nil {
+		logger.Info(fmt.Sprintf("Source Instructions: %s", *input.RecipeSource.Instructions))
+	}
+
+	recipeSourceRequest := recipe.CreateRecipeSourceRequest{
+		Type:         int(input.RecipeSource.Type),
+		URL:          input.RecipeSource.URL,
+		BookTitle:    input.RecipeSource.BookTitle,
+		BookPage:     input.RecipeSource.BookPage,
+		Instructions: input.RecipeSource.Instructions,
+	}
+
 	request := recipe.CreateRecipeRequest{
 		Name:        input.Name,
 		Ingredients: ingredientUsageRequests,
@@ -39,6 +62,7 @@ func (r *mutationResolver) CreateRecipe(ctx context.Context, input model.CreateR
 		PrepMins:    int(input.PrepMins),
 		CookMins:    int(input.CookMins),
 		Portions:    int(input.Portions),
+		Source:      recipeSourceRequest,
 	}
 	recipe, err := r.RecipeService.CreateRecipe(ctx, request)
 	if err != nil {

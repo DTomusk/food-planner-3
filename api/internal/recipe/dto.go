@@ -17,9 +17,9 @@ type CreateIngredientUsageRequest struct {
 }
 
 type CreateRecipeSourceRequest struct {
-	Type         SourceType `json:"type" validate:"required,oneof=url book_reference original"`
-	URL          string     `json:"url,omitempty"`
-	BookTitle    string     `json:"book_title,omitempty"`
-	BookPage     int        `json:"book_page,omitempty"`
-	Instructions string     `json:"instructions,omitempty"`
+	Type         int     `json:"type" validate:"required"`
+	URL          *string `json:"url,omitempty"`
+	BookTitle    *string `json:"book_title,omitempty"`
+	BookPage     *int32  `json:"book_page,omitempty"`
+	Instructions *string `json:"instructions,omitempty"`
 }

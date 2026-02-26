@@ -16,6 +16,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func ptrString(s string) *string {
+	return &s
+}
+
+func ptrInt32(i int32) *int32 {
+	return &i
+}
+
 func TestRecipeResolver_CreateAndGetRecipe(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		repo := recipe.NewRepo()
@@ -47,6 +55,10 @@ func TestRecipeResolver_CreateAndGetRecipe(t *testing.T) {
 			PrepMins: 30,
 			CookMins: 60,
 			Portions: 2,
+			RecipeSource: &model.CreateRecipeSourceInput{
+				Type: 1,
+				URL:  ptrString("https://example.com/chocolate-cake"),
+			},
 		}
 		claims := auth.Claims{UserID: testUser.ID.String()}
 		ctx = auth.ContextWithClaims(ctx, &claims)
@@ -99,6 +111,11 @@ func TestRecipeResolver_CreateAndGetRecipe_WithResolver(t *testing.T) {
 			PrepMins: 30,
 			CookMins: 60,
 			Portions: 2,
+			RecipeSource: &model.CreateRecipeSourceInput{
+				Type:      2,
+				BookTitle: ptrString("Blah blah"),
+				BookPage:  ptrInt32(42),
+			},
 		}
 		claims := auth.Claims{UserID: testUser.ID.String()}
 		ctx = auth.ContextWithClaims(ctx, &claims)

@@ -121,12 +121,21 @@ func (s *Service) validateAndConvertRecipeSource(sourceRequest *CreateRecipeSour
 		return nil, ErrNoSource
 	}
 	switch sourceRequest.Type {
-	case URL:
-		return NewURLSource(sourceRequest.URL)
-	case BookReference:
-		return NewBookReferenceSource(sourceRequest.BookTitle, sourceRequest.BookPage)
-	case Original:
-		return NewOriginalSource(sourceRequest.Instructions)
+	case 1:
+		if sourceRequest.URL == nil {
+			return nil, ErrMissingURL
+		}
+		return NewURLSource(*sourceRequest.URL)
+	case 2:
+		if sourceRequest.BookTitle == nil || sourceRequest.BookPage == nil {
+			return nil, ErrMissingBookReference
+		}
+		return NewBookReferenceSource(*sourceRequest.BookTitle, int(*sourceRequest.BookPage))
+	case 3:
+		if sourceRequest.Instructions == nil {
+			return nil, ErrMissingInstructions
+		}
+		return NewOriginalSource(*sourceRequest.Instructions)
 	default:
 		return nil, ErrInvalidSourceType
 	}
