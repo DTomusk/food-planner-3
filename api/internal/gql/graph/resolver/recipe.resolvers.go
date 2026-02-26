@@ -36,6 +36,9 @@ func (r *mutationResolver) CreateRecipe(ctx context.Context, input model.CreateR
 		Name:        input.Name,
 		Ingredients: ingredientUsageRequests,
 		UserID:      claims.UserID,
+		PrepMins:    int(input.PrepMins),
+		CookMins:    int(input.CookMins),
+		Portions:    int(input.Portions),
 	}
 	recipe, err := r.RecipeService.CreateRecipe(ctx, request)
 	if err != nil {

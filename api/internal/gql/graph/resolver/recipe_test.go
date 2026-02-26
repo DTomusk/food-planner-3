@@ -90,6 +90,9 @@ func TestRecipeResolver_CreateAndGetRecipe_WithResolver(t *testing.T) {
 					Unit:         1,
 				},
 			},
+			PrepMins: 30,
+			CookMins: 60,
+			Portions: 2,
 		}
 		claims := auth.Claims{UserID: testUser.ID.String()}
 		ctx = auth.ContextWithClaims(ctx, &claims)
@@ -104,6 +107,11 @@ func TestRecipeResolver_CreateAndGetRecipe_WithResolver(t *testing.T) {
 		require.NoError(t, err, "Failed to fetch recipe with resolver")
 		require.NotNil(t, fetchedRecipe, "Expected to fetch recipe with resolver, got nil")
 		require.Equal(t, "Chocolate Cake", fetchedRecipe.Name)
+		require.Equal(t, recipeModel.ID, fetchedRecipe.ID, "Recipe ID mismatch")
+		require.Equal(t, "Chocolate Cake", fetchedRecipe.Name, "Recipe name mismatch")
+		require.Equal(t, 30, fetchedRecipe.PrepMins, "Recipe prep minutes mismatch")
+		require.Equal(t, 60, fetchedRecipe.CookMins, "Recipe cook minutes mismatch")
+		require.Equal(t, 2, fetchedRecipe.Portions, "Recipe portions mismatch")
 
 		recipeResolver := &recipeResolver{r}
 		ingredientUsages, err := recipeResolver.IngredientUsages(ctx, fetchedRecipe)

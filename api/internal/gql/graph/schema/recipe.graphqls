@@ -3,6 +3,9 @@ type Recipe {
   name: String!
   ingredientUsages: [IngredientUsage!]! @goField(forceResolver: true)
   user: User! @goField(forceResolver: true)
+  prepMins: Int!
+  cookMins: Int!
+  portions: Int!
 }
 
 type IngredientUsage {
@@ -25,6 +28,9 @@ extend type Query {
 input CreateRecipeInput {
   name: String!
   ingredientUsages: [CreateIngredientUsageInput!]!
+  prepMins: Int!
+  cookMins: Int!
+  portions: Int!
 }
 
 input CreateIngredientUsageInput {
