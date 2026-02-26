@@ -1,3 +1,5 @@
+import clsx from "clsx";
+
 interface ButtonProps {
     onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
     disabled?: boolean;
@@ -19,11 +21,11 @@ export default function Button({ children, onClick, disabled, type = "button", v
         onClick={onClick} 
         disabled={disabled || loading} 
         type={type} 
-        className={`
-            px-4 py-2 text-sm font-medium
+        className={clsx(`
+            px-4 py-2 text-sm font-medium cursor-pointer
             ${variants[variant]}
             ${disabled || loading ? "opacity-50 cursor-not-allowed" : ""}
-        `}>
+        `)}>
             {loading ? "Loading..." : children}
     </button>
     );

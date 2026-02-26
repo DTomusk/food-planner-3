@@ -2,6 +2,7 @@ import { Alert, BackLink, PageTitle } from "@/components";
 import { useIngredients } from "@/features/ingredients/hooks/useIngredients";
 import { RecipeForm, useCreateRecipe, type RecipeFormValues } from "@/features/recipes";
 import { Page } from "@/layout";
+import { commonStrings } from "@/lib/strings";
 
 export default function RecipeCreatePage() {
     const { mutate, isPending, error } = useCreateRecipe();
@@ -31,7 +32,7 @@ export default function RecipeCreatePage() {
     return (
         <Page>
             <BackLink to="/recipe" />
-            <PageTitle text="Create Recipe" />
+            <PageTitle text={commonStrings.recipe.create} />
             {error && <Alert message={(error as Error).message} />}
             <RecipeForm onSubmit={handleSubmit} isSubmitting={isPending} ingredients={ingredientsData?.ingredients || []} />
         </Page>

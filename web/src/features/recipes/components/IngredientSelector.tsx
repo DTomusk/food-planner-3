@@ -5,6 +5,7 @@ import FormField from "@/components/form/FormField";
 import Select from "@/components/ui/Select";
 import IconButton from "@/components/ui/IconButton";
 import { X } from "lucide-react";
+import Inline from "@/components/layout/Inline";
 
 interface IngredientSelectorProps {
   index: number;
@@ -25,7 +26,7 @@ export default function IngredientSelector({ index, control, register, ingredien
     const hasSelection = Boolean(selectedIngredient);
 
     return (
-    <div className="flex items-center gap-3">
+    <Inline>
       <div className="flex-1">
         <FormField htmlFor={`ingredientUsages.${index}.ingredientId`} label="Ingredient" error={errors.ingredientUsages?.[index]?.ingredientId?.message}>
           <Select defaultValue="" disabled={ingredients.length === 0} {...register(`ingredientUsages.${index}.ingredientId`, { required: "Ingredient is required" })}>
@@ -62,6 +63,6 @@ export default function IngredientSelector({ index, control, register, ingredien
           <X size={20} />
         </IconButton>
       )}
-    </div>
+    </Inline>
     );
 }
