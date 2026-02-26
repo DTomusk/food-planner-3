@@ -40,9 +40,15 @@ func TestCreateRecipe(t *testing.T) {
 			Name:        "Vanilla Ice Cream",
 			Ingredients: []CreateIngredientUsageRequest{ingredientRequest},
 			UserID:      testUser.ID.String(),
+			PrepMins:    15,
+			CookMins:    0,
+			Portions:    6,
 		}
 		recipe, err := s.CreateRecipe(ctx, request)
 		require.NoError(t, err)
 		require.Equal(t, "Vanilla Ice Cream", recipe.Name)
+		require.Equal(t, 15, recipe.PrepMins)
+		require.Equal(t, 0, recipe.CookMins)
+		require.Equal(t, 6, recipe.Portions)
 	})
 }

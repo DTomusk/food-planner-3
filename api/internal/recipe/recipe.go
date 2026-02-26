@@ -9,17 +9,35 @@ type Recipe struct {
 	UserID      uuid.UUID
 	Name        string
 	Ingredients []*IngredientUsage
+	PrepMins    int
+	CookMins    int
+	Portions    int
 }
 
-func NewRecipe(name string, userID uuid.UUID, ingredients []*IngredientUsage) (*Recipe, error) {
+func NewRecipe(name string, userID uuid.UUID, ingredients []*IngredientUsage, prepMins, cookMins, portions int) (*Recipe, error) {
 	if name == "" {
 		return nil, ErrEmptyName
+	}
+	if len(ingredients) == 0 {
+		return nil, ErrNoIngredients
+	}
+	if prepMins < 0 {
+		return nil, ErrInvalidPrepMins
+	}
+	if cookMins < 0 {
+		return nil, ErrInvalidCookMins
+	}
+	if portions <= 0 {
+		return nil, ErrInvalidPortions
 	}
 	return &Recipe{
 		ID:          uuid.New(),
 		UserID:      userID,
 		Name:        name,
 		Ingredients: ingredients,
+		PrepMins:    prepMins,
+		CookMins:    cookMins,
+		Portions:    portions,
 	}, nil
 }
 

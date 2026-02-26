@@ -9,4 +9,7 @@ var (
 	ErrIngredientNotFound  = errors.New("ingredient not found")
 	ErrDuplicateIngredient = errors.New("duplicate ingredient in recipe")
 	ErrInvalidUnit         = errors.New("invalid unit for ingredient usage")
+	ErrInvalidPrepMins     = errors.New("prep minutes cannot be negative")
+	ErrInvalidCookMins     = errors.New("cook minutes cannot be negative")
+	ErrInvalidPortions     = errors.New("portions must be greater than zero")
 )
