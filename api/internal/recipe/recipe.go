@@ -5,17 +5,21 @@ import (
 )
 
 type Recipe struct {
-	ID   uuid.UUID
-	Name string
+	ID          uuid.UUID
+	UserID      uuid.UUID
+	Name        string
+	Ingredients []*IngredientUsage
 }
 
-func NewRecipe(name string) (*Recipe, error) {
+func NewRecipe(name string, userID uuid.UUID, ingredients []*IngredientUsage) (*Recipe, error) {
 	if name == "" {
 		return nil, ErrEmptyName
 	}
 	return &Recipe{
-		ID:   uuid.New(),
-		Name: name,
+		ID:          uuid.New(),
+		UserID:      userID,
+		Name:        name,
+		Ingredients: ingredients,
 	}, nil
 }
 

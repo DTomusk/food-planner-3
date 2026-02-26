@@ -8,6 +8,6 @@ describe("Alert Component", () => {
   });
   it("renders an alert message", () => {
     render(<Alert message="Test Alert" />);
-    expect(screen.getByText("Error: Test Alert")).toBeInTheDocument();
+    expect(screen.getByText("Test Alert")).toBeInTheDocument();
   });
 });

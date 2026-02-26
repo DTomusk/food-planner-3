@@ -27,20 +27,51 @@ func TestMiddleware_NoAuthHeader(t *testing.T) {
 }
 
 func TestMiddleware_InvalidAuthHeaderFormat(t *testing.T) {
-	// Arrange
 	jwtService := NewJWTService("testsecret", 15)
 	middleware := Middleware(jwtService)
-	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+
+	handlerCalled := false
+	var claimsInContext *Claims
+
+	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handlerCalled = true
+		var err error
+		claimsInContext, err = ClaimsFromContext(r.Context())
+		require.Error(t, err)
+	})
+
 	req := httptest.NewRequest("GET", "/", nil)
 	req.Header.Set("Authorization", "InvalidFormat")
 	rr := httptest.NewRecorder()
 
-	// Act
 	middleware(nextHandler).ServeHTTP(rr, req)
 
-	// Assert
-	require.Equal(t, http.StatusUnauthorized, rr.Code)
-	require.Equal(t, "invalid Authorization header format\n", rr.Body.String())
+	require.True(t, handlerCalled, "next handler should always be called")
+	require.Nil(t, claimsInContext)
+}
+
+func TestMiddleware_InvalidToken(t *testing.T) {
+	jwtService := NewJWTService("testsecret", 15)
+	middleware := Middleware(jwtService)
+
+	handlerCalled := false
+	var claimsInContext *Claims
+
+	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handlerCalled = true
+		var err error
+		claimsInContext, err = ClaimsFromContext(r.Context())
+		require.Error(t, err)
+	})
+
+	req := httptest.NewRequest("GET", "/", nil)
+	req.Header.Set("Authorization", "Bearer invalid-token")
+	rr := httptest.NewRecorder()
+
+	middleware(nextHandler).ServeHTTP(rr, req)
+
+	require.True(t, handlerCalled)
+	require.Nil(t, claimsInContext)
 }
 
 func TestMiddleware_ValidToken(t *testing.T) {
@@ -54,7 +85,11 @@ func TestMiddleware_ValidToken(t *testing.T) {
 	var claimsInContext *Claims
 	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		handlerCalled = true
-		claimsInContext, err = ClaimsFromContext(r.Context())
+
+		claims, err := ClaimsFromContext(r.Context())
+		require.NoError(t, err)
+
+		claimsInContext = claims
 	})
 	req := httptest.NewRequest("GET", "/", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
@@ -65,7 +100,6 @@ func TestMiddleware_ValidToken(t *testing.T) {
 
 	// Assert
 	require.True(t, handlerCalled, "next handler should be called with valid token")
-	require.NoError(t, err)
 	require.NotNil(t, claimsInContext)
 	require.Equal(t, userID, claimsInContext.UserID)
 }

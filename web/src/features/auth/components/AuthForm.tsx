@@ -1,5 +1,7 @@
 // Note: separate this if sign in and up diverge
-import { Button, Form, FormInputField, FormTitle } from "@/components";
+import { Button, Form } from "@/components";
+import FormField from "@/components/form/FormField";
+import Input from "@/components/ui/Input";
 import { commonStrings } from "@/lib/strings";
 import { useForm } from "react-hook-form";
 
@@ -21,26 +23,13 @@ export default function AuthForm({
     } = useForm<{ email: string; password: string }>();
     return (
         <Form onSubmit={handleSubmit(onSubmit)}>
-            <FormTitle text={formType === "signin" ? commonStrings.auth.signIn : commonStrings.auth.signUp} />
-            <FormInputField  
-                label="Email"
-                id="email"
-                register={register("email", { 
-                    required: "Email is required" 
-                })}
-                error={errors.email}
-                placeholder="Email"
-            />
+            <FormField htmlFor="email" label="Email" error={errors.email?.message}>
+                <Input type="email" placeholder="Email" {...register("email", { required: "Email is required" })} />
+            </FormField>
             {/* TODO: Add toggleable visibility text input */}
-            <FormInputField  
-                label="Password"
-                id="password"
-                register={register("password", { 
-                    required: "Password is required"
-                })}
-                error={errors.password}
-                placeholder="Password"
-            />      
+            <FormField htmlFor="password" label="Password" error={errors.password?.message}>
+                <Input type="password" placeholder="Password" {...register("password", { required: "Password is required" })} />
+            </FormField>      
             <Button disabled={isSubmitting} type="submit" loading={isSubmitting}>
                 {formType === "signin" ? commonStrings.auth.signIn : commonStrings.auth.signUp}
             </Button>

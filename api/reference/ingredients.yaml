@@ -1,0 +1,4 @@
+ingredients:
+  - id: "egg"
+    name: "Egg"
+    preferred_unit: 1

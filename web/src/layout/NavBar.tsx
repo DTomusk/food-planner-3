@@ -1,4 +1,4 @@
-import Link from "@/components/Link";
+import Link from "@/components/ui/Link";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { commonStrings } from "@/lib";
 import { useNavigate } from "react-router-dom";

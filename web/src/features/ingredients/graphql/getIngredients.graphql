@@ -1,0 +1,10 @@
+query GetIngredients {
+    ingredients {
+        name
+        id
+        preferredUnit {
+            name
+            val
+        }
+    }
+}

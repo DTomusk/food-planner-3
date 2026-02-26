@@ -17,13 +17,14 @@ func Middleware(jwtService *JWTService) func(http.Handler) http.Handler {
 
 			parts := strings.SplitN(authHeader, " ", 2)
 			if len(parts) != 2 || parts[0] != "Bearer" {
-				http.Error(w, "invalid Authorization header format", http.StatusUnauthorized)
+				next.ServeHTTP(w, r)
 				return
 			}
 
 			claims, err := jwtService.ValidateToken(parts[1])
 			if err != nil {
-				http.Error(w, "invalid token", http.StatusUnauthorized)
+				// Simply don't add claims, allow graphql to deal with it
+				next.ServeHTTP(w, r)
 				return
 			}
 

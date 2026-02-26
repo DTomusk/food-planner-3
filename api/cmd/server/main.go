@@ -4,9 +4,11 @@ import (
 	"database/sql"
 	"foodplanner/internal/auth"
 	"foodplanner/internal/config"
+	"foodplanner/internal/db"
 	"foodplanner/internal/gql/graph"
 	"foodplanner/internal/gql/graph/directive"
 	"foodplanner/internal/gql/graph/resolver"
+	"foodplanner/internal/ingredient"
 	"foodplanner/internal/recipe"
 	"foodplanner/internal/user"
 	"log"
@@ -28,32 +30,37 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	db, err := sql.Open("postgres", cfg.DatabaseURL)
+	database, err := sql.Open("postgres", cfg.DatabaseURL)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
-	if err := db.Ping(); err != nil {
+	if err := database.Ping(); err != nil {
 		log.Fatalf("Failed to ping database: %v", err)
 	}
 	log.Println("Successfully connected to the database")
 
 	log.Printf("Starting server on port %s", cfg.ServerPort)
 
-	recipeRepo := recipe.NewRepo()
-	recipeService := recipe.NewService(db, recipeRepo)
+	txRunner := db.NewDBTxRunner(database)
+
+	ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), cfg.IngredientUpsertBatchSize)
+
+	recipeService := recipe.NewService(txRunner, recipe.NewRepo(), ingredientService)
 
 	userRepo := user.NewUserRepo()
-	userService := user.NewUserService(db, userRepo)
+	userService := user.NewUserService(txRunner.DB(), userRepo)
 	jwtService := auth.NewJWTService(cfg.JWTSecret, cfg.JWTExpirationMinutes)
-	authService := auth.NewAuthService(db, userService, jwtService)
+	authService := auth.NewAuthService(txRunner.DB(), userService, jwtService)
 
 	srv := handler.New(
 		graph.NewExecutableSchema(
 			graph.Config{
 				Resolvers: &resolver.Resolver{
-					AuthService:   authService,
-					RecipeService: recipeService,
+					AuthService:        authService,
+					RecipeService:      recipeService,
+					IngredientsService: ingredientService,
+					UserService:        userService,
 				},
 				Directives: graph.DirectiveRoot{
 					Auth: directive.AuthDirective,

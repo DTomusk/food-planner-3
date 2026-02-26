@@ -5,51 +5,118 @@ import (
 	"database/sql"
 	"foodplanner/internal/auth"
 	"foodplanner/internal/gql/graph/model"
+	"foodplanner/internal/ingredient"
 	"foodplanner/internal/recipe"
 	"foodplanner/internal/testutil"
+	"foodplanner/internal/testutil/seeds"
+	"foodplanner/internal/user"
 	"testing"
 
 	_ "github.com/lib/pq"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRecipeResolver_CreateAndGetRecipe(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		repo := recipe.NewRepo()
-		service := recipe.NewService(tx, repo)
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+
+		testIngredient, err := seeds.SeedTestIngredient(ctx, tx)
+		require.NoError(t, err, "Failed to seed test ingredient")
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err, "Failed to seed test user")
+
+		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100)
+		service := recipe.NewService(txRunner, repo, ingredientService)
 		r := &Resolver{
 			RecipeService: service,
 		}
 		mutationResolver := &mutationResolver{r}
 
-		input := model.NewRecipe{
+		input := model.CreateRecipeInput{
 			Name: "Chocolate Cake",
+			IngredientUsages: []*model.CreateIngredientUsageInput{
+				{
+					IngredientID: testIngredient.ID.String(),
+					Quantity:     200,
+					Unit:         1,
+				},
+			},
 		}
-		ctx := context.Background()
-		claims := auth.Claims{UserID: "some-user-id"}
+		claims := auth.Claims{UserID: testUser.ID.String()}
 		ctx = auth.ContextWithClaims(ctx, &claims)
 		recipeModel, err := mutationResolver.CreateRecipe(ctx, input)
 
-		if err != nil {
-			t.Fatalf("CreateRecipe failed: %v", err)
-		}
+		require.NoError(t, err, "CreateRecipe failed")
+		require.Equal(t, "Chocolate Cake", recipeModel.Name)
 
-		if recipeModel.Name != "Chocolate Cake" {
-			t.Errorf("Expected recipe name %q, got %q", "Chocolate Cake", recipeModel.Name)
-		}
+		dbRecipe, err := repo.GetRecipeByID(ctx, tx, recipeModel.ID)
 
-		if recipeModel.ID == "" {
-			t.Errorf("Expected recipe ID to be set, got empty string")
-		}
+		require.NoError(t, err)
+		require.NotNil(t, dbRecipe, "Expected to find recipe in DB, got nil")
+		require.Equal(t, "Chocolate Cake", dbRecipe.Name)
+	})
+}
 
-		dbRecipe, err := repo.GetRecipeByID(recipeModel.ID, context.Background(), tx)
-		if err != nil {
-			t.Fatalf("GetRecipeByID failed: %v", err)
+func TestRecipeResolver_CreateAndGetRecipe_WithResolver(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		repo := recipe.NewRepo()
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+
+		testIngredient, err := seeds.SeedTestIngredient(ctx, tx)
+		require.NoError(t, err, "Failed to seed test ingredient")
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err, "Failed to seed test user")
+
+		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100)
+		service := recipe.NewService(txRunner, repo, ingredientService)
+		r := &Resolver{
+			IngredientsService: ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
+			RecipeService:      service,
+			UserService:        user.NewUserService(tx, user.NewUserRepo()),
 		}
-		if dbRecipe == nil {
-			t.Fatalf("Expected to find recipe in DB, got nil")
+		mutationResolver := &mutationResolver{r}
+
+		input := model.CreateRecipeInput{
+			Name: "Chocolate Cake",
+			IngredientUsages: []*model.CreateIngredientUsageInput{
+				{
+					IngredientID: testIngredient.ID.String(),
+					Quantity:     200,
+					Unit:         1,
+				},
+			},
 		}
-		if dbRecipe.Name != "Chocolate Cake" {
-			t.Errorf("Expected DB recipe name %q, got %q", "Chocolate Cake", dbRecipe.Name)
-		}
+		claims := auth.Claims{UserID: testUser.ID.String()}
+		ctx = auth.ContextWithClaims(ctx, &claims)
+		recipeModel, err := mutationResolver.CreateRecipe(ctx, input)
+
+		require.NoError(t, err, "CreateRecipe failed")
+		require.Equal(t, "Chocolate Cake", recipeModel.Name)
+
+		queryResolver := &queryResolver{r}
+		fetchedRecipe, err := queryResolver.Recipe(ctx, recipeModel.ID)
+
+		require.NoError(t, err, "Failed to fetch recipe with resolver")
+		require.NotNil(t, fetchedRecipe, "Expected to fetch recipe with resolver, got nil")
+		require.Equal(t, "Chocolate Cake", fetchedRecipe.Name)
+
+		recipeResolver := &recipeResolver{r}
+		ingredientUsages, err := recipeResolver.IngredientUsages(ctx, fetchedRecipe)
+		require.NoError(t, err, "Failed to fetch ingredient usages with resolver")
+		require.NotNil(t, ingredientUsages, "Expected to fetch ingredient usages with resolver, got nil")
+		require.Len(t, ingredientUsages, 1, "Expected exactly 1 ingredient usage")
+		require.Equal(t, testIngredient.ID.String(), ingredientUsages[0].Ingredient.ID, "Ingredient ID mismatch")
+		require.Equal(t, 200.0, ingredientUsages[0].Quantity, "Ingredient quantity mismatch")
+		require.Equal(t, int32(1), ingredientUsages[0].Unit.Val, "Ingredient unit mismatch")
+
+		user, err := recipeResolver.User(ctx, fetchedRecipe)
+		require.NoError(t, err, "Failed to fetch user with resolver")
+		require.NotNil(t, user, "Expected to fetch user with resolver, got nil")
+		require.Equal(t, testUser.ID.String(), user.ID, "User ID mismatch")
 	})
 }

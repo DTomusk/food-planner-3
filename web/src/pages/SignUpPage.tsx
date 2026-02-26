@@ -1,5 +1,5 @@
 import { Alert, PageTitle } from "@/components";
-import Link from "@/components/Link";
+import Link from "@/components/ui/Link";
 import AuthForm from "@/features/auth/components/AuthForm";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useSignUp } from "@/features/auth/hooks/useSignUp";
@@ -31,7 +31,7 @@ export default function SignUpPage() {
         <Page>
             <PageTitle text={commonStrings.auth.signUp} />
             {error && <Alert message={(error as Error).message} />}
-            <p>Already have an account? <Link onClick={() => navigate("/auth/signin")} text={commonStrings.auth.signIn}/></p>
+            <p className="text-center">Already have an account? <Link onClick={() => navigate("/auth/signin")} text={commonStrings.auth.signIn}/></p>
             <AuthForm
                 formType="signup"
                 onSubmit={handleSubmit}

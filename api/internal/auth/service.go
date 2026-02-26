@@ -9,14 +9,14 @@ import (
 type AuthService struct {
 	db          db.DBTX
 	userService *user.UserService
-	jwtSerivce  *JWTService
+	jwtService  *JWTService
 }
 
 func NewAuthService(db db.DBTX, userService *user.UserService, jwtService *JWTService) *AuthService {
 	return &AuthService{
 		db:          db,
 		userService: userService,
-		jwtSerivce:  jwtService,
+		jwtService:  jwtService,
 	}
 }
 
@@ -42,7 +42,7 @@ func (s *AuthService) SignUp(email, password string, ctx context.Context) (*user
 	if err != nil {
 		return nil, "", err
 	}
-	token, err := s.jwtSerivce.GenerateToken(user.ID)
+	token, err := s.jwtService.GenerateToken(user.ID.String())
 	if err != nil {
 		return nil, "", err
 	}
@@ -61,7 +61,7 @@ func (s *AuthService) SignIn(email, password string, ctx context.Context) (*user
 	if err != nil {
 		return nil, "", ErrInvalidCredentials
 	}
-	token, err := s.jwtSerivce.GenerateToken(user.ID)
+	token, err := s.jwtService.GenerateToken(user.ID.String())
 	if err != nil {
 		return nil, "", err
 	}

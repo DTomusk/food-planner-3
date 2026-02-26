@@ -7,19 +7,41 @@ type AuthPayload struct {
 	User *User  `json:"user"`
 }
 
-type Mutation struct {
+type CreateIngredientUsageInput struct {
+	IngredientID string  `json:"ingredientID"`
+	Unit         int32   `json:"unit"`
+	Quantity     float64 `json:"quantity"`
 }
 
-type NewRecipe struct {
-	Name string `json:"name"`
+type CreateRecipeInput struct {
+	Name             string                        `json:"name"`
+	IngredientUsages []*CreateIngredientUsageInput `json:"ingredientUsages"`
+}
+
+type Ingredient struct {
+	ID            string `json:"id"`
+	Name          string `json:"name"`
+	PreferredUnit *Unit  `json:"preferredUnit"`
+}
+
+type IngredientUsage struct {
+	ID         string      `json:"id"`
+	Ingredient *Ingredient `json:"ingredient"`
+	Unit       *Unit       `json:"unit"`
+	Quantity   float64     `json:"quantity"`
+}
+
+type Mutation struct {
 }
 
 type Query struct {
 }
 
 type Recipe struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID               string             `json:"id"`
+	Name             string             `json:"name"`
+	IngredientUsages []*IngredientUsage `json:"ingredientUsages"`
+	User             *User              `json:"user"`
 }
 
 type SignInInput struct {
@@ -30,6 +52,11 @@ type SignInInput struct {
 type SignUpInput struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+}
+
+type Unit struct {
+	Val  int32  `json:"val"`
+	Name string `json:"name"`
 }
 
 type User struct {
