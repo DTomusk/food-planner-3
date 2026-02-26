@@ -8,7 +8,7 @@ query GetRecipe($id: ID!) {
         ingredientUsages {
             quantity
             unit {
-                name
+                symbol
             }
             ingredient {
                 name

@@ -132,8 +132,9 @@ func (r *recipeResolver) IngredientUsages(ctx context.Context, obj *model.Recipe
 			ID:       usage.ID.String(),
 			Quantity: usage.Quantity,
 			Unit: &model.Unit{
-				Val:  int32(usage.Unit),
-				Name: usage.Unit.String(),
+				Val:    int32(usage.Unit),
+				Name:   usage.Unit.String(),
+				Symbol: usage.Unit.Symbol(),
 			},
 			Ingredient: ingredientMap[usage.IngredientID.String()],
 		}

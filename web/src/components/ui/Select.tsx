@@ -17,7 +17,8 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
                         error
                         ? "border-red-500 focus:ring-red-500"
                         : "border-gray-300",
-                        className
+                        className,
+                        props.disabled && "cursor-not-allowed opacity-50"
                     )}
                     {...props}
                 >

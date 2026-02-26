@@ -11,7 +11,7 @@ export default function IngredientList({ ingredients }: { ingredients: Ingredien
         setCheckedItems(newCheckedItems);
     }
     return (
-        <ul>
+        <ul className="grid gap-2">
             {ingredients.map((ingredient, index) => (
             <CheckListItem key={index} checked={checkedItems[index]} onChange={() => handleCheckChange(index)}>
                 {ingredient.name}: {ingredient.formattedQuantity} 

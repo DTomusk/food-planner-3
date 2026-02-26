@@ -61,8 +61,9 @@ type SignUpInput struct {
 }
 
 type Unit struct {
-	Val  int32  `json:"val"`
-	Name string `json:"name"`
+	Val    int32  `json:"val"`
+	Name   string `json:"name"`
+	Symbol string `json:"symbol"`
 }
 
 type User struct {

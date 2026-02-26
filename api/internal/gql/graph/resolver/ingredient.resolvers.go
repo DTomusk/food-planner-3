@@ -24,7 +24,7 @@ func (r *queryResolver) Ingredients(ctx context.Context) ([]*model.Ingredient, e
 		ingredientModel := model.Ingredient{
 			ID:            ingredient.ID.String(),
 			Name:          ingredient.Name,
-			PreferredUnit: &model.Unit{Val: int32(ingredient.PreferredUnit), Name: ingredient.PreferredUnit.String()},
+			PreferredUnit: &model.Unit{Val: int32(ingredient.PreferredUnit), Name: ingredient.PreferredUnit.String(), Symbol: ingredient.PreferredUnit.Symbol()},
 		}
 		ingredientModels = append(ingredientModels, &ingredientModel)
 	}

@@ -11,7 +11,7 @@ import Stack from "@/components/layout/Stack";
 type RecipeFormProps = {
   onSubmit: (values: RecipeFormValues) => void;
   isSubmitting?: boolean;
-  ingredients: { id: string; name: string }[];
+  ingredients: { id: string; name: string, preferredUnit: { val: number; name: string; symbol: string } }[];
 };
 
 export default function RecipeForm({
@@ -23,11 +23,13 @@ export default function RecipeForm({
     register,
     control,
     handleSubmit,
-    formState: { errors, isValid },
+    setValue,
+    formState: { errors, isValid, isSubmitted },
   } = useForm<RecipeFormValues>({
+    mode: "onChange",
     defaultValues: {
       name: "",
-      ingredientUsages: [{ ingredientId: "", quantity: 0 }],
+      ingredientUsages: [{ ingredientId: "", quantity: 0, unit: 1 }],
     },
   });
 
@@ -56,9 +58,9 @@ export default function RecipeForm({
         </FormField>
       </FormSection>      
 
-      <IngredientSection control={control} register={register} errors={errors} ingredients={ingredients} />
+      <IngredientSection control={control} register={register} errors={errors} ingredients={ingredients} setValue={setValue} />
 
-      <Button disabled={isSubmitting || !isValid} type="submit" loading={isSubmitting}>
+      <Button disabled={isSubmitting || (isSubmitted && !isValid)} type="submit" loading={isSubmitting}>
         {commonStrings.forms.create}
       </Button>
       </Stack>
