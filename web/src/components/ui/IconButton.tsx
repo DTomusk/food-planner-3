@@ -2,7 +2,7 @@ import clsx from "clsx";
 import { forwardRef, type ButtonHTMLAttributes } from "react";
 
 type IconButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-    variant?: "primary" | "secondary" | "danger";
+    variant?: "primary" | "secondary" | "danger" | "primary-outline" | "secondary-outline";
     shape?: "circle" | "square";
 };
 
@@ -17,6 +17,8 @@ const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
                     variant === "primary" && "bg-blue-500 text-white hover:bg-blue-600",
                     variant === "secondary" && "bg-gray-500 text-white hover:bg-gray-600",
                     variant === "danger" && "bg-red-500 text-white hover:bg-red-600",
+                    variant === "primary-outline" && "border border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white",
+                    variant === "secondary-outline" && "border border-gray-500 text-gray-500 hover:bg-gray-500 hover:text-white",
                     shape === "circle" && "rounded-full",
                     shape === "square" && "rounded-md",
                     className

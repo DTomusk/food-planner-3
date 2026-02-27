@@ -1,4 +1,4 @@
-import { useFieldArray, type Control, type FieldErrors, type UseFormRegister, type UseFormSetValue } from "react-hook-form";
+import { useFieldArray, useFormContext } from "react-hook-form";
 import type { RecipeFormValues } from "../types";
 import Button from "@/components/ui/Button";
 import FormSection from "@/components/form/FormSection";
@@ -6,14 +6,12 @@ import IngredientSelector from "./IngredientSelector";
 import { useAvailableIngredients } from "../hooks/useAvailableIngredients";
 
 interface IngredientSectionProps {
-  control: Control<RecipeFormValues>;
-  register: UseFormRegister<RecipeFormValues>;
-  errors: FieldErrors<RecipeFormValues>;
-  setValue: UseFormSetValue<RecipeFormValues>;
   ingredients: { id: string; name: string, preferredUnit: { val: number; name: string; symbol: string } }[];
 };
 
-export default function IngredientSection({ control, register, errors, setValue, ingredients }: IngredientSectionProps) {
+export default function IngredientSection({ ingredients }: IngredientSectionProps) {
+    const { control, register, formState: { errors }, setValue } = useFormContext<RecipeFormValues>();
+
     const { fields, append, remove } = useFieldArray({
         name: "ingredientUsages",
         control,
@@ -22,7 +20,7 @@ export default function IngredientSection({ control, register, errors, setValue,
     const { getAvailableIngredients } = useAvailableIngredients(control, ingredients);
     
     return (
-        <FormSection title="Ingredients">
+        <FormSection title="Ingredients" collapsible defaultCollapsed={false}>
             {fields.map((field, index) => (
                 <IngredientSelector 
                     key={field.id}

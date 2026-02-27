@@ -10,6 +10,7 @@ import Stack from "@/components/layout/Stack";
 import { useEffect, useState } from "react";
 import { extractErrorMessage } from "@/lib/errors";
 import MarkdownRenderer from "@/components/ui/MarkdownRenderer";
+import { RecipeSourceType } from "@/features/recipes/types";
 
 export default function RecipePage() {
     const { id } = useParams<{ id: string }>();
@@ -48,17 +49,18 @@ export default function RecipePage() {
                         <Stack space="lg">
                             <SectionTitle text="Ingredients" />
                             <IngredientList ingredients={recipe.ingredients} />
-                            {recipe.source.type === 1 && recipe.source.url && (<>
+                            {recipe.source.type === RecipeSourceType.Website && recipe.source.url && (<>
                                 <SectionTitle text="Website reference" />
                                 <a href={recipe.source.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
                                     {recipe.source.url}
                                 </a>
                             </>)}
-                            {recipe.source.type === 2 && recipe.source.bookTitle && recipe.source.bookPage && (<>
+                            {recipe.source.type === RecipeSourceType.Cookbook && recipe.source.bookTitle && recipe.source.bookPage && (<>
                                 <SectionTitle text="Book reference" />
                                 <div>{recipe.source.bookTitle}, page {recipe.source.bookPage}</div>
                             </>)}
-                            {recipe.source.instructions && (<>
+                            {recipe.source.type === RecipeSourceType.Original && recipe.source.instructions && (<>
+
                                 <SectionTitle text="Instructions" />
                                 <MarkdownRenderer content={recipe.source.instructions} />
                             </>)}

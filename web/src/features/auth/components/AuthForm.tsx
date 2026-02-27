@@ -1,6 +1,7 @@
 // Note: separate this if sign in and up diverge
 import { Button, Form } from "@/components";
 import FormField from "@/components/form/FormField";
+import Container from "@/components/layout/Container";
 import Input from "@/components/ui/Input";
 import { commonStrings } from "@/lib/strings";
 import { useForm } from "react-hook-form";
@@ -22,11 +23,11 @@ export default function AuthForm({
         formState: { errors },
     } = useForm<{ email: string; password: string }>();
     return (
+        <Container size="sm">
         <Form onSubmit={handleSubmit(onSubmit)}>
             <FormField htmlFor="email" label="Email" error={errors.email?.message}>
                 <Input type="email" placeholder="Email" {...register("email", { required: "Email is required" })} />
             </FormField>
-            {/* TODO: Add toggleable visibility text input */}
             <FormField htmlFor="password" label="Password" error={errors.password?.message}>
                 <Input type="password" placeholder="Password" {...register("password", { required: "Password is required" })} />
             </FormField>      
@@ -34,5 +35,6 @@ export default function AuthForm({
                 {formType === "signin" ? commonStrings.auth.signIn : commonStrings.auth.signUp}
             </Button>
         </Form>
+        </Container>
     );
 }

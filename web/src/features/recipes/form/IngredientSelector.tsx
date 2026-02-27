@@ -48,7 +48,7 @@ export default function IngredientSelector({ index, control, register, ingredien
     <Inline>
       <div className="flex-1">
         <FormField htmlFor={`ingredientUsages.${index}.ingredientId`} label="Ingredient" error={errors.ingredientUsages?.[index]?.ingredientId?.message}>
-          <Select defaultValue="" disabled={ingredients.length === 0} {...register(`ingredientUsages.${index}.ingredientId`, { required: "Ingredient is required" })}>
+          <Select defaultValue="" disabled={ingredients.length === 0} {...register(`ingredientUsages.${index}.ingredientId`)}>
             <option value="" disabled={hasSelection}>
               Select ingredient
             </option>
@@ -69,10 +69,7 @@ export default function IngredientSelector({ index, control, register, ingredien
             step={1}
             placeholder="Qty"
             {...register(`ingredientUsages.${index}.quantity`, {
-              required: "Quantity is required",
-              valueAsNumber: true,
-              validate: (value) => value > 0 || "Must be positive",
-            })}
+              valueAsNumber: true})}
           />
         </FormField>
       )}
