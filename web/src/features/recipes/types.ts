@@ -18,7 +18,7 @@ export type Ingredients = {
 }
 
 export type RecipeSource = {
-    type: number;
+    type: RecipeSourceType;
     url?: string;
     bookTitle?: string;
     bookPage?: number;
@@ -31,3 +31,12 @@ export type RecipeSummary = {
 };
 
 export type RecipeFormValues = z.infer<typeof recipeFormSchema>;
+
+export const RecipeSourceType = {
+  None: "none",
+  Website: "website",
+  Cookbook: "cookbook",
+  Original: "original",
+} as const;
+
+export type RecipeSourceType = typeof RecipeSourceType[keyof typeof RecipeSourceType];

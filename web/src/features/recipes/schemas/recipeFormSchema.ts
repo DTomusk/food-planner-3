@@ -10,7 +10,7 @@ export const recipeFormSchema = z.object({
         quantity: z.number().min(0.0001, "Quantity must be greater than 0"),
         unit: z.number()
     })).min(1, "At least one ingredient is required"),
-    sourceType: z.number(),
+    sourceType: z.string(),
     url: z.string().optional(),
     bookTitle: z.string().optional(),
     bookPage: z.number().optional(),

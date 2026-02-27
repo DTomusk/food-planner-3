@@ -1,5 +1,5 @@
 import { FormProvider, useForm } from "react-hook-form";
-import type { RecipeFormValues } from "../types";
+import { RecipeSourceType, type RecipeFormValues } from "../types";
 import { Form, Button } from "@/components/";
 import { commonStrings } from "@/lib/strings";
 import IngredientSection from "./IngredientSection";
@@ -31,7 +31,7 @@ export default function RecipeForm({
       cookMins: 0,
       portions: 0,
       ingredientUsages: [{ ingredientId: "", quantity: 0, unit: 1 }],
-      sourceType: 0,
+      sourceType: RecipeSourceType.None,
       url: "",
       bookTitle: "",
       bookPage: 0,

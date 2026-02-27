@@ -1,5 +1,5 @@
 import { Controller, useFormContext, useWatch } from "react-hook-form";
-import type { RecipeFormValues } from "../types";
+import { RecipeSourceType, type RecipeFormValues } from "../types";
 import FormSection from "@/components/form/FormSection";
 import FormField from "@/components/form/FormField";
 import Input from "@/components/ui/Input";
@@ -29,16 +29,16 @@ export default function RecipeSourceSection() {
                     <label className="flex items-center gap-2">
                         <input
                         type="radio"
-                        checked={field.value === 0}
-                        onChange={() => field.onChange(0)}
+                        checked={field.value === RecipeSourceType.None}
+                        onChange={() => field.onChange(RecipeSourceType.None)}
                         />
                         No source - don't include any source information
                     </label>  
                     <label className="flex items-center gap-2">
                         <input
                         type="radio"
-                        checked={field.value === 1}
-                        onChange={() => field.onChange(1)}
+                        checked={field.value === RecipeSourceType.Website}
+                        onChange={() => field.onChange(RecipeSourceType.Website)}
                         />
                         Website - add a link to the recipe
                     </label>
@@ -46,8 +46,8 @@ export default function RecipeSourceSection() {
                     <label className="flex items-center gap-2">
                         <input
                         type="radio"
-                        checked={field.value === 2}
-                        onChange={() => field.onChange(2)}
+                        checked={field.value === RecipeSourceType.Cookbook}
+                        onChange={() => field.onChange(RecipeSourceType.Cookbook)}
                         />
                         Cookbook - add the name of the cookbook and the page number of the recipe
                     </label>
@@ -55,20 +55,20 @@ export default function RecipeSourceSection() {
                     <label className="flex items-center gap-2">
                         <input
                         type="radio"
-                        checked={field.value === 3}
-                        onChange={() => field.onChange(3)}
+                        checked={field.value === RecipeSourceType.Original}
+                        onChange={() => field.onChange(RecipeSourceType.Original)}
                         />
                         Original recipe - add your own instructions for the recipe
                     </label>
                     </Stack>
                 )}
                 />
-            {sourceType === 1 && (
+            {sourceType === RecipeSourceType.Website && (
                 <FormField htmlFor="url" label="URL" error={errors.url?.message}>
                     <Input type="text" placeholder="URL of the recipe" {...register("url")} />
                 </FormField>
             )}
-            {sourceType === 2 && (
+            {sourceType === RecipeSourceType.Cookbook && (
                 <Inline>
                     <FormField htmlFor="cookbook" label="Cookbook" error={errors.bookTitle?.message}>
                         <Input type="text" placeholder="Name of the cookbook" {...register("bookTitle")} />
@@ -78,7 +78,7 @@ export default function RecipeSourceSection() {
                     </FormField>
                 </Inline>
             )}
-            {sourceType === 3 && (
+            {sourceType === RecipeSourceType.Original && (
                 <FormField htmlFor="instructions" label="Instructions" error={errors.instructions?.message}>
                 <TextArea
                 placeholder="Add the instructions for the recipe"
