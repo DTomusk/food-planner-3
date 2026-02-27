@@ -7,7 +7,7 @@ import { useFormContext } from "react-hook-form";
 export default function RecipeDetailSection() {
     const { register, formState: { errors } } = useFormContext<RecipeFormValues>();
     return (
-        <FormSection title="Recipe details" collapsible>
+        <FormSection title="Recipe details" collapsible defaultCollapsed={false} showStatus status={{ status: "pending" }}>
           <FormField htmlFor="name" label="Recipe name" error={errors.name?.message}>
             <Input type="text" placeholder="Recipe name" 
             {...register("name", 

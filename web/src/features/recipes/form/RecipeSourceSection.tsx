@@ -16,7 +16,7 @@ export default function RecipeSourceSection() {
     });
     
     return (
-        <FormSection title="Recipe source" collapsible>
+        <FormSection title="Recipe source" collapsible defaultCollapsed showStatus status={{ status: "pending" }}>
             <SectionHelpText>
                 Please choose where the recipe comes from. If it's your own, you can add the instructions here. Otherwise, you can reference the site or book the recipe comes from.
             </SectionHelpText>
