@@ -4,8 +4,6 @@ import Button from "@/components/ui/Button";
 import FormSection from "@/components/form/FormSection";
 import IngredientSelector from "./IngredientSelector";
 import { useAvailableIngredients } from "../hooks/useAvailableIngredients";
-import { recipeFormSections } from "../schemas/recipeFormSchema";
-import { useSectionStatus } from "../hooks/useSectionStatus";
 
 interface IngredientSectionProps {
   ingredients: { id: string; name: string, preferredUnit: { val: number; name: string; symbol: string } }[];
@@ -22,7 +20,7 @@ export default function IngredientSection({ ingredients }: IngredientSectionProp
     const { getAvailableIngredients } = useAvailableIngredients(control, ingredients);
     
     return (
-        <FormSection title="Ingredients" collapsible defaultCollapsed showStatus status={{ status: useSectionStatus(recipeFormSections.ingredients) }}>
+        <FormSection title="Ingredients" collapsible defaultCollapsed>
             {fields.map((field, index) => (
                 <IngredientSelector 
                     key={field.id}
