@@ -65,16 +65,16 @@ export default function RecipeSourceSection() {
                 />
             {sourceType === 1 && (
                 <FormField htmlFor="url" label="URL" error={errors.url?.message}>
-                    <Input type="text" placeholder="URL of the recipe" {...register("url", { required: "Please add the URL of the recipe" })} />
+                    <Input type="text" placeholder="URL of the recipe" {...register("url")} />
                 </FormField>
             )}
             {sourceType === 2 && (
                 <Inline>
                     <FormField htmlFor="cookbook" label="Cookbook" error={errors.bookTitle?.message}>
-                        <Input type="text" placeholder="Name of the cookbook" {...register("bookTitle", { required: "Please add the name of the cookbook" })} />
+                        <Input type="text" placeholder="Name of the cookbook" {...register("bookTitle")} />
                     </FormField>
                     <FormField htmlFor="page" label="Page number" error={errors.bookPage?.message}>
-                        <Input type="number" placeholder="Page number" {...register("bookPage", { required: "Please add the page number of the recipe in the cookbook", min: { value: 1, message: "Page number must be at least 1" } })} />
+                        <Input type="number" placeholder="Page number" {...register("bookPage")} />
                     </FormField>
                 </Inline>
             )}
@@ -82,10 +82,7 @@ export default function RecipeSourceSection() {
                 <FormField htmlFor="instructions" label="Instructions" error={errors.instructions?.message}>
                 <TextArea
                 placeholder="Add the instructions for the recipe"
-                {...register("instructions", {
-                    required: "Please add the instructions for the recipe",
-                    minLength: { value: 10, message: "Instructions must be at least 10 characters long" },
-                })}
+                {...register("instructions")}
                 />
                 </FormField>
             )}

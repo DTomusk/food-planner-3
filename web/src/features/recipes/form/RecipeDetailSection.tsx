@@ -11,24 +11,21 @@ export default function RecipeDetailSection() {
         <FormSection title="Recipe details" collapsible defaultCollapsed={false}>
           <FormField htmlFor="name" label="Recipe name" error={errors.name?.message}>
             <Input type="text" placeholder="Recipe name" 
-            {...register("name", 
-            { required: "Please add a name",
-                minLength: { value: 3, message: "Name must be at least 3 characters" },
-            })} />
+            {...register("name")} />
           </FormField>
           <Inline>
             <FormField htmlFor="prepMins" label="Preparation time (minutes)" error={errors.prepMins?.message}>
               <Input type="number" placeholder="Preparation time in minutes" 
-              {...register("prepMins", { valueAsNumber: true, required: "Please add preparation time", min: { value: 1, message: "Preparation time must be at least 1 minute" } })} />
+              {...register("prepMins", { valueAsNumber: true })} />
             </FormField>
             <FormField htmlFor="cookMins" label="Cooking time (minutes)" error={errors.cookMins?.message}>
               <Input type="number" placeholder="Cooking time in minutes" 
-              {...register("cookMins", { valueAsNumber: true, required: "Please add cooking time", min: { value: 1, message: "Cooking time must be at least 1 minute" } })} />
+              {...register("cookMins", { valueAsNumber: true })} />
             </FormField>
           </Inline>
           <FormField htmlFor="portions" label="Portions" error={errors.portions?.message}>
             <Input type="number" placeholder="How many portions does this make?" 
-            {...register("portions", { valueAsNumber: true, required: "Please add number of portions", min: { value: 1, message: "Number of portions must be at least 1" } })} />
+            {...register("portions", { valueAsNumber: true })} />
           </FormField>
       </FormSection>  
     );
