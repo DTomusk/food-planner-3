@@ -20,7 +20,7 @@ export default function IngredientSection({ ingredients }: IngredientSectionProp
     const { getAvailableIngredients } = useAvailableIngredients(control, ingredients);
     
     return (
-        <FormSection title="Ingredients" collapsible defaultCollapsed>
+        <FormSection title="Ingredients" collapsible defaultCollapsed={false}>
             {fields.map((field, index) => (
                 <IngredientSelector 
                     key={field.id}
