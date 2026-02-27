@@ -7,6 +7,8 @@ import Stack from "@/components/layout/Stack";
 import RecipeSourceSection from "./RecipeSourceSection";
 import RecipeDetailSection from "./RecipeDetailSection";
 import Container from "@/components/layout/Container";
+import { recipeFormSchema } from "../schemas/recipeFormSchema";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 type RecipeFormProps = {
   onSubmit: (values: RecipeFormValues) => void;
@@ -21,14 +23,19 @@ export default function RecipeForm({
 }: RecipeFormProps) {
 
   const methods = useForm<RecipeFormValues>({
+    resolver: zodResolver(recipeFormSchema),
     mode: "onChange",
     defaultValues: {
       name: "",
-      ingredientUsages: [{ ingredientId: "", quantity: 0, unit: 1 }],
       prepMins: 0,
       cookMins: 0,
       portions: 0,
-      sourceType: 0
+      ingredientUsages: [{ ingredientId: "", quantity: 0, unit: 1 }],
+      sourceType: 0,
+      url: "",
+      bookTitle: "",
+      bookPage: 0,
+      instructions: "",
     },
   });
 

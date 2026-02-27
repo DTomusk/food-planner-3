@@ -1,3 +1,6 @@
+import type z from "zod";
+import type { recipeFormSchema } from "./schemas/recipeFormSchema";
+
 export type Recipe = {
     id: string;
     name: string;
@@ -27,19 +30,4 @@ export type RecipeSummary = {
     name: string;
 };
 
-export type RecipeFormValues = {
-    name: string;
-    ingredientUsages: {
-        ingredientId: string;
-        quantity: number;
-        unit: number;
-    }[];
-    prepMins: number;
-    cookMins: number;
-    portions: number;
-    sourceType: number;
-    url?: string;
-    bookTitle?: string;
-    bookPage?: number;
-    instructions?: string;
-};
+export type RecipeFormValues = z.infer<typeof recipeFormSchema>;

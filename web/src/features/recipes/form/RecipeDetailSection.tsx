@@ -3,11 +3,12 @@ import FormSection from "@/components/form/FormSection";
 import Input from "@/components/ui/Input";
 import type { RecipeFormValues } from "../types";
 import { useFormContext } from "react-hook-form";
+import { useSectionStatus } from "../hooks/useSectionStatus";
 
 export default function RecipeDetailSection() {
     const { register, formState: { errors } } = useFormContext<RecipeFormValues>();
     return (
-        <FormSection title="Recipe details" collapsible defaultCollapsed={false} showStatus status={{ status: "pending" }}>
+        <FormSection title="Recipe details" collapsible defaultCollapsed={false} showStatus status={{ status: useSectionStatus(["name", "prepMins", "cookMins", "portions"]) }}>
           <FormField htmlFor="name" label="Recipe name" error={errors.name?.message}>
             <Input type="text" placeholder="Recipe name" 
             {...register("name", 
@@ -17,15 +18,15 @@ export default function RecipeDetailSection() {
           </FormField>
           <FormField htmlFor="prepMins" label="Preparation time (minutes)" error={errors.prepMins?.message}>
             <Input type="number" placeholder="Preparation time in minutes" 
-            {...register("prepMins", { required: "Please add preparation time", min: { value: 1, message: "Preparation time must be at least 1 minute" } })} />
+            {...register("prepMins", { valueAsNumber: true, required: "Please add preparation time", min: { value: 1, message: "Preparation time must be at least 1 minute" } })} />
           </FormField>
           <FormField htmlFor="cookMins" label="Cooking time (minutes)" error={errors.cookMins?.message}>
             <Input type="number" placeholder="Cooking time in minutes" 
-            {...register("cookMins", { required: "Please add cooking time", min: { value: 1, message: "Cooking time must be at least 1 minute" } })} />
+            {...register("cookMins", { valueAsNumber: true, required: "Please add cooking time", min: { value: 1, message: "Cooking time must be at least 1 minute" } })} />
           </FormField>
           <FormField htmlFor="portions" label="Portions" error={errors.portions?.message}>
             <Input type="number" placeholder="How many portions does this make?" 
-            {...register("portions", { required: "Please add number of portions", min: { value: 1, message: "Number of portions must be at least 1" } })} />
+            {...register("portions", { valueAsNumber: true, required: "Please add number of portions", min: { value: 1, message: "Number of portions must be at least 1" } })} />
           </FormField>
       </FormSection>  
     );
