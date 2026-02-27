@@ -17,7 +17,7 @@ export function mapRecipe(
         cookMins: gqlRecipe.cookMins,
         portions: gqlRecipe.portions,
         source: {
-            type: gqlRecipe.source.type,
+            type: gqlRecipe.source.type === 0 ? "none" : gqlRecipe.source.type === 1 ? "website" : gqlRecipe.source.type === 2 ? "cookbook" : "original",
             url: gqlRecipe.source.url || undefined,
             bookTitle: gqlRecipe.source.bookTitle || undefined,
             bookPage: gqlRecipe.source.bookPage || undefined,
