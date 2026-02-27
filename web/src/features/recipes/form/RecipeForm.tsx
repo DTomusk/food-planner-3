@@ -6,6 +6,7 @@ import IngredientSection from "./IngredientSection";
 import Stack from "@/components/layout/Stack";
 import RecipeSourceSection from "./RecipeSourceSection";
 import RecipeDetailSection from "./RecipeDetailSection";
+import Container from "@/components/layout/Container";
 
 type RecipeFormProps = {
   onSubmit: (values: RecipeFormValues) => void;
@@ -37,17 +38,19 @@ export default function RecipeForm({
   } = methods;
 
   return (
-    <FormProvider {...methods}>
-    <Form onSubmit={handleSubmit(onSubmit)}>
-      <Stack space="lg">
-        <RecipeDetailSection />
-        <IngredientSection ingredients={ingredients} />
-        <RecipeSourceSection />
-        <Button disabled={isSubmitting || (isSubmitted && !isValid)} type="submit" loading={isSubmitting}>
-          {commonStrings.forms.create}
-        </Button>
-      </Stack>
-    </Form>
-    </FormProvider>
+    <Container size="md">
+      <FormProvider {...methods}>
+      <Form onSubmit={handleSubmit(onSubmit)}>
+        <Stack space="lg">
+          <RecipeDetailSection />
+          <IngredientSection ingredients={ingredients} />
+          <RecipeSourceSection />
+          <Button disabled={isSubmitting || (isSubmitted && !isValid)} type="submit" loading={isSubmitting}>
+            {commonStrings.forms.create}
+          </Button>
+        </Stack>
+      </Form>
+      </FormProvider>
+    </Container>
   );
 }

@@ -16,7 +16,7 @@ export default function RecipeSourceSection() {
     });
     
     return (
-        <FormSection title="Recipe source">
+        <FormSection title="Recipe source" collapsible>
             <SectionHelpText>
                 Please choose where the recipe comes from. If it's your own, you can add the instructions here. Otherwise, you can reference the site or book the recipe comes from.
             </SectionHelpText>
