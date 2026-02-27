@@ -1,4 +1,4 @@
-import { Controller, useWatch, type Control, type FieldErrors, type UseFormRegister } from "react-hook-form";
+import { Controller, useFormContext, useWatch } from "react-hook-form";
 import type { RecipeFormValues } from "../types";
 import FormSection from "@/components/form/FormSection";
 import FormField from "@/components/form/FormField";
@@ -8,13 +8,8 @@ import Stack from "@/components/layout/Stack";
 import SectionHelpText from "@/components/form/SectionHelpText";
 import TextArea from "@/components/ui/TextArea";
 
-interface RecipeFormSectionProps {
-  control: Control<RecipeFormValues>;
-  register: UseFormRegister<RecipeFormValues>;
-  errors: FieldErrors<RecipeFormValues>;
-};
-
-export default function RecipeSourceSection({ control, register, errors }: RecipeFormSectionProps) {
+export default function RecipeSourceSection() {
+    const { control, register, formState: { errors } } = useFormContext<RecipeFormValues>();
     const sourceType = useWatch({
         control,
         name: "sourceType",
