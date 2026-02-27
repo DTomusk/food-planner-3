@@ -3,6 +3,7 @@ import type { RecipeFormValues } from "../types";
 import Button from "@/components/ui/Button";
 import FormSection from "@/components/form/FormSection";
 import IngredientSelector from "./IngredientSelector";
+import { useAvailableIngredients } from "../hooks/useAvailableIngredients";
 
 interface IngredientSectionProps {
   control: Control<RecipeFormValues>;
@@ -17,6 +18,8 @@ export default function IngredientSection({ control, register, errors, setValue,
         name: "ingredientUsages",
         control,
     });
+
+    const { getAvailableIngredients } = useAvailableIngredients(control, ingredients);
     
     return (
         <FormSection title="Ingredients">
@@ -26,7 +29,7 @@ export default function IngredientSection({ control, register, errors, setValue,
                     index={index}
                     control={control}
                     register={register}
-                    ingredients={ingredients}
+                    ingredients={getAvailableIngredients(index)}
                     remove={remove}
                     canRemove={fields.length > 1}
                     errors={errors}

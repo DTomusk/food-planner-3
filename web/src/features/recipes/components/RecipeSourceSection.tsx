@@ -22,7 +22,6 @@ export default function RecipeSourceSection({ control, register, errors }: Recip
     
     return (
         <FormSection title="Recipe source">
-            {/* Want help text, three radio buttons (one of which has to be selected), and then the corresponding inputs */}
             <SectionHelpText>
                 Please choose where the recipe comes from. If it's your own, you can add the instructions here. Otherwise, you can reference the site or book the recipe comes from.
             </SectionHelpText>
