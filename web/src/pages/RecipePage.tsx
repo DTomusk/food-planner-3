@@ -29,7 +29,7 @@ export default function RecipePage() {
         <Page>
             <Container size="xl">
                 <Stack space="xl">
-                    <BackLink to="/recipe" />
+                    <BackLink to="/recipes" />
                     <Container size="sm">
                         {!id && <Alert message="No recipe ID provided." />}
                         {isLoading && <Spinner />}
