@@ -13,16 +13,18 @@ import (
 )
 
 type Service struct {
-	txRunner          db.TxRunner
-	Repo              *Repo
-	IngredientService *ingredient.IngredientService
+	txRunner            db.TxRunner
+	Repo                *Repo
+	IngredientService   *ingredient.IngredientService
+	RecipeRetentionDays *int
 }
 
-func NewService(txRunner db.TxRunner, repo *Repo, ingredientService *ingredient.IngredientService) *Service {
+func NewService(txRunner db.TxRunner, repo *Repo, ingredientService *ingredient.IngredientService, recipeRetentionDays *int) *Service {
 	return &Service{
-		txRunner:          txRunner,
-		Repo:              repo,
-		IngredientService: ingredientService,
+		txRunner:            txRunner,
+		Repo:                repo,
+		IngredientService:   ingredientService,
+		RecipeRetentionDays: recipeRetentionDays,
 	}
 }
 
@@ -204,4 +206,12 @@ func (s *Service) UndeleteRecipe(ctx context.Context, recipeID, userID string) (
 		return nil, err
 	}
 	return dbRecipe, nil
+}
+
+func (s *Service) DeleteOldRecipes(ctx context.Context) (int64, error) {
+	// To prevent this being called incorrectly
+	if s.RecipeRetentionDays == nil {
+		return 0, ErrRetentionNotSet
+	}
+	return s.Repo.DeleteOldRecipes(ctx, s.txRunner.DB(), *s.RecipeRetentionDays)
 }

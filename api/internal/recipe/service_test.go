@@ -31,7 +31,7 @@ func TestCreateRecipe(t *testing.T) {
 		testUser, err := seeds.SeedTestUser(ctx, tx)
 		require.NoError(t, err, "Failed to seed test user")
 
-		s := NewService(txRunner, NewRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100))
+		s := NewService(txRunner, NewRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100), nil)
 		ingredientRequest := CreateIngredientUsageRequest{
 			IngredientID: ingredientID.String(),
 			Quantity:     200,
@@ -82,7 +82,7 @@ func TestCreateRecipeWithDuplicateIngredients(t *testing.T) {
 		testUser, err := seeds.SeedTestUser(ctx, tx)
 		require.NoError(t, err, "Failed to seed test user")
 
-		s := NewService(txRunner, NewRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100))
+		s := NewService(txRunner, NewRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100), nil)
 		ingredientRequest := CreateIngredientUsageRequest{
 			IngredientID: ingredientID.String(),
 			Quantity:     200,
@@ -109,7 +109,7 @@ func TestCreateRecipeWithNonexistentIngredient(t *testing.T) {
 
 		testUser, err := seeds.SeedTestUser(ctx, tx)
 		require.NoError(t, err, "Failed to seed test user")
-		s := NewService(txRunner, NewRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100))
+		s := NewService(txRunner, NewRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100), nil)
 		ingredientRequest := CreateIngredientUsageRequest{
 			IngredientID: ingredientID.String(),
 			Quantity:     200,
@@ -144,7 +144,7 @@ func TestCreateRecipeWithInvalidUnit(t *testing.T) {
 		require.NoError(t, err, "Failed to seed test ingredient")
 		testUser, err := seeds.SeedTestUser(ctx, tx)
 		require.NoError(t, err, "Failed to seed test user")
-		s := NewService(txRunner, NewRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100))
+		s := NewService(txRunner, NewRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100), nil)
 		ingredientRequest := CreateIngredientUsageRequest{
 			IngredientID: ingredientID.String(),
 			Quantity:     200,
@@ -178,7 +178,7 @@ func TestCreateRecipeNotPreferredUnit(t *testing.T) {
 		require.NoError(t, err, "Failed to seed test ingredient")
 		testUser, err := seeds.SeedTestUser(ctx, tx)
 		require.NoError(t, err, "Failed to seed test user")
-		s := NewService(txRunner, NewRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100))
+		s := NewService(txRunner, NewRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100), nil)
 		ingredientRequest := CreateIngredientUsageRequest{
 			IngredientID: ingredientID.String(),
 			Quantity:     200,
@@ -216,7 +216,7 @@ func TestCreateRecipe_NoSource(t *testing.T) {
 		testUser, err := seeds.SeedTestUser(ctx, tx)
 		require.NoError(t, err, "Failed to seed test user")
 
-		s := NewService(txRunner, NewRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100))
+		s := NewService(txRunner, NewRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100), nil)
 		ingredientRequest := CreateIngredientUsageRequest{
 			IngredientID: ingredientID.String(),
 			Quantity:     200,
@@ -259,7 +259,7 @@ func TestCreateAndDeleteRecipe(t *testing.T) {
 		testUser, err := seeds.SeedTestUser(ctx, tx)
 		require.NoError(t, err, "Failed to seed test user")
 
-		s := NewService(txRunner, NewRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100))
+		s := NewService(txRunner, NewRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100), nil)
 		ingredientRequest := CreateIngredientUsageRequest{
 			IngredientID: ingredientID.String(),
 			Quantity:     200,

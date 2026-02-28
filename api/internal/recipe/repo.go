@@ -175,6 +175,14 @@ func (r *Repo) UndeleteRecipe(ctx context.Context, db db.DBTX, recipeID string) 
 	return &recipe, nil
 }
 
+func (s *Repo) DeleteOldRecipes(ctx context.Context, db db.DBTX, retentionDays int) (int64, error) {
+	result, err := db.ExecContext(ctx, "DELETE FROM recipes WHERE deleted_on IS NOT NULL AND deleted_on < NOW() - INTERVAL '$1 days'", retentionDays)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 func (r *Repo) GetRecipesByUserID(ctx context.Context, db db.DBTX, userID string) ([]*Recipe, error) {
 	rows, err := db.QueryContext(ctx,
 		`SELECT id, user_id, name, prep_mins, cook_mins, portions, deleted_on

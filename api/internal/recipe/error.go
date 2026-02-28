@@ -22,6 +22,7 @@ var (
 	ErrMissingBookReference = errors.New("book reference source must include a book title and page")
 	ErrMissingInstructions  = errors.New("original source must include instructions")
 	// TODO: this should be somewhere generic
-	ErrUnauthorized   = errors.New("unauthorized to perform this action")
-	ErrRecipeNotFound = errors.New("recipe not found")
+	ErrUnauthorized    = errors.New("unauthorized to perform this action")
+	ErrRecipeNotFound  = errors.New("recipe not found")
+	ErrRetentionNotSet = errors.New("recipe retention days not set in configuration")
 )
