@@ -25,7 +25,7 @@ export function AppRoutes() {
   return (
     <Routes>
         <Route path="/" element={<HomePage/>}/>
-        <Route path="/recipe" element={<RecipeLayout />}>
+        <Route path="/recipes" element={<RecipeLayout />}>
           <Route index element={<RecipeListingPage />} />
           <Route element={<ProtectedLayout />}>
             <Route path="me" element={<MyRecipesPage />} />

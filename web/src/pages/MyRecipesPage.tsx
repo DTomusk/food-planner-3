@@ -2,12 +2,12 @@ import { Alert, PageTitle, Spinner } from "@/components";
 import Container from "@/components/layout/Container";
 import Stack from "@/components/layout/Stack";
 import SectionTitle from "@/components/ui/SectionTitle";
-import { RecipeList, useRecipes } from "@/features/recipes";
+import { RecipeList, useMyRecipes } from "@/features/recipes";
 import { Page } from "@/layout";
 import { extractErrorMessage } from "@/lib/errors";
 
 export default function MyRecipesPage() {
-    const { data, isLoading, error } = useRecipes();
+    const { data, isLoading, error } = useMyRecipes();
     
     return (
         <Page>
@@ -19,7 +19,7 @@ export default function MyRecipesPage() {
             {data && (
                 <>
                     <SectionTitle text="My recipes" />
-                    <RecipeList recipes={data.recipes} />
+                    <RecipeList recipes={data.myRecipes} />
                 </>
             )}
                 </Stack>
