@@ -5,6 +5,7 @@ import ConfirmModal from "@/components/ui/ConfirmModal";
 import IconButton from "@/components/ui/IconButton";
 import SectionTitle from "@/components/ui/SectionTitle";
 import { RecipeList, useMyRecipes } from "@/features/recipes";
+import { useDeleteRecipe } from "@/features/recipes/hooks/useDeleteRecipe";
 import { Page } from "@/layout";
 import { extractErrorMessage } from "@/lib/errors";
 import { Edit, Eye, Trash } from "lucide-react";
@@ -12,6 +13,7 @@ import { useState } from "react";
 
 export default function MyRecipesPage() {
     const { data, isLoading, error } = useMyRecipes();
+    const { mutate: deleteRecipe, error: deleteError } = useDeleteRecipe();
     const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -26,7 +28,7 @@ export default function MyRecipesPage() {
 
         setLoading(true);
         try {
-            console.log("Deleting recipe with ID:", selectedRecipeId);
+            deleteRecipe({ input: { id: selectedRecipeId } });
             setShowDeleteConfirm(false);
         } catch (err) {
             console.error("Error deleting recipe:", err);
@@ -76,6 +78,7 @@ export default function MyRecipesPage() {
                     onConfirm={handleConfirmDelete}
                     onCancel={() => setShowDeleteConfirm(false)}
                     variant="danger"
+                    error={deleteError ? extractErrorMessage(deleteError) : undefined}
                 />
             )}
         </Page>

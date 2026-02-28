@@ -17,7 +17,7 @@ export default function MyDeletedRecipesPage() {
                 {isLoading && <Spinner/>}
                 {error && <Alert message={extractErrorMessage(error)} closable />}
                 {data && (
-                    <RecipeList recipes={data.myDeletedRecipes} />
+                    <RecipeList recipes={data.myDeletedRecipes} onCardClick={()=>{}} />
                 )}
                 </Stack>
             </Container>
