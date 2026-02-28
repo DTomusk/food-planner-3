@@ -82,6 +82,10 @@ type SignUpInput struct {
 	Password string `json:"password"`
 }
 
+type UndeleteRecipeInput struct {
+	ID string `json:"id"`
+}
+
 type Unit struct {
 	Val    int32  `json:"val"`
 	Name   string `json:"name"`

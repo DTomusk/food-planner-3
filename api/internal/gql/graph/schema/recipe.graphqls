@@ -60,12 +60,17 @@ input CreateRecipeSourceInput {
   instructions: String
 }
 
-extend type Mutation {
-  createRecipe(input: CreateRecipeInput!): Recipe! @auth
-  deleteRecipe(input: DeleteRecipeInput!): Recipe! @auth
-  undeleteRecipe(id: ID!): Recipe! @auth
-}
-
 input DeleteRecipeInput {
   id: ID!
 }
+
+input UndeleteRecipeInput {
+  id: ID!
+}
+
+extend type Mutation {
+  createRecipe(input: CreateRecipeInput!): Recipe! @auth
+  deleteRecipe(input: DeleteRecipeInput!): Recipe! @auth
+  undeleteRecipe(input: UndeleteRecipeInput!): Recipe! @auth
+}
+

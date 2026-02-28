@@ -73,7 +73,7 @@ type ComplexityRoot struct {
 		Empty          func(childComplexity int) int
 		Signin         func(childComplexity int, input model.SignInInput) int
 		Signup         func(childComplexity int, input model.SignUpInput) int
-		UndeleteRecipe func(childComplexity int, id string) int
+		UndeleteRecipe func(childComplexity int, input model.UndeleteRecipeInput) int
 	}
 
 	Query struct {
@@ -122,7 +122,7 @@ type MutationResolver interface {
 	Signin(ctx context.Context, input model.SignInInput) (*model.AuthPayload, error)
 	CreateRecipe(ctx context.Context, input model.CreateRecipeInput) (*model.Recipe, error)
 	DeleteRecipe(ctx context.Context, input model.DeleteRecipeInput) (*model.Recipe, error)
-	UndeleteRecipe(ctx context.Context, id string) (*model.Recipe, error)
+	UndeleteRecipe(ctx context.Context, input model.UndeleteRecipeInput) (*model.Recipe, error)
 }
 type QueryResolver interface {
 	Empty(ctx context.Context) (*string, error)
@@ -275,7 +275,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UndeleteRecipe(childComplexity, args["id"].(string)), true
+		return e.complexity.Mutation.UndeleteRecipe(childComplexity, args["input"].(model.UndeleteRecipeInput)), true
 
 	case "Query._empty":
 		if e.complexity.Query.Empty == nil {
@@ -445,6 +445,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputDeleteRecipeInput,
 		ec.unmarshalInputSignInInput,
 		ec.unmarshalInputSignUpInput,
+		ec.unmarshalInputUndeleteRecipeInput,
 	)
 	first := true
 
@@ -612,11 +613,11 @@ func (ec *executionContext) field_Mutation_signup_args(ctx context.Context, rawA
 func (ec *executionContext) field_Mutation_undeleteRecipe_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUndeleteRecipeInput2foodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐUndeleteRecipeInput)
 	if err != nil {
 		return nil, err
 	}
-	args["id"] = arg0
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -1260,7 +1261,7 @@ func (ec *executionContext) _Mutation_undeleteRecipe(ctx context.Context, field 
 		ec.fieldContext_Mutation_undeleteRecipe,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().UndeleteRecipe(ctx, fc.Args["id"].(string))
+			return ec.resolvers.Mutation().UndeleteRecipe(ctx, fc.Args["input"].(model.UndeleteRecipeInput))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -3973,6 +3974,33 @@ func (ec *executionContext) unmarshalInputSignUpInput(ctx context.Context, obj a
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUndeleteRecipeInput(ctx context.Context, obj any) (model.UndeleteRecipeInput, error) {
+	var it model.UndeleteRecipeInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -5344,6 +5372,11 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNUndeleteRecipeInput2foodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐUndeleteRecipeInput(ctx context.Context, v any) (model.UndeleteRecipeInput, error) {
+	res, err := ec.unmarshalInputUndeleteRecipeInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNUnit2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐUnit(ctx context.Context, sel ast.SelectionSet, v *model.Unit) graphql.Marshaler {
