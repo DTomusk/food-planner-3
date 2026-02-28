@@ -18,7 +18,7 @@ export default function MyRecipesPage() {
             {error && <Alert message={extractErrorMessage(error)} closable />}
             {data && (
                 <>
-                    <SectionTitle text="My Recipes" />
+                    <SectionTitle text="My recipes" />
                     <RecipeList recipes={data.recipes} />
                 </>
             )}
