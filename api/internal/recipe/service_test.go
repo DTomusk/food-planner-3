@@ -239,3 +239,65 @@ func TestCreateRecipe_NoSource(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
+func TestCreateAndDeleteRecipe(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		// Arrange
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+
+		ingredientID := uuid.New()
+		testIngredient := ingredient.Ingredient{
+			ID:            ingredientID,
+			FileKey:       "test_ingredient",
+			Name:          "Test Ingredient",
+			PreferredUnit: 1,
+		}
+		err := seeds.InsertIngredient(ctx, tx, &testIngredient)
+		require.NoError(t, err, "Failed to seed test ingredient")
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err, "Failed to seed test user")
+
+		s := NewService(txRunner, NewRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100))
+		ingredientRequest := CreateIngredientUsageRequest{
+			IngredientID: ingredientID.String(),
+			Quantity:     200,
+			Unit:         1,
+		}
+
+		source := CreateRecipeSourceRequest{
+			Type: 1,
+			URL:  testutil.PtrString("https://example.com/pancakes"),
+		}
+
+		request := CreateRecipeRequest{
+			Name:        "Vanilla Ice Cream",
+			Ingredients: []CreateIngredientUsageRequest{ingredientRequest},
+			UserID:      testUser.ID.String(),
+			PrepMins:    15,
+			CookMins:    0,
+			Portions:    6,
+			Source:      source,
+		}
+
+		// Act 1 - Create recipe
+		recipe, err := s.CreateRecipe(ctx, request)
+
+		// Assert
+		require.NoError(t, err, "Expected no error when creating recipe")
+		require.Nil(t, recipe.DeletedOn, "Expected DeletedOn to be nil for newly created recipe")
+
+		// Act 2 - Delete recipe
+		recipe, err = s.DeleteRecipe(ctx, recipe.ID.String(), testUser.ID.String())
+
+		// Assert
+		require.NoError(t, err, "Expected no error when deleting recipe")
+		require.NotNil(t, recipe.DeletedOn, "Expected DeletedOn to be set after deleting recipe")
+
+		// Act 3 - Try to get deleted recipe
+		got, err := s.GetRecipeByID(ctx, recipe.ID.String())
+		require.NoError(t, err, "Expected no error when getting recipe by ID")
+		require.Nil(t, got, "Expected to not find deleted recipe by ID")
+	})
+}

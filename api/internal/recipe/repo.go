@@ -14,11 +14,30 @@ func NewRepo() *Repo {
 
 // Creates a new recipe including ingredient usages
 // Returns recipe fields, ingredient usages can be loaded lazily
-// TODO: use transaction
 func (r *Repo) CreateRecipe(ctx context.Context, tx *sql.Tx, recipe *Recipe) (*Recipe, error) {
 	var dbRecipe Recipe
-	query := `INSERT INTO recipes (id, user_id, name, prep_mins, cook_mins, portions) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, user_id, name, prep_mins, cook_mins, portions`
-	err := tx.QueryRowContext(ctx, query, recipe.ID, recipe.UserID, recipe.Name, recipe.PrepMins, recipe.CookMins, recipe.Portions).Scan(&dbRecipe.ID, &dbRecipe.UserID, &dbRecipe.Name, &dbRecipe.PrepMins, &dbRecipe.CookMins, &dbRecipe.Portions)
+	query := `INSERT INTO recipes 
+	(id, user_id, name, prep_mins, cook_mins, portions) 
+	VALUES ($1, $2, $3, $4, $5, $6) 
+	RETURNING id, user_id, name, prep_mins, cook_mins, portions, deleted_on`
+	err := tx.QueryRowContext(
+		ctx,
+		query,
+		recipe.ID,
+		recipe.UserID,
+		recipe.Name,
+		recipe.PrepMins,
+		recipe.CookMins,
+		recipe.Portions,
+	).Scan(
+		&dbRecipe.ID,
+		&dbRecipe.UserID,
+		&dbRecipe.Name,
+		&dbRecipe.PrepMins,
+		&dbRecipe.CookMins,
+		&dbRecipe.Portions,
+		&dbRecipe.DeletedOn,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -41,8 +60,14 @@ func (r *Repo) CreateRecipe(ctx context.Context, tx *sql.Tx, recipe *Recipe) (*R
 
 func (r *Repo) GetRecipeByID(ctx context.Context, db db.DBTX, id string) (*Recipe, error) {
 	var recipe Recipe
-	row := db.QueryRowContext(ctx, "SELECT id, user_id, name, prep_mins, cook_mins, portions FROM recipes WHERE id = $1", id)
-	err := row.Scan(&recipe.ID, &recipe.UserID, &recipe.Name, &recipe.PrepMins, &recipe.CookMins, &recipe.Portions)
+	row := db.QueryRowContext(ctx,
+		`SELECT id, user_id, name, prep_mins, cook_mins, portions, deleted_on 
+		FROM recipes 
+		WHERE id = $1
+		AND deleted_on IS NULL`,
+		id,
+	)
+	err := row.Scan(&recipe.ID, &recipe.UserID, &recipe.Name, &recipe.PrepMins, &recipe.CookMins, &recipe.Portions, &recipe.DeletedOn)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -53,7 +78,11 @@ func (r *Repo) GetRecipeByID(ctx context.Context, db db.DBTX, id string) (*Recip
 }
 
 func (r *Repo) GetAllRecipes(ctx context.Context, db db.DBTX) ([]*Recipe, error) {
-	rows, err := db.QueryContext(ctx, "SELECT id, user_id, name, prep_mins, cook_mins, portions FROM recipes")
+	rows, err := db.QueryContext(ctx,
+		`SELECT id, user_id, name, prep_mins, cook_mins, portions, deleted_on 
+		FROM recipes
+		WHERE deleted_on IS NULL`,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +91,7 @@ func (r *Repo) GetAllRecipes(ctx context.Context, db db.DBTX) ([]*Recipe, error)
 	var recipes []*Recipe
 	for rows.Next() {
 		var recipe Recipe
-		if err := rows.Scan(&recipe.ID, &recipe.UserID, &recipe.Name, &recipe.PrepMins, &recipe.CookMins, &recipe.Portions); err != nil {
+		if err := rows.Scan(&recipe.ID, &recipe.UserID, &recipe.Name, &recipe.PrepMins, &recipe.CookMins, &recipe.Portions, &recipe.DeletedOn); err != nil {
 			return nil, err
 		}
 		recipes = append(recipes, &recipe)
@@ -109,8 +138,8 @@ func (r *Repo) GetRecipeSourceByRecipeID(ctx context.Context, db db.DBTX, recipe
 
 func (r *Repo) DeleteRecipe(ctx context.Context, db db.DBTX, recipeID string) (*Recipe, error) {
 	var recipe Recipe
-	row := db.QueryRowContext(ctx, "UPDATE recipes SET deleted_at = NOW() WHERE id = $1 RETURNING id, user_id, name, prep_mins, cook_mins, portions", recipeID)
-	err := row.Scan(&recipe.ID, &recipe.UserID, &recipe.Name, &recipe.PrepMins, &recipe.CookMins, &recipe.Portions)
+	row := db.QueryRowContext(ctx, "UPDATE recipes SET deleted_on = NOW() WHERE id = $1 RETURNING id, user_id, name, prep_mins, cook_mins, portions, deleted_on", recipeID)
+	err := row.Scan(&recipe.ID, &recipe.UserID, &recipe.Name, &recipe.PrepMins, &recipe.CookMins, &recipe.Portions, &recipe.DeletedOn)
 	if err != nil {
 		return nil, err
 	}
