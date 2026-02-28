@@ -37,7 +37,7 @@ export default function RecipeCreatePage() {
           },
           {
             onSuccess: (data) => {
-              navigate(`/recipe/${data.createRecipe.id}`, {
+              navigate(`/recipes/${data.createRecipe.id}`, {
                 state: { successMessage: "Recipe created successfully!" }
               });
             }
@@ -47,7 +47,7 @@ export default function RecipeCreatePage() {
 
     return (
         <Page>
-            <BackLink to="/recipe" />
+            <BackLink to="/recipes" />
             <PageTitle text={commonStrings.recipe.create} />
             {error && <Container><Alert message={extractErrorMessage(error)} closable /></Container>}
             <RecipeForm onSubmit={handleSubmit} isSubmitting={isPending} ingredients={ingredientsData?.ingredients || []} />

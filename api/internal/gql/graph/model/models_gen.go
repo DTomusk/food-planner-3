@@ -30,6 +30,10 @@ type CreateRecipeSourceInput struct {
 	Instructions *string `json:"instructions,omitempty"`
 }
 
+type DeleteRecipeInput struct {
+	ID string `json:"id"`
+}
+
 type Ingredient struct {
 	ID            string `json:"id"`
 	Name          string `json:"name"`
@@ -76,6 +80,10 @@ type SignInInput struct {
 type SignUpInput struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+}
+
+type UndeleteRecipeInput struct {
+	ID string `json:"id"`
 }
 
 type Unit struct {

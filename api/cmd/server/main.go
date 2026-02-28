@@ -46,7 +46,7 @@ func main() {
 
 	ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), cfg.IngredientUpsertBatchSize)
 
-	recipeService := recipe.NewService(txRunner, recipe.NewRepo(), ingredientService)
+	recipeService := recipe.NewService(txRunner, recipe.NewRepo(), ingredientService, nil)
 
 	userRepo := user.NewUserRepo()
 	userService := user.NewUserService(txRunner.DB(), userRepo)

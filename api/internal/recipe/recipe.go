@@ -1,6 +1,8 @@
 package recipe
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 )
 
@@ -13,6 +15,7 @@ type Recipe struct {
 	CookMins    int
 	Portions    int
 	Source      *RecipeSource
+	DeletedOn   *time.Time
 }
 
 func NewRecipe(name string, userID uuid.UUID, ingredients []*IngredientUsage, prepMins, cookMins, portions int, source *RecipeSource) (*Recipe, error) {
