@@ -77,6 +77,25 @@ func (r *Repo) GetRecipeByID(ctx context.Context, db db.DBTX, id string) (*Recip
 	return &recipe, nil
 }
 
+func (r *Repo) GetDeletedRecipeByID(ctx context.Context, db db.DBTX, id string) (*Recipe, error) {
+	var recipe Recipe
+	row := db.QueryRowContext(ctx,
+		`SELECT id, user_id, name, prep_mins, cook_mins, portions, deleted_on 
+		FROM recipes 
+		WHERE id = $1
+		AND deleted_on IS NOT NULL`,
+		id,
+	)
+	err := row.Scan(&recipe.ID, &recipe.UserID, &recipe.Name, &recipe.PrepMins, &recipe.CookMins, &recipe.Portions, &recipe.DeletedOn)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &recipe, nil
+}
+
 func (r *Repo) GetAllRecipes(ctx context.Context, db db.DBTX) ([]*Recipe, error) {
 	rows, err := db.QueryContext(ctx,
 		`SELECT id, user_id, name, prep_mins, cook_mins, portions, deleted_on 
@@ -139,6 +158,16 @@ func (r *Repo) GetRecipeSourceByRecipeID(ctx context.Context, db db.DBTX, recipe
 func (r *Repo) DeleteRecipe(ctx context.Context, db db.DBTX, recipeID string) (*Recipe, error) {
 	var recipe Recipe
 	row := db.QueryRowContext(ctx, "UPDATE recipes SET deleted_on = NOW() WHERE id = $1 RETURNING id, user_id, name, prep_mins, cook_mins, portions, deleted_on", recipeID)
+	err := row.Scan(&recipe.ID, &recipe.UserID, &recipe.Name, &recipe.PrepMins, &recipe.CookMins, &recipe.Portions, &recipe.DeletedOn)
+	if err != nil {
+		return nil, err
+	}
+	return &recipe, nil
+}
+
+func (r *Repo) UndeleteRecipe(ctx context.Context, db db.DBTX, recipeID string) (*Recipe, error) {
+	var recipe Recipe
+	row := db.QueryRowContext(ctx, "UPDATE recipes SET deleted_on = NULL WHERE id = $1 RETURNING id, user_id, name, prep_mins, cook_mins, portions, deleted_on", recipeID)
 	err := row.Scan(&recipe.ID, &recipe.UserID, &recipe.Name, &recipe.PrepMins, &recipe.CookMins, &recipe.Portions, &recipe.DeletedOn)
 	if err != nil {
 		return nil, err

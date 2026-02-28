@@ -87,6 +87,29 @@ func (r *mutationResolver) DeleteRecipe(ctx context.Context, input model.DeleteR
 	return recipeModel, nil
 }
 
+// UndeleteRecipe is the resolver for the undeleteRecipe field.
+func (r *mutationResolver) UndeleteRecipe(ctx context.Context, id string) (*model.Recipe, error) {
+	logger := logging.FromContext(ctx)
+	claims, err := auth.ClaimsFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	recipe, err := r.RecipeService.UndeleteRecipe(ctx, id, claims.UserID)
+	if err != nil {
+		logger.Error("Failed to undelete recipe", "error", err)
+		return nil, err
+	}
+	recipeModel := &model.Recipe{
+		ID:       recipe.ID.String(),
+		Name:     recipe.Name,
+		PrepMins: int32(recipe.PrepMins),
+		CookMins: int32(recipe.CookMins),
+		Portions: int32(recipe.Portions),
+	}
+	return recipeModel, nil
+}
+
 // Recipes is the resolver for the recipes field.
 func (r *queryResolver) Recipes(ctx context.Context) ([]*model.Recipe, error) {
 	logger := logging.FromContext(ctx)

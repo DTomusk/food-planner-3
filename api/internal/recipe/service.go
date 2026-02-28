@@ -186,3 +186,22 @@ func (s *Service) DeleteRecipe(ctx context.Context, recipeID, userID string) (*R
 	}
 	return dbRecipe, nil
 }
+
+func (s *Service) UndeleteRecipe(ctx context.Context, recipeID, userID string) (*Recipe, error) {
+	// Get the recipe to ensure it exists and belongs to the user
+	recipe, err := s.Repo.GetDeletedRecipeByID(ctx, s.txRunner.DB(), recipeID)
+	if err != nil {
+		return nil, err
+	}
+	if recipe == nil {
+		return nil, ErrRecipeNotFound
+	}
+	if recipe.UserID.String() != userID {
+		return nil, ErrUnauthorized
+	}
+	dbRecipe, err := s.Repo.UndeleteRecipe(ctx, s.txRunner.DB(), recipeID)
+	if err != nil {
+		return nil, err
+	}
+	return dbRecipe, nil
+}

@@ -68,11 +68,12 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		CreateRecipe func(childComplexity int, input model.CreateRecipeInput) int
-		DeleteRecipe func(childComplexity int, input model.DeleteRecipeInput) int
-		Empty        func(childComplexity int) int
-		Signin       func(childComplexity int, input model.SignInInput) int
-		Signup       func(childComplexity int, input model.SignUpInput) int
+		CreateRecipe   func(childComplexity int, input model.CreateRecipeInput) int
+		DeleteRecipe   func(childComplexity int, input model.DeleteRecipeInput) int
+		Empty          func(childComplexity int) int
+		Signin         func(childComplexity int, input model.SignInInput) int
+		Signup         func(childComplexity int, input model.SignUpInput) int
+		UndeleteRecipe func(childComplexity int, id string) int
 	}
 
 	Query struct {
@@ -121,6 +122,7 @@ type MutationResolver interface {
 	Signin(ctx context.Context, input model.SignInInput) (*model.AuthPayload, error)
 	CreateRecipe(ctx context.Context, input model.CreateRecipeInput) (*model.Recipe, error)
 	DeleteRecipe(ctx context.Context, input model.DeleteRecipeInput) (*model.Recipe, error)
+	UndeleteRecipe(ctx context.Context, id string) (*model.Recipe, error)
 }
 type QueryResolver interface {
 	Empty(ctx context.Context) (*string, error)
@@ -263,6 +265,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.Signup(childComplexity, args["input"].(model.SignUpInput)), true
+	case "Mutation.undeleteRecipe":
+		if e.complexity.Mutation.UndeleteRecipe == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_undeleteRecipe_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UndeleteRecipe(childComplexity, args["id"].(string)), true
 
 	case "Query._empty":
 		if e.complexity.Query.Empty == nil {
@@ -593,6 +606,17 @@ func (ec *executionContext) field_Mutation_signup_args(ctx context.Context, rawA
 		return nil, err
 	}
 	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_undeleteRecipe_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -1222,6 +1246,78 @@ func (ec *executionContext) fieldContext_Mutation_deleteRecipe(ctx context.Conte
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_deleteRecipe_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_undeleteRecipe(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_undeleteRecipe,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().UndeleteRecipe(ctx, fc.Args["id"].(string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				if ec.directives.Auth == nil {
+					var zeroVal *model.Recipe
+					return zeroVal, errors.New("directive auth is not implemented")
+				}
+				return ec.directives.Auth(ctx, nil, directive0)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNRecipe2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipe,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_undeleteRecipe(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Recipe_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Recipe_name(ctx, field)
+			case "ingredientUsages":
+				return ec.fieldContext_Recipe_ingredientUsages(ctx, field)
+			case "user":
+				return ec.fieldContext_Recipe_user(ctx, field)
+			case "prepMins":
+				return ec.fieldContext_Recipe_prepMins(ctx, field)
+			case "cookMins":
+				return ec.fieldContext_Recipe_cookMins(ctx, field)
+			case "portions":
+				return ec.fieldContext_Recipe_portions(ctx, field)
+			case "source":
+				return ec.fieldContext_Recipe_source(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Recipe", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_undeleteRecipe_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -4079,6 +4175,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "deleteRecipe":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_deleteRecipe(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "undeleteRecipe":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_undeleteRecipe(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
