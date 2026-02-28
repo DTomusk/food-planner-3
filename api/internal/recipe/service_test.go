@@ -297,7 +297,17 @@ func TestCreateAndDeleteRecipe(t *testing.T) {
 
 		// Act 3 - Try to get deleted recipe
 		got, err := s.GetRecipeByID(ctx, recipe.ID.String())
+
+		// Assert
 		require.NoError(t, err, "Expected no error when getting recipe by ID")
 		require.Nil(t, got, "Expected to not find deleted recipe by ID")
+
+		// Act 4 - Get deleted recipes for user
+		deletedRecipes, err := s.GetDeletedRecipesByUserID(ctx, testUser.ID.String())
+
+		// Assert
+		require.NoError(t, err, "Expected no error when getting deleted recipes by user ID")
+		require.Len(t, deletedRecipes, 1, "Expected to find one deleted recipe for user")
+		require.Equal(t, recipe.ID, deletedRecipes[0].ID, "Expected deleted recipe ID to match created recipe ID")
 	})
 }

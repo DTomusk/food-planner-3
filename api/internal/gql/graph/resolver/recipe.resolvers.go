@@ -130,6 +130,58 @@ func (r *queryResolver) Recipe(ctx context.Context, id string) (*model.Recipe, e
 	return recipeModel, nil
 }
 
+// MyRecipes is the resolver for the myRecipes field.
+func (r *queryResolver) MyRecipes(ctx context.Context) ([]*model.Recipe, error) {
+	logger := logging.FromContext(ctx)
+	claims, err := auth.ClaimsFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	recipes, err := r.RecipeService.GetRecipesByUserID(ctx, claims.UserID)
+	if err != nil {
+		logger.Error("Failed to get recipes for user", "error", err)
+		return nil, err
+	}
+	var recipeModels []*model.Recipe
+	for _, recipe := range recipes {
+		recipeModel := model.Recipe{
+			ID:       recipe.ID.String(),
+			Name:     recipe.Name,
+			PrepMins: int32(recipe.PrepMins),
+			CookMins: int32(recipe.CookMins),
+			Portions: int32(recipe.Portions),
+		}
+		recipeModels = append(recipeModels, &recipeModel)
+	}
+	return recipeModels, nil
+}
+
+// MyDeletedRecipes is the resolver for the myDeletedRecipes field.
+func (r *queryResolver) MyDeletedRecipes(ctx context.Context) ([]*model.Recipe, error) {
+	logger := logging.FromContext(ctx)
+	claims, err := auth.ClaimsFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	recipes, err := r.RecipeService.GetDeletedRecipesByUserID(ctx, claims.UserID)
+	if err != nil {
+		logger.Error("Failed to get deleted recipes for user", "error", err)
+		return nil, err
+	}
+	var recipeModels []*model.Recipe
+	for _, recipe := range recipes {
+		recipeModel := model.Recipe{
+			ID:       recipe.ID.String(),
+			Name:     recipe.Name,
+			PrepMins: int32(recipe.PrepMins),
+			CookMins: int32(recipe.CookMins),
+			Portions: int32(recipe.Portions),
+		}
+		recipeModels = append(recipeModels, &recipeModel)
+	}
+	return recipeModels, nil
+}
+
 // IngredientUsages is the resolver for the ingredientUsages field.
 func (r *recipeResolver) IngredientUsages(ctx context.Context, obj *model.Recipe) ([]*model.IngredientUsage, error) {
 	logger := logging.FromContext(ctx).With("recipe_id", obj.ID)

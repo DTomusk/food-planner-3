@@ -145,3 +145,51 @@ func (r *Repo) DeleteRecipe(ctx context.Context, db db.DBTX, recipeID string) (*
 	}
 	return &recipe, nil
 }
+
+func (r *Repo) GetRecipesByUserID(ctx context.Context, db db.DBTX, userID string) ([]*Recipe, error) {
+	rows, err := db.QueryContext(ctx,
+		`SELECT id, user_id, name, prep_mins, cook_mins, portions, deleted_on
+		FROM recipes
+		WHERE user_id = $1
+		AND deleted_on IS NULL`,
+		userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var recipes []*Recipe
+	for rows.Next() {
+		var recipe Recipe
+		if err := rows.Scan(&recipe.ID, &recipe.UserID, &recipe.Name, &recipe.PrepMins, &recipe.CookMins, &recipe.Portions, &recipe.DeletedOn); err != nil {
+			return nil, err
+		}
+		recipes = append(recipes, &recipe)
+	}
+	return recipes, nil
+}
+
+func (r *Repo) GetDeletedRecipesByUserID(ctx context.Context, db db.DBTX, userID string) ([]*Recipe, error) {
+	rows, err := db.QueryContext(ctx,
+		`SELECT id, user_id, name, prep_mins, cook_mins, portions, deleted_on
+		FROM recipes
+		WHERE user_id = $1
+		AND deleted_on IS NOT NULL`,
+		userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var recipes []*Recipe
+	for rows.Next() {
+		var recipe Recipe
+		if err := rows.Scan(&recipe.ID, &recipe.UserID, &recipe.Name, &recipe.PrepMins, &recipe.CookMins, &recipe.Portions, &recipe.DeletedOn); err != nil {
+			return nil, err
+		}
+		recipes = append(recipes, &recipe)
+	}
+	return recipes, nil
+}

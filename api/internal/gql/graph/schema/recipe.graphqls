@@ -33,6 +33,8 @@ type RecipeSource {
 extend type Query {
   recipes: [Recipe!]!
   recipe(id: ID!): Recipe
+  myRecipes: [Recipe!]! @auth
+  myDeletedRecipes: [Recipe!]! @auth
 }
 
 input CreateRecipeInput {
