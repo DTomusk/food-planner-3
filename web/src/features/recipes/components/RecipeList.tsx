@@ -2,6 +2,7 @@ import { recipeStrings } from "../strings";
 import type { RecipeSummary } from "../types"
 import { useNavigate } from "react-router-dom"
 import RecipeListingCard from "./RecipeListingCard";
+import { Alert } from "@/components";
 
 interface RecipeListProps {
     recipes: Array<RecipeSummary>;
@@ -11,7 +12,7 @@ export default function RecipeList({ recipes }: RecipeListProps) {
     const navigate = useNavigate();
 
     if (recipes.length === 0) {
-        return <p>{recipeStrings.errors.noRecipesFound}</p>;
+        return <Alert message={recipeStrings.errors.noRecipesFound} type="info" />;
     }
 
     return (
