@@ -30,6 +30,10 @@ type CreateRecipeSourceInput struct {
 	Instructions *string `json:"instructions,omitempty"`
 }
 
+type DeleteRecipeInput struct {
+	ID string `json:"id"`
+}
+
 type Ingredient struct {
 	ID            string `json:"id"`
 	Name          string `json:"name"`

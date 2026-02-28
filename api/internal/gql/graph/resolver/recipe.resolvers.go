@@ -64,6 +64,29 @@ func (r *mutationResolver) CreateRecipe(ctx context.Context, input model.CreateR
 	return recipeModel, nil
 }
 
+// DeleteRecipe is the resolver for the deleteRecipe field.
+func (r *mutationResolver) DeleteRecipe(ctx context.Context, input model.DeleteRecipeInput) (*model.Recipe, error) {
+	logger := logging.FromContext(ctx)
+	claims, err := auth.ClaimsFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	recipe, err := r.RecipeService.DeleteRecipe(ctx, input.ID, claims.UserID)
+	if err != nil {
+		logger.Error("Failed to delete recipe", "error", err)
+		return nil, err
+	}
+	recipeModel := &model.Recipe{
+		ID:       recipe.ID.String(),
+		Name:     recipe.Name,
+		PrepMins: int32(recipe.PrepMins),
+		CookMins: int32(recipe.CookMins),
+		Portions: int32(recipe.Portions),
+	}
+	return recipeModel, nil
+}
+
 // Recipes is the resolver for the recipes field.
 func (r *queryResolver) Recipes(ctx context.Context) ([]*model.Recipe, error) {
 	logger := logging.FromContext(ctx)

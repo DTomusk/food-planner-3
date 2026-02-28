@@ -21,4 +21,7 @@ var (
 	ErrMissingURL           = errors.New("URL source must include a URL")
 	ErrMissingBookReference = errors.New("book reference source must include a book title and page")
 	ErrMissingInstructions  = errors.New("original source must include instructions")
+	// TODO: this should be somewhere generic
+	ErrUnauthorized   = errors.New("unauthorized to perform this action")
+	ErrRecipeNotFound = errors.New("recipe not found")
 )

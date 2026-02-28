@@ -106,3 +106,13 @@ func (r *Repo) GetRecipeSourceByRecipeID(ctx context.Context, db db.DBTX, recipe
 	}
 	return &source, nil
 }
+
+func (r *Repo) DeleteRecipe(ctx context.Context, db db.DBTX, recipeID string) (*Recipe, error) {
+	var recipe Recipe
+	row := db.QueryRowContext(ctx, "UPDATE recipes SET deleted_at = NOW() WHERE id = $1 RETURNING id, user_id, name, prep_mins, cook_mins, portions", recipeID)
+	err := row.Scan(&recipe.ID, &recipe.UserID, &recipe.Name, &recipe.PrepMins, &recipe.CookMins, &recipe.Portions)
+	if err != nil {
+		return nil, err
+	}
+	return &recipe, nil
+}

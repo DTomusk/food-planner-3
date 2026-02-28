@@ -81,6 +81,7 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 	}
 	return recipe, nil
 }
+
 func (s *Service) validateAndConvertIngredientUsages(ctx context.Context, logger *slog.Logger, ingredientUsageRequests []CreateIngredientUsageRequest) ([]*IngredientUsage, error) {
 	// Validate ingredients and check for duplicates
 	// TODO: There may be cases where we allow duplicate ingredients (e.g. different sections of the same recipe)
@@ -157,4 +158,23 @@ func (s *Service) GetIngredientUsagesByRecipeID(ctx context.Context, recipeID st
 
 func (s *Service) GetRecipeSourceByRecipeID(ctx context.Context, recipeID string) (*RecipeSource, error) {
 	return s.Repo.GetRecipeSourceByRecipeID(ctx, s.txRunner.DB(), recipeID)
+}
+
+func (s *Service) DeleteRecipe(ctx context.Context, recipeID, userID string) (*Recipe, error) {
+	// Get the recipe to ensure it exists and belongs to the user
+	recipe, err := s.GetRecipeByID(ctx, recipeID)
+	if err != nil {
+		return nil, err
+	}
+	if recipe == nil {
+		return nil, ErrRecipeNotFound
+	}
+	if recipe.UserID.String() != userID {
+		return nil, ErrUnauthorized
+	}
+	dbRecipe, err := s.Repo.DeleteRecipe(ctx, s.txRunner.DB(), recipeID)
+	if err != nil {
+		return nil, err
+	}
+	return dbRecipe, nil
 }
