@@ -7,6 +7,7 @@ import (
 	"foodplanner/internal/testutil"
 	"foodplanner/internal/testutil/seeds"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -331,5 +332,62 @@ func TestCreateAndDeleteRecipe(t *testing.T) {
 		// Assert
 		require.NoError(t, err, "Expected no error when getting deleted recipes by user ID")
 		require.Len(t, deletedRecipes, 0, "Expected to find no deleted recipes for user after undeleting")
+	})
+}
+
+func TestDeleteOldRecipes(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		// Arrange
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err, "Failed to seed test user")
+		retentionPeriod := 30
+		s := NewService(txRunner, NewRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100), &retentionPeriod)
+
+		// Act 1 - delete old recipes with empty repo
+		deletedCount, err := s.DeleteOldRecipes(ctx)
+
+		// Assert
+		require.NoError(t, err, "Expected no error when deleting old recipes with empty repo")
+		require.Equal(t, int64(0), deletedCount, "Expected to delete 0 old recipes with empty repo")
+
+		// Arrange - create not deleted recipe
+		recipeID := uuid.New()
+		err = seeds.InsertRecipe(ctx, tx, recipeID.String(), testUser.ID.String(), "Test Recipe", 10, 20, 2, nil)
+		require.NoError(t, err, "Failed to insert test recipe")
+
+		// Act 2 - delete old recipes with no deleted recipes
+		deletedCount, err = s.DeleteOldRecipes(ctx)
+
+		// Assert
+		require.NoError(t, err, "Expected no error when deleting old recipes with no deleted recipes")
+		require.Equal(t, int64(0), deletedCount, "Expected to delete 0 old recipes when there are no deleted recipes")
+
+		// Arrange - delete recipe with deleted_on > retention period
+		deletedRecipeID := uuid.New()
+		deletedOn := time.Now().AddDate(0, 0, -1) // 1 day ago
+		err = seeds.InsertRecipe(ctx, tx, deletedRecipeID.String(), testUser.ID.String(), "Deleted Recipe", 10, 20, 2, &deletedOn)
+		require.NoError(t, err, "Failed to insert deleted test recipe")
+
+		// Act 3 - delete old recipes with a deleted recipe that is not old enough
+		deletedCount, err = s.DeleteOldRecipes(ctx)
+
+		// Assert
+		require.NoError(t, err, "Expected no error when deleting old recipes with a deleted recipe that is not old enough")
+		require.Equal(t, int64(0), deletedCount, "Expected to delete 0 old recipes when the deleted recipe is not old enough")
+
+		// Arrange - delete recipe with deleted_on < retention period
+		oldDeletedRecipeID := uuid.New()
+		oldDeletedOn := time.Now().AddDate(0, 0, -31)
+		err = seeds.InsertRecipe(ctx, tx, oldDeletedRecipeID.String(), testUser.ID.String(), "Old Deleted Recipe", 10, 20, 2, &oldDeletedOn)
+		require.NoError(t, err, "Failed to insert old deleted test recipe")
+
+		// Act 4 - delete old recipes with a deleted recipe that is old enough
+		deletedCount, err = s.DeleteOldRecipes(ctx)
+
+		// Assert
+		require.NoError(t, err, "Expected no error when deleting old recipes with a deleted recipe that is old enough")
+		require.Equal(t, int64(1), deletedCount, "Expected to delete 1 old recipe when there is one deleted recipe that is old enough")
 	})
 }
