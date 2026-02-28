@@ -9,7 +9,7 @@ export function useDeleteRecipe() {
     return useMutation<DeleteRecipeMutation, ClientError, DeleteRecipeMutationVariables, unknown>({
         mutationFn: (variables) => graphqlClient.request(DeleteRecipeDocument, variables),
         onSuccess: (data) => {
-            queryClient.invalidateQueries({ queryKey: ["myRecipes"] });
+            queryClient.invalidateQueries({ queryKey: ["recipes","me"] });
             console.log("Recipe deleted:", data.deleteRecipe);
         },
         onError: (error) => {

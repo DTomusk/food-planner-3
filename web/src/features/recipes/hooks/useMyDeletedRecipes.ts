@@ -4,7 +4,7 @@ import { graphqlClient } from "@/lib/graphqlClient";
 
 export function useMyDeletedRecipes() {
     return useQuery<GetMyDeletedRecipesQuery>({
-        queryKey: ["myDeletedRecipes"],
+        queryKey: ["recipes","me","deleted"],
         queryFn: () => graphqlClient.request(GetMyDeletedRecipesDocument),
     });
 }

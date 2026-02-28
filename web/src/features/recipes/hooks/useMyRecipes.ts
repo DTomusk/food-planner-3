@@ -4,7 +4,7 @@ import { graphqlClient } from "@/lib/graphqlClient";
 
 export function useMyRecipes() {
     return useQuery<GetMyRecipesQuery>({
-        queryKey: ["myRecipes"],
+        queryKey: ["recipes","me"],
         queryFn: () => graphqlClient.request(GetMyRecipesDocument),
     });
 }
