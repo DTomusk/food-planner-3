@@ -12,6 +12,7 @@
     "codegen": "graphql-codegen --config codegen.yml"
   },
   "dependencies": {
+    "@headlessui/react": "^2.2.9",
     "@hookform/resolvers": "^5.2.2",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/query-core": "^5.90.16",
