@@ -176,7 +176,7 @@ func (r *Repo) UndeleteRecipe(ctx context.Context, db db.DBTX, recipeID string) 
 }
 
 func (s *Repo) DeleteOldRecipes(ctx context.Context, db db.DBTX, retentionDays int) (int64, error) {
-	result, err := db.ExecContext(ctx, "DELETE FROM recipes WHERE deleted_on IS NOT NULL AND deleted_on < NOW() - INTERVAL '$1 days'", retentionDays)
+	result, err := db.ExecContext(ctx, "DELETE FROM recipes WHERE deleted_on IS NOT NULL AND deleted_on < NOW() - $1 * INTERVAL '1 day'", retentionDays)
 	if err != nil {
 		return 0, err
 	}
