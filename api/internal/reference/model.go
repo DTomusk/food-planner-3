@@ -5,6 +5,8 @@ type IngredientModel struct {
 	Name          string  `yaml:"name"`
 	PreferredUnit int     `yaml:"preferred_unit"`
 	Counter       *string `yaml:"counter,omitempty"`
+	Plural        *string `yaml:"plural,omitempty"`
+	CounterPlural *string `yaml:"counter_plural,omitempty"`
 }
 
 type FileData struct {

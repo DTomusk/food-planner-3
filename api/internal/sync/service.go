@@ -43,6 +43,8 @@ func (s *SyncService) SyncIngredientData(ctx context.Context) error {
 			fileIngredient.ID,
 			fileIngredient.PreferredUnit,
 			fileIngredient.Counter,
+			fileIngredient.Plural,
+			fileIngredient.CounterPlural,
 		)
 		if err != nil {
 			return err
