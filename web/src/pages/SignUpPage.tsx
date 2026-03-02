@@ -6,15 +6,18 @@ import { useSignUp } from "@/features/auth/hooks/useSignUp";
 import { Page } from "@/layout";
 import { commonStrings } from "@/lib";
 import { extractErrorMessage } from "@/lib/errors";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 
 export default function SignUpPage() {
     const { mutate, isPending, error } = useSignUp();
     const navigate = useNavigate();
     const { isAuthenticated } = useAuth();
 
+    const location = useLocation();
+    const from = location.state?.from?.pathname || "/";
+
     if (isAuthenticated) {
-        navigate("/");
+        return (<Navigate to={from} />);
     }
 
     const handleSubmit = (values: { email: string; password: string }) => {
@@ -22,7 +25,7 @@ export default function SignUpPage() {
             { input: { email: values.email, password: values.password } },
             {
                 onSuccess: () => {
-                    navigate("/");
+                    navigate(from, { replace: true });
                 }
             }
         );
@@ -32,7 +35,7 @@ export default function SignUpPage() {
         <Page>
             <PageTitle text={commonStrings.auth.signUp} />
             {error && <Alert message={extractErrorMessage(error)} closable />}
-            <p className="text-center">Already have an account? <Link onClick={() => navigate("/auth/signin")} text={commonStrings.auth.signIn}/></p>
+            <p className="text-center">Already have an account? <Link onClick={() => navigate("/auth/signin", { state: { from: location } })} text={commonStrings.auth.signIn}/></p>
             <AuthForm
                 formType="signup"
                 onSubmit={handleSubmit}
