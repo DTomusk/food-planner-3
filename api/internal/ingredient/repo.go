@@ -23,6 +23,7 @@ type IngredientRow struct {
 	Name          string
 	PreferredUnit int
 	FileKey       string
+	Counter       *string
 }
 
 func (r *IngredientRepo) IngredientExists(ctx context.Context, db db.DBTX, ingredientID string) (bool, error) {
@@ -32,7 +33,7 @@ func (r *IngredientRepo) IngredientExists(ctx context.Context, db db.DBTX, ingre
 }
 
 func (r *IngredientRepo) GetAllIngredients(ctx context.Context, db db.DBTX) ([]*Ingredient, error) {
-	rows, err := db.QueryContext(ctx, "SELECT id, name, preferred_unit, file_key FROM reference.ingredients")
+	rows, err := db.QueryContext(ctx, "SELECT id, name, preferred_unit, file_key, counter FROM reference.ingredients")
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -44,7 +45,7 @@ func (r *IngredientRepo) GetAllIngredients(ctx context.Context, db db.DBTX) ([]*
 	var ingredients []*Ingredient
 	for rows.Next() {
 		var ingredientRow IngredientRow
-		if err := rows.Scan(&ingredientRow.ID, &ingredientRow.Name, &ingredientRow.PreferredUnit, &ingredientRow.FileKey); err != nil {
+		if err := rows.Scan(&ingredientRow.ID, &ingredientRow.Name, &ingredientRow.PreferredUnit, &ingredientRow.FileKey, &ingredientRow.Counter); err != nil {
 			return nil, err
 		}
 
@@ -58,6 +59,7 @@ func (r *IngredientRepo) GetAllIngredients(ctx context.Context, db db.DBTX) ([]*
 			Name:          ingredientRow.Name,
 			PreferredUnit: unit,
 			FileKey:       ingredientRow.FileKey,
+			Counter:       ingredientRow.Counter,
 		})
 	}
 	return ingredients, nil
@@ -67,7 +69,7 @@ func (r *IngredientRepo) GetIngredientsByIDs(ctx context.Context, db db.DBTX, in
 	if len(ingredientIDs) == 0 {
 		return []*Ingredient{}, nil
 	}
-	query := "SELECT id, name, preferred_unit, file_key FROM reference.ingredients WHERE id = ANY($1)"
+	query := "SELECT id, name, preferred_unit, file_key, counter FROM reference.ingredients WHERE id = ANY($1)"
 	rows, err := db.QueryContext(ctx, query, pq.Array(ingredientIDs))
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -80,7 +82,7 @@ func (r *IngredientRepo) GetIngredientsByIDs(ctx context.Context, db db.DBTX, in
 	var ingredients []*Ingredient
 	for rows.Next() {
 		var ingredientRow IngredientRow
-		if err := rows.Scan(&ingredientRow.ID, &ingredientRow.Name, &ingredientRow.PreferredUnit, &ingredientRow.FileKey); err != nil {
+		if err := rows.Scan(&ingredientRow.ID, &ingredientRow.Name, &ingredientRow.PreferredUnit, &ingredientRow.FileKey, &ingredientRow.Counter); err != nil {
 			return nil, err
 		}
 
@@ -94,6 +96,7 @@ func (r *IngredientRepo) GetIngredientsByIDs(ctx context.Context, db db.DBTX, in
 			Name:          ingredientRow.Name,
 			PreferredUnit: unit,
 			FileKey:       ingredientRow.FileKey,
+			Counter:       ingredientRow.Counter,
 		})
 	}
 	return ingredients, nil
@@ -105,22 +108,23 @@ func (r *IngredientRepo) UpsertIngredients(ctx context.Context, db db.DBTX, ingr
 	}
 
 	var (
-		query  = "INSERT INTO reference.ingredients (id, name, preferred_unit, file_key) VALUES"
+		query  = "INSERT INTO reference.ingredients (id, name, preferred_unit, file_key, counter) VALUES"
 		args   []any
 		values []string
 	)
 
 	for i, ingredient := range ingredients {
-		start := i*4 + 1
-		values = append(values, fmt.Sprintf("($%d, $%d, $%d, $%d)", start, start+1, start+2, start+3))
-		args = append(args, ingredient.ID, ingredient.Name, int(ingredient.PreferredUnit), ingredient.FileKey)
+		start := i*5 + 1
+		values = append(values, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)", start, start+1, start+2, start+3, start+4))
+		args = append(args, ingredient.ID, ingredient.Name, int(ingredient.PreferredUnit), ingredient.FileKey, ingredient.Counter)
 	}
 
 	query += " " + strings.Join(values, ", ") + `
 	ON CONFLICT (file_key)
 	DO UPDATE SET
 	name = EXCLUDED.name,
-	preferred_unit = EXCLUDED.preferred_unit;
+	preferred_unit = EXCLUDED.preferred_unit,
+	counter = EXCLUDED.counter;
 	`
 
 	_, err := db.ExecContext(ctx, query, args...)

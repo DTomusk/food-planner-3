@@ -11,9 +11,10 @@ type Ingredient struct {
 	Name          string
 	FileKey       string
 	PreferredUnit unit.Unit
+	Counter       *string
 }
 
-func NewIngredient(name, fileKey string, preferredUnit int) (*Ingredient, error) {
+func NewIngredient(name, fileKey string, preferredUnit int, counter *string) (*Ingredient, error) {
 	if name == "" {
 		return nil, ErrInvalidName
 	}
@@ -25,5 +26,6 @@ func NewIngredient(name, fileKey string, preferredUnit int) (*Ingredient, error)
 		Name:          name,
 		FileKey:       fileKey,
 		PreferredUnit: unit.Unit(preferredUnit),
+		Counter:       counter,
 	}, nil
 }
