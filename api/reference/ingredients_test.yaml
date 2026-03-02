@@ -2,3 +2,12 @@ ingredients:
   - id: "test_ingredient"
     name: "Test Ingredient"
     preferred_unit: 1
+    plural: "Test Ingredients"
+  - id: "test_ingredient_grams"
+    name: "Test Ingredient (grams)"
+    preferred_unit: 2
+  - id: "test_ingredient_with_counter"
+    name: "Test Ingredient with Counter"
+    preferred_unit: 1
+    counter: "piece"
+    counter_plural: "pieces"
