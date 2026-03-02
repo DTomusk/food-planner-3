@@ -6,7 +6,7 @@ import { useSignIn } from "@/features/auth/hooks/useSignIn";
 import Page from "@/layout/PageWrapper";
 import { commonStrings } from "@/lib";
 import { extractErrorMessage } from "@/lib/errors";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 
 export default function SignInPage() {
     const { mutate, isPending, error } = useSignIn();
@@ -14,7 +14,7 @@ export default function SignInPage() {
     const { isAuthenticated } = useAuth();
 
     if (isAuthenticated) {
-        navigate("/");
+        return (<Navigate to="/" />);
     }
 
     const handleSubmit = (values: { email: string; password: string }) => {

@@ -6,7 +6,7 @@ import { useSignUp } from "@/features/auth/hooks/useSignUp";
 import { Page } from "@/layout";
 import { commonStrings } from "@/lib";
 import { extractErrorMessage } from "@/lib/errors";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 
 export default function SignUpPage() {
     const { mutate, isPending, error } = useSignUp();
@@ -14,7 +14,7 @@ export default function SignUpPage() {
     const { isAuthenticated } = useAuth();
 
     if (isAuthenticated) {
-        navigate("/");
+        return (<Navigate to="/" />);
     }
 
     const handleSubmit = (values: { email: string; password: string }) => {
