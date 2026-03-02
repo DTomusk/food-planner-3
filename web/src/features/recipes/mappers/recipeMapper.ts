@@ -7,10 +7,13 @@ export function mapRecipe(
     return {
         id: gqlRecipe.id,
         name: gqlRecipe.name,
-        // TODO: add proper formatting later
         ingredients: gqlRecipe.ingredientUsages.map((iu) => ({
             name: iu.ingredient.name,
-            formattedQuantity: iu.quantity + iu.unit.symbol
+            quantity: iu.quantity,
+            counter: iu.ingredient.counter,
+            unitSymbol: iu.unit.symbol,
+            plural: iu.ingredient.plural,
+            counterPlural: iu.ingredient.counterPlural,
         })),
         user: gqlRecipe.user.id,
         prepMins: gqlRecipe.prepMins,

@@ -4,7 +4,7 @@ import type { recipeFormSchema } from "./schemas/recipeFormSchema";
 export type Recipe = {
     id: string;
     name: string;
-    ingredients: Ingredients[];
+    ingredients: Ingredient[];
     user: string;
     prepMins: number;
     cookMins: number;
@@ -12,9 +12,13 @@ export type Recipe = {
     source: RecipeSource;
 };
 
-export type Ingredients = {
+export type Ingredient = {
     name: string;
-    formattedQuantity: string;
+    quantity: number;
+    counter: string | null | undefined;
+    unitSymbol: string;
+    plural: string | null | undefined;
+    counterPlural: string | null | undefined;
 }
 
 export type RecipeSource = {

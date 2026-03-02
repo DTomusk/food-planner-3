@@ -9,11 +9,12 @@ import RecipeDetailSection from "./RecipeDetailSection";
 import Container from "@/components/layout/Container";
 import { recipeFormSchema } from "../schemas/recipeFormSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
+import type { IngredientOptionModel } from "@/features/ingredients/types";
 
 type RecipeFormProps = {
   onSubmit: (values: RecipeFormValues) => void;
   isSubmitting?: boolean;
-  ingredients: { id: string; name: string, preferredUnit: { val: number; name: string; symbol: string } }[];
+  ingredients: IngredientOptionModel[];
 };
 
 export default function RecipeForm({

@@ -4,9 +4,10 @@ import Button from "@/components/ui/Button";
 import FormSection from "@/components/form/FormSection";
 import IngredientSelector from "./IngredientSelector";
 import { useAvailableIngredients } from "../hooks/useAvailableIngredients";
+import type { IngredientOptionModel } from "@/features/ingredients/types";
 
 interface IngredientSectionProps {
-  ingredients: { id: string; name: string, preferredUnit: { val: number; name: string; symbol: string } }[];
+  ingredients: IngredientOptionModel[];
 };
 
 export default function IngredientSection({ ingredients }: IngredientSectionProps) {

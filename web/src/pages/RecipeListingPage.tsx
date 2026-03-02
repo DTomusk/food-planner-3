@@ -25,7 +25,7 @@ export default function RecipeListingPage() {
             {isAuthenticated && 
             <Inline>
                 <Stack space="sm">
-                    <Button onClick={() => navigate("/recipe/create")} 
+                    <Button onClick={() => navigate("/recipes/create")} 
                     aria-label="Add new recipe" variant="primary">
                         <Inline>
                         <Plus /> {commonStrings.recipe.add}

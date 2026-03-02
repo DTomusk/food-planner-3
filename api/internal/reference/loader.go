@@ -1,7 +1,6 @@
 package reference
 
 import (
-	"fmt"
 	"log/slog"
 	"os"
 
@@ -31,8 +30,6 @@ func (l *Loader) LoadIngredientData(logger *slog.Logger) ([]*IngredientModel, er
 		logger.Error("Failed to unmarshal ingredient data", "error", err)
 		return nil, err
 	}
-
-	logger.Info("File ingredient data", "ingredients", fmt.Sprintf("%+v", fileData.Ingredients))
 
 	return fileData.Ingredients, nil
 }

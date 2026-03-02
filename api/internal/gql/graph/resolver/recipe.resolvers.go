@@ -228,8 +228,11 @@ func (r *recipeResolver) IngredientUsages(ctx context.Context, obj *model.Recipe
 	ingredientMap := make(map[string]*model.Ingredient)
 	for _, ingredient := range ingredients {
 		ingredientMap[ingredient.ID.String()] = &model.Ingredient{
-			ID:   ingredient.ID.String(),
-			Name: ingredient.Name,
+			ID:            ingredient.ID.String(),
+			Name:          ingredient.Name,
+			Counter:       ingredient.Counter,
+			Plural:        ingredient.Plural,
+			CounterPlural: ingredient.CounterPlural,
 		}
 	}
 
