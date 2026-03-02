@@ -55,6 +55,7 @@ type ComplexityRoot struct {
 	}
 
 	Ingredient struct {
+		Counter       func(childComplexity int) int
 		ID            func(childComplexity int) int
 		Name          func(childComplexity int) int
 		PreferredUnit func(childComplexity int) int
@@ -171,6 +172,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AuthPayload.User(childComplexity), true
 
+	case "Ingredient.counter":
+		if e.complexity.Ingredient.Counter == nil {
+			break
+		}
+
+		return e.complexity.Ingredient.Counter(childComplexity), true
 	case "Ingredient.id":
 		if e.complexity.Ingredient.ID == nil {
 			break
@@ -854,6 +861,35 @@ func (ec *executionContext) fieldContext_Ingredient_preferredUnit(_ context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _Ingredient_counter(ctx context.Context, field graphql.CollectedField, obj *model.Ingredient) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Ingredient_counter,
+		func(ctx context.Context) (any, error) {
+			return obj.Counter, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Ingredient_counter(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Ingredient",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _IngredientUsage_id(ctx context.Context, field graphql.CollectedField, obj *model.IngredientUsage) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -913,6 +949,8 @@ func (ec *executionContext) fieldContext_IngredientUsage_ingredient(_ context.Co
 				return ec.fieldContext_Ingredient_name(ctx, field)
 			case "preferredUnit":
 				return ec.fieldContext_Ingredient_preferredUnit(ctx, field)
+			case "counter":
+				return ec.fieldContext_Ingredient_counter(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Ingredient", field.Name)
 		},
@@ -1384,6 +1422,8 @@ func (ec *executionContext) fieldContext_Query_ingredients(_ context.Context, fi
 				return ec.fieldContext_Ingredient_name(ctx, field)
 			case "preferredUnit":
 				return ec.fieldContext_Ingredient_preferredUnit(ctx, field)
+			case "counter":
+				return ec.fieldContext_Ingredient_counter(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Ingredient", field.Name)
 		},
@@ -4079,6 +4119,8 @@ func (ec *executionContext) _Ingredient(ctx context.Context, sel ast.SelectionSe
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "counter":
+			out.Values[i] = ec._Ingredient_counter(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

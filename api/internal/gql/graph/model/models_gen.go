@@ -35,9 +35,10 @@ type DeleteRecipeInput struct {
 }
 
 type Ingredient struct {
-	ID            string `json:"id"`
-	Name          string `json:"name"`
-	PreferredUnit *Unit  `json:"preferredUnit"`
+	ID            string  `json:"id"`
+	Name          string  `json:"name"`
+	PreferredUnit *Unit   `json:"preferredUnit"`
+	Counter       *string `json:"counter,omitempty"`
 }
 
 type IngredientUsage struct {

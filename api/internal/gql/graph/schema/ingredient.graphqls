@@ -2,6 +2,7 @@ type Ingredient {
     id: ID!
     name: String!
     preferredUnit: Unit!
+    counter: String
 }
 
 extend type Query {
