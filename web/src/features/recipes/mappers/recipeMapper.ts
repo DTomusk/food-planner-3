@@ -12,6 +12,8 @@ export function mapRecipe(
             quantity: iu.quantity,
             counter: iu.ingredient.counter,
             unitSymbol: iu.unit.symbol,
+            plural: iu.ingredient.plural,
+            counterPlural: iu.ingredient.counterPlural,
         })),
         user: gqlRecipe.user.id,
         prepMins: gqlRecipe.prepMins,

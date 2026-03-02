@@ -17,6 +17,8 @@ export type Ingredient = {
     quantity: number;
     counter: string | null | undefined;
     unitSymbol: string;
+    plural: string | null | undefined;
+    counterPlural: string | null | undefined;
 }
 
 export type RecipeSource = {

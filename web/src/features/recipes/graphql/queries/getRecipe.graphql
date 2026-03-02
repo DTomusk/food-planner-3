@@ -13,6 +13,8 @@ query GetRecipe($id: ID!) {
             ingredient {
                 name
                 counter
+                plural
+                counterPlural
             }
         }
         prepMins

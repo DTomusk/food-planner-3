@@ -39,6 +39,8 @@ type Ingredient struct {
 	Name          string  `json:"name"`
 	PreferredUnit *Unit   `json:"preferredUnit"`
 	Counter       *string `json:"counter,omitempty"`
+	Plural        *string `json:"plural,omitempty"`
+	CounterPlural *string `json:"counterPlural,omitempty"`
 }
 
 type IngredientUsage struct {
