@@ -7,5 +7,6 @@ query GetIngredients {
             val
             symbol
         }
+        counter
     }
 }

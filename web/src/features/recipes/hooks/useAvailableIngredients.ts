@@ -5,6 +5,7 @@ import type { RecipeFormValues } from "../types";
 interface Ingredient {
   id: string;
   name: string;
+  counter: string;
   preferredUnit: {
     val: number;
     name: string;

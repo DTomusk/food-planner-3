@@ -6,7 +6,7 @@ import IngredientSelector from "./IngredientSelector";
 import { useAvailableIngredients } from "../hooks/useAvailableIngredients";
 
 interface IngredientSectionProps {
-  ingredients: { id: string; name: string, preferredUnit: { val: number; name: string; symbol: string } }[];
+  ingredients: { id: string; name: string, counter: string; preferredUnit: { val: number; name: string; symbol: string } }[];
 };
 
 export default function IngredientSection({ ingredients }: IngredientSectionProps) {

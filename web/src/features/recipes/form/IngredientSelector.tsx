@@ -12,7 +12,7 @@ interface IngredientSelectorProps {
   index: number;
   control: Control<RecipeFormValues>;
   register: UseFormRegister<RecipeFormValues>;
-  ingredients: { id: string; name: string; preferredUnit: { val: number; name: string; symbol: string } }[];
+  ingredients: { id: string; name: string; counter: string; preferredUnit: { val: number; name: string; symbol: string } }[];
   remove: (index: number) => void;
   canRemove: boolean;
   errors: any;
@@ -24,6 +24,12 @@ export default function IngredientSelector({ index, control, register, ingredien
         control,
         name: `ingredientUsages.${index}.ingredientId`,
     });
+
+    // TODO: move somewhere
+    const formatIngredientOption = (ingredientName: string, counter: string) => {
+      if (!counter) return ingredientName;
+      return `${ingredientName} (${counter})`;
+    }
 
     // Get which ingredient is selected to determine if we should show unit
     const selectedIngredientObj = ingredients.find((ingredient) => ingredient.id === selectedIngredient);
@@ -54,7 +60,7 @@ export default function IngredientSelector({ index, control, register, ingredien
             </option>
             {ingredients.map((ingredient) => (
               <option key={ingredient.id} value={ingredient.id}>
-                {ingredient.name}
+                {formatIngredientOption(ingredient.name, ingredient.counter)}
               </option>
             ))}
           </Select>
