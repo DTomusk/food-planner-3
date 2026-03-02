@@ -1,0 +1,6 @@
+mutation DeleteRecipe($input: DeleteRecipeInput!) {
+    deleteRecipe(input: $input) {
+        id
+        name
+    }
+}

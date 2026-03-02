@@ -13,16 +13,18 @@ import (
 )
 
 type Service struct {
-	txRunner          db.TxRunner
-	Repo              *Repo
-	IngredientService *ingredient.IngredientService
+	txRunner            db.TxRunner
+	Repo                *Repo
+	IngredientService   *ingredient.IngredientService
+	RecipeRetentionDays *int
 }
 
-func NewService(txRunner db.TxRunner, repo *Repo, ingredientService *ingredient.IngredientService) *Service {
+func NewService(txRunner db.TxRunner, repo *Repo, ingredientService *ingredient.IngredientService, recipeRetentionDays *int) *Service {
 	return &Service{
-		txRunner:          txRunner,
-		Repo:              repo,
-		IngredientService: ingredientService,
+		txRunner:            txRunner,
+		Repo:                repo,
+		IngredientService:   ingredientService,
+		RecipeRetentionDays: recipeRetentionDays,
 	}
 }
 
@@ -81,6 +83,7 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 	}
 	return recipe, nil
 }
+
 func (s *Service) validateAndConvertIngredientUsages(ctx context.Context, logger *slog.Logger, ingredientUsageRequests []CreateIngredientUsageRequest) ([]*IngredientUsage, error) {
 	// Validate ingredients and check for duplicates
 	// TODO: There may be cases where we allow duplicate ingredients (e.g. different sections of the same recipe)
@@ -151,10 +154,64 @@ func (s *Service) GetRecipeByID(ctx context.Context, id string) (*Recipe, error)
 	return s.Repo.GetRecipeByID(ctx, s.txRunner.DB(), id)
 }
 
+func (s *Service) GetRecipesByUserID(ctx context.Context, userID string) ([]*Recipe, error) {
+	return s.Repo.GetRecipesByUserID(ctx, s.txRunner.DB(), userID)
+}
+
+func (s *Service) GetDeletedRecipesByUserID(ctx context.Context, userID string) ([]*Recipe, error) {
+	return s.Repo.GetDeletedRecipesByUserID(ctx, s.txRunner.DB(), userID)
+}
+
 func (s *Service) GetIngredientUsagesByRecipeID(ctx context.Context, recipeID string) ([]*IngredientUsage, error) {
 	return s.Repo.GetIngredientUsagesForRecipe(ctx, s.txRunner.DB(), recipeID)
 }
 
 func (s *Service) GetRecipeSourceByRecipeID(ctx context.Context, recipeID string) (*RecipeSource, error) {
 	return s.Repo.GetRecipeSourceByRecipeID(ctx, s.txRunner.DB(), recipeID)
+}
+
+func (s *Service) DeleteRecipe(ctx context.Context, recipeID, userID string) (*Recipe, error) {
+	// Get the recipe to ensure it exists and belongs to the user
+	recipe, err := s.GetRecipeByID(ctx, recipeID)
+	if err != nil {
+		return nil, err
+	}
+	if recipe == nil {
+		return nil, ErrRecipeNotFound
+	}
+	if recipe.UserID.String() != userID {
+		return nil, ErrUnauthorized
+	}
+	dbRecipe, err := s.Repo.DeleteRecipe(ctx, s.txRunner.DB(), recipeID)
+	if err != nil {
+		return nil, err
+	}
+	return dbRecipe, nil
+}
+
+func (s *Service) UndeleteRecipe(ctx context.Context, recipeID, userID string) (*Recipe, error) {
+	// Get the recipe to ensure it exists and belongs to the user
+	recipe, err := s.Repo.GetDeletedRecipeByID(ctx, s.txRunner.DB(), recipeID)
+	if err != nil {
+		return nil, err
+	}
+	if recipe == nil {
+		return nil, ErrRecipeNotFound
+	}
+	if recipe.UserID.String() != userID {
+		return nil, ErrUnauthorized
+	}
+	dbRecipe, err := s.Repo.UndeleteRecipe(ctx, s.txRunner.DB(), recipeID)
+	if err != nil {
+		return nil, err
+	}
+	return dbRecipe, nil
+}
+
+func (s *Service) DeleteOldRecipes(ctx context.Context) (int64, error) {
+	// To prevent this being called incorrectly
+	if s.RecipeRetentionDays == nil {
+		return 0, ErrRetentionNotSet
+	}
+	return s.Repo.DeleteOldRecipes(ctx, s.txRunner.DB(), *s.RecipeRetentionDays)
 }

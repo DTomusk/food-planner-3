@@ -16,6 +16,7 @@ type Config struct {
 	JWTExpirationMinutes      int
 	IngredientDataFilePath    string
 	IngredientUpsertBatchSize int
+	RecipeRetentionDays       int
 }
 
 func Load() (*Config, error) {
@@ -69,6 +70,15 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("invalid INGREDIENT_UPSERT_BATCH_SIZE: %v", err)
 	}
 
+	recipeRetentionDaysStr := os.Getenv("RECIPE_RETENTION_DAYS")
+	if recipeRetentionDaysStr == "" {
+		return nil, fmt.Errorf("RECIPE_RETENTION_DAYS not set in environment")
+	}
+	recipeRetentionDays, err := strconv.Atoi(recipeRetentionDaysStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid RECIPE_RETENTION_DAYS: %v", err)
+	}
+
 	return &Config{
 		DatabaseURL:               db_url,
 		ServerPort:                port,
@@ -77,5 +87,6 @@ func Load() (*Config, error) {
 		JWTExpirationMinutes:      jwtExpirationMinutes,
 		IngredientDataFilePath:    ingredientDataFilePath,
 		IngredientUpsertBatchSize: ingredientUpsertBatchSize,
+		RecipeRetentionDays:       recipeRetentionDays,
 	}, nil
 }

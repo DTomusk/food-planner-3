@@ -37,7 +37,7 @@ func TestRecipeResolver_CreateAndGetRecipe(t *testing.T) {
 		require.NoError(t, err, "Failed to seed test user")
 
 		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100)
-		service := recipe.NewService(txRunner, repo, ingredientService)
+		service := recipe.NewService(txRunner, repo, ingredientService, nil)
 		r := &Resolver{
 			RecipeService: service,
 		}
@@ -91,7 +91,7 @@ func TestRecipeResolver_CreateAndGetRecipe_WithResolver(t *testing.T) {
 		require.NoError(t, err, "Failed to seed test user")
 
 		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100)
-		service := recipe.NewService(txRunner, repo, ingredientService)
+		service := recipe.NewService(txRunner, repo, ingredientService, nil)
 		r := &Resolver{
 			IngredientsService: ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
 			RecipeService:      service,

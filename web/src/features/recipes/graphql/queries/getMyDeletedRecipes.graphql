@@ -1,0 +1,6 @@
+query GetMyDeletedRecipes {
+    myDeletedRecipes {
+        name
+        id
+    }
+}
