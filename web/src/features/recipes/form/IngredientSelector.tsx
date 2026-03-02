@@ -7,12 +7,13 @@ import IconButton from "@/components/ui/IconButton";
 import { X } from "lucide-react";
 import Inline from "@/components/layout/Inline";
 import { useIngredientSelector } from "../hooks/useIngredientSelector";
+import type { IngredientOptionModel } from "@/features/ingredients/types";
 
 interface IngredientSelectorProps {
   index: number;
   control: Control<RecipeFormValues>;
   register: UseFormRegister<RecipeFormValues>;
-  ingredients: { id: string; name: string; counter: string; preferredUnit: { val: number; name: string; symbol: string } }[];
+  ingredients: IngredientOptionModel[];
   remove: (index: number) => void;
   canRemove: boolean;
   errors: any;

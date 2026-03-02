@@ -1,21 +1,11 @@
 import { useMemo } from "react";
 import { useWatch, type Control } from "react-hook-form";
 import type { RecipeFormValues } from "../types";
-
-interface Ingredient {
-  id: string;
-  name: string;
-  counter: string;
-  preferredUnit: {
-    val: number;
-    name: string;
-    symbol: string;
-  };
-}
+import type { IngredientOptionModel } from "@/features/ingredients/types";
 
 export function useAvailableIngredients(
   control: Control<RecipeFormValues>,
-  allIngredients: Ingredient[]
+  allIngredients: IngredientOptionModel[]
 ) {
   // Watch which ingredients have been selected to later filter for duplicates
   const ingredientUsages = useWatch({

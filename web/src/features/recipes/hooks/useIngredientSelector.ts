@@ -1,17 +1,13 @@
 import { useEffect, useMemo } from "react";
 import { useWatch, type Control, type UseFormSetValue } from "react-hook-form";
 import type { RecipeFormValues } from "../types";
+import type { IngredientOptionModel } from "@/features/ingredients/types";
 
 interface UseIngredientSelectorProps {
   index: number;
   control: Control<RecipeFormValues>;
   setValue: UseFormSetValue<RecipeFormValues>;
-  ingredients: {
-    id: string;
-    name: string;
-    counter: string;
-    preferredUnit: { val: number; name: string; symbol: string };
-  }[];
+  ingredients: IngredientOptionModel[];
 }
 
 export function useIngredientSelector({
@@ -45,10 +41,7 @@ export function useIngredientSelector({
     }
   }, [selectedIngredient, index, setValue]);
 
-  const formatIngredientOption = (ingredient: {
-    name: string;
-    counter: string;
-  }) => {
+  const formatIngredientOption = (ingredient: IngredientOptionModel) => {
     if (!ingredient.counter) return ingredient.name;
     return `${ingredient.name} (${ingredient.counter})`;
   };
