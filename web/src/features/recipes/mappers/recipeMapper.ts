@@ -1,10 +1,10 @@
 import type { GetRecipeQuery } from "@/lib";
-import type { Recipe } from "../types";
+import type { Recipe, User } from "../types";
 
 export function mapRecipe(
     gqlRecipe: NonNullable<GetRecipeQuery["recipe"]>
-): Recipe {
-    return {
+): { recipe: Recipe, user: User }  {
+    return { recipe:{
         id: gqlRecipe.id,
         name: gqlRecipe.name,
         ingredients: gqlRecipe.ingredientUsages.map((iu) => ({
@@ -15,7 +15,6 @@ export function mapRecipe(
             plural: iu.ingredient.plural,
             counterPlural: iu.ingredient.counterPlural,
         })),
-        user: gqlRecipe.user.id,
         prepMins: gqlRecipe.prepMins,
         cookMins: gqlRecipe.cookMins,
         portions: gqlRecipe.portions,
@@ -25,6 +24,10 @@ export function mapRecipe(
             bookTitle: gqlRecipe.source.bookTitle || undefined,
             bookPage: gqlRecipe.source.bookPage || undefined,
             instructions: gqlRecipe.source.instructions || undefined,
-        }
+        }} ,
+        user: {
+            id: gqlRecipe.user.id,
+            username: gqlRecipe.user.username,
+        } 
     }
 }

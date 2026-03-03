@@ -1,13 +1,16 @@
+import type { User } from "@/features/recipes/types";
+import Link from "./ui/Link";
+import { useNavigate } from "react-router-dom";
+
 interface SharedByProps {
-    userName: string;
+    user: User;
 }
 
 // TODO: add user id and link to user page
 // TODO: maybe move into user feature? Or recipe...
-export default function SharedBy({ userName }: SharedByProps) {
+export default function SharedBy({ user }: SharedByProps) {
+    const navigate = useNavigate();
     return (
-        <p className="text-center text-sm text-gray-500">
-            Shared by {userName}
-        </p>
+        <Link onClick={() => navigate(`/users/${user.id}`)} text={`Shared by ${user.username}`} />
     );
 }

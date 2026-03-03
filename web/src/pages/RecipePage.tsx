@@ -14,7 +14,7 @@ import { RecipeSourceType } from "@/features/recipes/types";
 
 export default function RecipePage() {
     const { id } = useParams<{ id: string }>();
-    const { data: recipe, isLoading, error } = useRecipe(id!);
+    const { data: {recipe, user} = {}, isLoading, error } = useRecipe(id!);
     const location = useLocation();
     const navigate = useNavigate();
     const [successMessage, setSuccessMessage] = useState<string | undefined>(location.state?.successMessage);
@@ -39,7 +39,7 @@ export default function RecipePage() {
                     {recipe ? (
                     <>
                     <PageTitle text={recipe ? recipe.name : "Recipe Page"} />
-                    <SharedBy userName={recipe.user} />
+                    { user && <SharedBy user={user} /> }
                     <Stack space="sm">
                         <div className="text-center">Prep time: {recipe.prepMins} mins</div>
                         <div className="text-center">Cook time: {recipe.cookMins} mins</div>
