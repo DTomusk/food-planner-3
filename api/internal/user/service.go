@@ -25,7 +25,10 @@ func (s *UserService) CreateUser(email, passwordHash, username string, ctx conte
 	if existingUser != nil {
 		return nil, ErrEmailInUse
 	}
-	newUser := NewUser(email, passwordHash, username)
+	newUser, err := NewUser(email, passwordHash, username)
+	if err != nil {
+		return nil, err
+	}
 	createdUser, err := s.repo.CreateUser(newUser, ctx, s.db)
 	if err != nil {
 		return nil, err

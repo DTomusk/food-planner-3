@@ -28,7 +28,8 @@ func TestGetByID_Throws(t *testing.T) {
 func TestCreate_ReturnsUser(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		repo := NewUserRepo()
-		user := NewUser("blah@test.com", "securepassword", "testuser")
+		user, err := NewUser("blah@test.com", "securepassword", "testuser")
+		require.NoError(t, err)
 		repoUser, err := repo.CreateUser(user, context.Background(), tx)
 		require.NoError(t, err)
 		require.Equal(t, user.ID, repoUser.ID)

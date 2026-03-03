@@ -1,6 +1,10 @@
 package user
 
-import "github.com/google/uuid"
+import (
+	"strings"
+
+	"github.com/google/uuid"
+)
 
 type User struct {
 	ID           uuid.UUID
@@ -9,11 +13,18 @@ type User struct {
 	Username     string
 }
 
-func NewUser(email, passwordHash, username string) *User {
+func NewUser(email, passwordHash, username string) (*User, error) {
+	trimmedUsername := strings.TrimSpace(username)
+	if trimmedUsername == "" {
+		return nil, ErrUsernameRequired
+	}
+	if len(trimmedUsername) > 50 {
+		return nil, ErrUsernameTooLong
+	}
 	return &User{
 		ID:           uuid.New(),
 		Email:        email,
 		PasswordHash: passwordHash,
-		Username:     username,
-	}
+		Username:     trimmedUsername,
+	}, nil
 }

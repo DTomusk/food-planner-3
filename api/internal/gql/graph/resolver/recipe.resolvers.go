@@ -271,8 +271,9 @@ func (r *recipeResolver) User(ctx context.Context, obj *model.Recipe) (*model.Us
 		return nil, fmt.Errorf("user not found for recipe")
 	}
 	return &model.User{
-		ID:    user.ID.String(),
-		Email: user.Email,
+		ID:       user.ID.String(),
+		Email:    user.Email,
+		Username: user.Username,
 	}, nil
 }
 
