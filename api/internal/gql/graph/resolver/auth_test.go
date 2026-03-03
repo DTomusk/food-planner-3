@@ -52,7 +52,7 @@ func TestAuthResolver_SignIn(t *testing.T) {
 
 		// First, create a user to sign in
 		ctx := context.Background()
-		createdUser, _, err := authService.SignUp("test@example.com", "securepassword", ctx)
+		createdUser, _, err := authService.SignUp("test@example.com", "securepassword", "testuser", ctx)
 		require.NoError(t, err)
 
 		input := model.SignInInput{
