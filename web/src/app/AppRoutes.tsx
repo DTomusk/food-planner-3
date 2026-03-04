@@ -9,6 +9,7 @@ import RecipeCreatePage from "@/pages/RecipeCreatePage";
 import ProtectedLayout from "./ProtectedLayout";
 import MyRecipesPage from "@/pages/MyRecipesPage";
 import MyDeletedRecipesPage from "@/pages/MyDeletedRecipesPage";
+import UserPage from "@/pages/UserPage";
 
 function AuthLayout() {
   return (
@@ -39,6 +40,7 @@ export function AppRoutes() {
           <Route path="signin" element={<SignInPage />} />
           <Route path="signup" element={<SignUpPage />} />
         </Route>
+        <Route path="/users/:id" element={<UserPage />} />
         <Route path="*" element={<NotFound />} />
     </Routes>
   );
