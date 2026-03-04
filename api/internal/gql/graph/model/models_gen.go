@@ -97,7 +97,8 @@ type Unit struct {
 }
 
 type User struct {
-	ID       string `json:"id"`
-	Email    string `json:"email"`
-	Username string `json:"username"`
+	ID       string    `json:"id"`
+	Email    string    `json:"email"`
+	Username string    `json:"username"`
+	Recipes  []*Recipe `json:"recipes"`
 }

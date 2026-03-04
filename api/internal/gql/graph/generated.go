@@ -42,6 +42,7 @@ type ResolverRoot interface {
 	Mutation() MutationResolver
 	Query() QueryResolver
 	Recipe() RecipeResolver
+	User() UserResolver
 }
 
 type DirectiveRoot struct {
@@ -86,6 +87,7 @@ type ComplexityRoot struct {
 		MyRecipes        func(childComplexity int) int
 		Recipe           func(childComplexity int, id string) int
 		Recipes          func(childComplexity int) int
+		User             func(childComplexity int, id string) int
 	}
 
 	Recipe struct {
@@ -116,6 +118,7 @@ type ComplexityRoot struct {
 	User struct {
 		Email    func(childComplexity int) int
 		ID       func(childComplexity int) int
+		Recipes  func(childComplexity int) int
 		Username func(childComplexity int) int
 	}
 }
@@ -135,12 +138,16 @@ type QueryResolver interface {
 	Recipe(ctx context.Context, id string) (*model.Recipe, error)
 	MyRecipes(ctx context.Context) ([]*model.Recipe, error)
 	MyDeletedRecipes(ctx context.Context) ([]*model.Recipe, error)
+	User(ctx context.Context, id string) (*model.User, error)
 }
 type RecipeResolver interface {
 	IngredientUsages(ctx context.Context, obj *model.Recipe) ([]*model.IngredientUsage, error)
 	User(ctx context.Context, obj *model.Recipe) (*model.User, error)
 
 	Source(ctx context.Context, obj *model.Recipe) (*model.RecipeSource, error)
+}
+type UserResolver interface {
+	Recipes(ctx context.Context, obj *model.User) ([]*model.Recipe, error)
 }
 
 type executableSchema struct {
@@ -340,6 +347,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.Recipes(childComplexity), true
+	case "Query.user":
+		if e.complexity.Query.User == nil {
+			break
+		}
+
+		args, err := ec.field_Query_user_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.User(childComplexity, args["id"].(string)), true
 
 	case "Recipe.cookMins":
 		if e.complexity.Recipe.CookMins == nil {
@@ -452,6 +470,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.User.ID(childComplexity), true
+	case "User.recipes":
+		if e.complexity.User.Recipes == nil {
+			break
+		}
+
+		return e.complexity.User.Recipes(childComplexity), true
 	case "User.username":
 		if e.complexity.User.Username == nil {
 			break
@@ -671,6 +695,17 @@ func (ec *executionContext) field_Query_recipe_args(ctx context.Context, rawArgs
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_user_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field___Directive_args_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -782,6 +817,8 @@ func (ec *executionContext) fieldContext_AuthPayload_user(_ context.Context, fie
 				return ec.fieldContext_User_email(ctx, field)
 			case "username":
 				return ec.fieldContext_User_username(ctx, field)
+			case "recipes":
+				return ec.fieldContext_User_recipes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -1746,6 +1783,57 @@ func (ec *executionContext) fieldContext_Query_myDeletedRecipes(_ context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_user(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_user,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().User(ctx, fc.Args["id"].(string))
+		},
+		nil,
+		ec.marshalOUser2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐUser,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_user(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "username":
+				return ec.fieldContext_User_username(ctx, field)
+			case "recipes":
+				return ec.fieldContext_User_recipes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_user_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1981,6 +2069,8 @@ func (ec *executionContext) fieldContext_Recipe_user(_ context.Context, field gr
 				return ec.fieldContext_User_email(ctx, field)
 			case "username":
 				return ec.fieldContext_User_username(ctx, field)
+			case "recipes":
+				return ec.fieldContext_User_recipes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -2430,6 +2520,53 @@ func (ec *executionContext) fieldContext_User_username(_ context.Context, field 
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_recipes(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_User_recipes,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.User().Recipes(ctx, obj)
+		},
+		nil,
+		ec.marshalNRecipe2ᚕᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipeᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_User_recipes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Recipe_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Recipe_name(ctx, field)
+			case "ingredientUsages":
+				return ec.fieldContext_Recipe_ingredientUsages(ctx, field)
+			case "user":
+				return ec.fieldContext_Recipe_user(ctx, field)
+			case "prepMins":
+				return ec.fieldContext_Recipe_prepMins(ctx, field)
+			case "cookMins":
+				return ec.fieldContext_Recipe_cookMins(ctx, field)
+			case "portions":
+				return ec.fieldContext_Recipe_portions(ctx, field)
+			case "source":
+				return ec.fieldContext_Recipe_source(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Recipe", field.Name)
 		},
 	}
 	return fc, nil
@@ -4555,6 +4692,25 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "user":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_user(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
@@ -4863,18 +5019,54 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 		case "id":
 			out.Values[i] = ec._User_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "email":
 			out.Values[i] = ec._User_email(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "username":
 			out.Values[i] = ec._User_username(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "recipes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_recipes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -5905,6 +6097,13 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	_ = ctx
 	res := graphql.MarshalString(*v)
 	return res
+}
+
+func (ec *executionContext) marshalOUser2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._User(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

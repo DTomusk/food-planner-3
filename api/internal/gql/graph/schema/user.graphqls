@@ -2,4 +2,9 @@ type User {
     id: ID!
     email: String!
     username: String!
+    recipes: [Recipe!]! @goField(forceResolver: true)
+}
+
+extend type Query {
+    user(id: ID!): User
 }
