@@ -10,16 +10,53 @@ import (
 	"fmt"
 	"foodplanner/internal/gql/graph"
 	"foodplanner/internal/gql/graph/model"
+	"foodplanner/internal/logging"
 )
 
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error) {
-	panic(fmt.Errorf("not implemented: User - user"))
+	logger := logging.FromContext(ctx)
+	user, err := r.UserService.GetUserByID(ctx, id)
+	if err != nil {
+		logger.Error("Failed to get user by ID", "error", err, "userID", id)
+		return nil, err
+	}
+	if user == nil {
+		return nil, nil
+	}
+	return &model.User{
+		ID:       user.ID.String(),
+		Email:    user.Email,
+		Username: user.Username,
+	}, nil
+}
+
+// Me is the resolver for the me field.
+func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
+	panic(fmt.Errorf("not implemented: Me - me"))
 }
 
 // Recipes is the resolver for the recipes field.
-func (r *userResolver) Recipes(ctx context.Context, obj *model.User) ([]*model.Recipe, error) {
-	panic(fmt.Errorf("not implemented: Recipes - recipes"))
+func (r *userResolver) Recipes(ctx context.Context, obj *model.User, filter *model.RecipeFilter) ([]*model.Recipe, error) {
+	logger := logging.FromContext(ctx)
+
+	recipes, err := r.RecipeService.GetRecipesByUserID(ctx, obj.ID)
+	if err != nil {
+		logger.Error("Failed to get recipes for user", "error", err)
+		return nil, err
+	}
+	var recipeModels []*model.Recipe
+	for _, recipe := range recipes {
+		recipeModel := model.Recipe{
+			ID:       recipe.ID.String(),
+			Name:     recipe.Name,
+			PrepMins: int32(recipe.PrepMins),
+			CookMins: int32(recipe.CookMins),
+			Portions: int32(recipe.Portions),
+		}
+		recipeModels = append(recipeModels, &recipeModel)
+	}
+	return recipeModels, nil
 }
 
 // User returns graph.UserResolver implementation.
