@@ -15,13 +15,13 @@ export default function UserPage() {
     return (
         <Page>
             <PageTitle text={user ? user.username : ""} />
-            <Container size="xl">
-                <Stack space="xl">
+            <Container size="md">
+                <Stack space="lg">
                 {isLoading && <Spinner/>}
                 {error && <Alert message={extractErrorMessage(error)} closable />}
-                {recipes && recipes.length > 0 && (
+                {recipes && (
                     <>
-                        <SectionTitle text="Top recipes" />
+                        <SectionTitle text="Recipes" />
                         <RecipeList recipes={recipes} />
                     </>
                 )}
