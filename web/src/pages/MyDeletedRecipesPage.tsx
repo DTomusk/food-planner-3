@@ -47,8 +47,9 @@ export default function MyDeletedRecipesPage() {
                 <Text>View any of your deleted recipes below. You can choose to restore any of the listed recipes. Recipes that have been deleted for 30 days or more will be permanently deleted.</Text>
                 {isLoading && <Spinner/>}
                 {error && <Alert message={extractErrorMessage(error)} closable />}
-                {data && (
-                    <RecipeList recipes={data.myDeletedRecipes} 
+                {data && !data.me && <Alert message="You need to be logged in to view your deleted recipes." closable />}
+                {data && data.me && (
+                    <RecipeList recipes={data.me.recipes} 
                         onCardClick={()=>{}} 
                         renderActions={(recipe) => (
                            <IconButton variant="primary" onClick={() => handleUndeleteClick(recipe.id)}>

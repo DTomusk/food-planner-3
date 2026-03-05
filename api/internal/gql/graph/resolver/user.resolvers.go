@@ -8,6 +8,7 @@ package resolver
 import (
 	"context"
 	"fmt"
+	"foodplanner/internal/auth"
 	"foodplanner/internal/gql/graph"
 	"foodplanner/internal/gql/graph/model"
 	"foodplanner/internal/logging"
@@ -33,30 +34,67 @@ func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error
 
 // Me is the resolver for the me field.
 func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
-	panic(fmt.Errorf("not implemented: Me - me"))
+	logger := logging.FromContext(ctx)
+	claims, err := auth.ClaimsFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := r.UserService.GetUserByID(ctx, claims.UserID)
+	if err != nil {
+		logger.Error("Failed to get user by ID", "error", err, "userID", claims.UserID)
+		return nil, err
+	}
+	if user == nil {
+		return nil, nil
+	}
+	return &model.User{
+		ID:       user.ID.String(),
+		Email:    user.Email,
+		Username: user.Username,
+	}, nil
 }
 
 // Recipes is the resolver for the recipes field.
 func (r *userResolver) Recipes(ctx context.Context, obj *model.User, filter *model.RecipeFilter) ([]*model.Recipe, error) {
 	logger := logging.FromContext(ctx)
 
-	recipes, err := r.RecipeService.GetRecipesByUserID(ctx, obj.ID)
-	if err != nil {
-		logger.Error("Failed to get recipes for user", "error", err)
-		return nil, err
+	// Default behaviour: ACTIVE
+	status := model.RecipeStatusActive
+	if filter != nil && filter.Status != nil {
+		status = *filter.Status
 	}
-	var recipeModels []*model.Recipe
-	for _, recipe := range recipes {
-		recipeModel := model.Recipe{
-			ID:       recipe.ID.String(),
-			Name:     recipe.Name,
-			PrepMins: int32(recipe.PrepMins),
-			CookMins: int32(recipe.CookMins),
-			Portions: int32(recipe.Portions),
+
+	switch status {
+
+	case model.RecipeStatusActive:
+		recipes, err := r.RecipeService.GetRecipesByUserID(ctx, obj.ID)
+		if err != nil {
+			logger.Error("Failed to get active recipes for user", "error", err)
+			return nil, err
 		}
-		recipeModels = append(recipeModels, &recipeModel)
+		return mapRecipes(recipes), nil
+
+	case model.RecipeStatusDeleted:
+		claims, err := auth.ClaimsFromContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		// Only allow users to view their own deleted recipes
+		if claims.UserID != obj.ID {
+			return nil, fmt.Errorf("not authorized to view deleted recipes")
+		}
+
+		recipes, err := r.RecipeService.GetDeletedRecipesByUserID(ctx, obj.ID)
+		if err != nil {
+			logger.Error("Failed to get deleted recipes for user", "error", err)
+			return nil, err
+		}
+		return mapRecipes(recipes), nil
 	}
-	return recipeModels, nil
+
+	return nil, fmt.Errorf("unsupported recipe filter")
 }
 
 // User returns graph.UserResolver implementation.

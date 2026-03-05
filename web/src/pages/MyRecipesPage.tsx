@@ -48,10 +48,11 @@ export default function MyRecipesPage() {
                 <Stack space="lg">
             {isLoading && <Spinner/>}
             {error && <Alert message={extractErrorMessage(error)} closable />}
-            {data && (
+            {data && !data.me && <Alert message="You need to be logged in to view your recipes." closable />}
+            {data && data.me && (
                 <>
                     <Text>Here you can find all the recipes you've shared. Have you deleted a recipe by mistake or otherwise want to bring one back from the dead? Then click <Link text="here" color="primary" onClick={()=> navigate("deleted")}/>.</Text>
-                    <RecipeList recipes={data.myRecipes}
+                    <RecipeList recipes={data.me.recipes}
                         onCardClick={()=>{}}
                         renderActions={(recipe) => (
                             <>
