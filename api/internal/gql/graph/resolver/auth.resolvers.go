@@ -12,16 +12,13 @@ import (
 
 // Signup is the resolver for the signup field.
 func (r *mutationResolver) Signup(ctx context.Context, input model.SignUpInput) (*model.AuthPayload, error) {
-	user, token, err := r.AuthService.SignUp(input.Email, input.Password, ctx)
+	user, token, err := r.AuthService.SignUp(input.Email, input.Password, input.Username, ctx)
 	if err != nil {
 		return nil, err
 	}
 	return &model.AuthPayload{
-		User: &model.User{
-			ID:    user.ID.String(),
-			Email: user.Email,
-		},
-		Jwt: token,
+		User: mapUser(user),
+		Jwt:  token,
 	}, nil
 }
 
@@ -32,10 +29,7 @@ func (r *mutationResolver) Signin(ctx context.Context, input model.SignInInput) 
 		return nil, err
 	}
 	return &model.AuthPayload{
-		User: &model.User{
-			ID:    user.ID.String(),
-			Email: user.Email,
-		},
-		Jwt: token,
+		User: mapUser(user),
+		Jwt:  token,
 	}, nil
 }

@@ -20,7 +20,7 @@ func NewAuthService(db db.DBTX, userService *user.UserService, jwtService *JWTSe
 	}
 }
 
-func (s *AuthService) SignUp(email, password string, ctx context.Context) (*user.User, string, error) {
+func (s *AuthService) SignUp(email, password, username string, ctx context.Context) (*user.User, string, error) {
 	if err := validateEmail(email); err != nil {
 		return nil, "", err
 	}
@@ -38,7 +38,7 @@ func (s *AuthService) SignUp(email, password string, ctx context.Context) (*user
 	if err != nil {
 		return nil, "", err
 	}
-	user, err := s.userService.CreateUser(email, hashedPassword, ctx)
+	user, err := s.userService.CreateUser(email, hashedPassword, username, ctx)
 	if err != nil {
 		return nil, "", err
 	}

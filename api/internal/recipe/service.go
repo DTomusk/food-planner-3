@@ -154,12 +154,21 @@ func (s *Service) GetRecipeByID(ctx context.Context, id string) (*Recipe, error)
 	return s.Repo.GetRecipeByID(ctx, s.txRunner.DB(), id)
 }
 
-func (s *Service) GetRecipesByUserID(ctx context.Context, userID string) ([]*Recipe, error) {
-	return s.Repo.GetRecipesByUserID(ctx, s.txRunner.DB(), userID)
-}
-
-func (s *Service) GetDeletedRecipesByUserID(ctx context.Context, userID string) ([]*Recipe, error) {
-	return s.Repo.GetDeletedRecipesByUserID(ctx, s.txRunner.DB(), userID)
+func (s *Service) GetRecipesByUserID(ctx context.Context, userID string, status RecipeStatus, viewerID *string) ([]*Recipe, error) {
+	switch status {
+	case StatusActive:
+		return s.Repo.GetRecipesByUserID(ctx, s.txRunner.DB(), userID)
+	case StatusDeleted:
+		if viewerID == nil {
+			return nil, ErrUnauthorized
+		}
+		if *viewerID != userID {
+			return nil, ErrUnauthorized
+		}
+		return s.Repo.GetDeletedRecipesByUserID(ctx, s.txRunner.DB(), userID)
+	default:
+		return nil, ErrInvalidStatus
+	}
 }
 
 func (s *Service) GetIngredientUsagesByRecipeID(ctx context.Context, recipeID string) ([]*IngredientUsage, error) {

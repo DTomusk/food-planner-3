@@ -2,6 +2,13 @@
 
 package model
 
+import (
+	"bytes"
+	"fmt"
+	"io"
+	"strconv"
+)
+
 type AuthPayload struct {
 	Jwt  string `json:"jwt"`
 	User *User  `json:"user"`
@@ -67,6 +74,10 @@ type Recipe struct {
 	Source           *RecipeSource      `json:"source"`
 }
 
+type RecipeFilter struct {
+	Status *RecipeStatus `json:"status,omitempty"`
+}
+
 type RecipeSource struct {
 	Type         int32   `json:"type"`
 	URL          *string `json:"url,omitempty"`
@@ -83,6 +94,7 @@ type SignInInput struct {
 type SignUpInput struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+	Username string `json:"username"`
 }
 
 type UndeleteRecipeInput struct {
@@ -96,6 +108,63 @@ type Unit struct {
 }
 
 type User struct {
-	ID    string `json:"id"`
-	Email string `json:"email"`
+	ID       string    `json:"id"`
+	Email    string    `json:"email"`
+	Username string    `json:"username"`
+	Recipes  []*Recipe `json:"recipes"`
+}
+
+type RecipeStatus string
+
+const (
+	RecipeStatusActive  RecipeStatus = "ACTIVE"
+	RecipeStatusDeleted RecipeStatus = "DELETED"
+)
+
+var AllRecipeStatus = []RecipeStatus{
+	RecipeStatusActive,
+	RecipeStatusDeleted,
+}
+
+func (e RecipeStatus) IsValid() bool {
+	switch e {
+	case RecipeStatusActive, RecipeStatusDeleted:
+		return true
+	}
+	return false
+}
+
+func (e RecipeStatus) String() string {
+	return string(e)
+}
+
+func (e *RecipeStatus) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = RecipeStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid RecipeStatus", str)
+	}
+	return nil
+}
+
+func (e RecipeStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *RecipeStatus) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e RecipeStatus) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
 }

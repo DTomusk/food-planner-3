@@ -1,6 +1,6 @@
 import { Alert, PageTitle } from "@/components";
 import Link from "@/components/ui/Link";
-import AuthForm from "@/features/auth/components/AuthForm";
+import SignInForm from "@/features/auth/components/SignInForm";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useSignIn } from "@/features/auth/hooks/useSignIn";
 import Page from "@/layout/PageWrapper";
@@ -36,8 +36,7 @@ export default function SignInPage() {
             <PageTitle text={commonStrings.auth.signIn} />
             {error && <Alert message={extractErrorMessage(error)} closable />}
             <p className="text-center">Don't have an account yet? <Link onClick={() => navigate("/auth/signup", { state: { from: location } })} text={commonStrings.auth.signUp}/></p>
-            <AuthForm
-                formType="signin"
+            <SignInForm
                 onSubmit={handleSubmit}
                 isSubmitting={isPending}
             />

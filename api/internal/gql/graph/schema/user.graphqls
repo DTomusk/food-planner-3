@@ -1,4 +1,11 @@
 type User {
     id: ID!
     email: String!
+    username: String!
+    recipes(filter: RecipeFilter): [Recipe!]! @goField(forceResolver: true)
+}
+
+extend type Query {
+    user(id: ID!): User
+    me: User @auth
 }

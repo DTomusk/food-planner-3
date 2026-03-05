@@ -4,6 +4,7 @@ query GetRecipe($id: ID!) {
         id
         user {
             id
+            username
         }
         ingredientUsages {
             quantity

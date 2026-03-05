@@ -5,12 +5,17 @@ export type Recipe = {
     id: string;
     name: string;
     ingredients: Ingredient[];
-    user: string;
     prepMins: number;
     cookMins: number;
     portions: number;
     source: RecipeSource;
 };
+
+// TODO: move to user feature
+export type User = {
+    id: string;
+    username: string;
+}
 
 export type Ingredient = {
     name: string;

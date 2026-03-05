@@ -18,9 +18,9 @@ import (
 // CreateRecipe is the resolver for the createRecipe field.
 func (r *mutationResolver) CreateRecipe(ctx context.Context, input model.CreateRecipeInput) (*model.Recipe, error) {
 	logger := logging.FromContext(ctx)
-	claims, err := auth.ClaimsFromContext(ctx)
-	if err != nil {
-		return nil, err
+	claims, ok := auth.ClaimsFromContext(ctx)
+	if !ok {
+		return nil, fmt.Errorf("unauthenticated")
 	}
 
 	ingredientUsageRequests := make([]recipe.CreateIngredientUsageRequest, len(input.IngredientUsages))
@@ -54,22 +54,15 @@ func (r *mutationResolver) CreateRecipe(ctx context.Context, input model.CreateR
 		logger.Error("Failed to create recipe", "error", err)
 		return nil, err
 	}
-	recipeModel := &model.Recipe{
-		ID:       recipe.ID.String(),
-		Name:     recipe.Name,
-		PrepMins: int32(recipe.PrepMins),
-		CookMins: int32(recipe.CookMins),
-		Portions: int32(recipe.Portions),
-	}
-	return recipeModel, nil
+	return mapRecipe(recipe), nil
 }
 
 // DeleteRecipe is the resolver for the deleteRecipe field.
 func (r *mutationResolver) DeleteRecipe(ctx context.Context, input model.DeleteRecipeInput) (*model.Recipe, error) {
 	logger := logging.FromContext(ctx)
-	claims, err := auth.ClaimsFromContext(ctx)
-	if err != nil {
-		return nil, err
+	claims, ok := auth.ClaimsFromContext(ctx)
+	if !ok {
+		return nil, fmt.Errorf("unauthenticated")
 	}
 
 	recipe, err := r.RecipeService.DeleteRecipe(ctx, input.ID, claims.UserID)
@@ -77,22 +70,16 @@ func (r *mutationResolver) DeleteRecipe(ctx context.Context, input model.DeleteR
 		logger.Error("Failed to delete recipe", "error", err)
 		return nil, err
 	}
-	recipeModel := &model.Recipe{
-		ID:       recipe.ID.String(),
-		Name:     recipe.Name,
-		PrepMins: int32(recipe.PrepMins),
-		CookMins: int32(recipe.CookMins),
-		Portions: int32(recipe.Portions),
-	}
-	return recipeModel, nil
+
+	return mapRecipe(recipe), nil
 }
 
 // UndeleteRecipe is the resolver for the undeleteRecipe field.
 func (r *mutationResolver) UndeleteRecipe(ctx context.Context, input model.UndeleteRecipeInput) (*model.Recipe, error) {
 	logger := logging.FromContext(ctx)
-	claims, err := auth.ClaimsFromContext(ctx)
-	if err != nil {
-		return nil, err
+	claims, ok := auth.ClaimsFromContext(ctx)
+	if !ok {
+		return nil, fmt.Errorf("unauthenticated")
 	}
 
 	recipe, err := r.RecipeService.UndeleteRecipe(ctx, input.ID, claims.UserID)
@@ -100,14 +87,8 @@ func (r *mutationResolver) UndeleteRecipe(ctx context.Context, input model.Undel
 		logger.Error("Failed to undelete recipe", "error", err)
 		return nil, err
 	}
-	recipeModel := &model.Recipe{
-		ID:       recipe.ID.String(),
-		Name:     recipe.Name,
-		PrepMins: int32(recipe.PrepMins),
-		CookMins: int32(recipe.CookMins),
-		Portions: int32(recipe.Portions),
-	}
-	return recipeModel, nil
+
+	return mapRecipe(recipe), nil
 }
 
 // Recipes is the resolver for the recipes field.
@@ -118,18 +99,8 @@ func (r *queryResolver) Recipes(ctx context.Context) ([]*model.Recipe, error) {
 		logger.Error("Failed to get all recipes", "error", err)
 		return nil, err
 	}
-	var recipeModels []*model.Recipe
-	for _, recipe := range recipes {
-		recipeModel := model.Recipe{
-			ID:       recipe.ID.String(),
-			Name:     recipe.Name,
-			PrepMins: int32(recipe.PrepMins),
-			CookMins: int32(recipe.CookMins),
-			Portions: int32(recipe.Portions),
-		}
-		recipeModels = append(recipeModels, &recipeModel)
-	}
-	return recipeModels, nil
+
+	return mapRecipes(recipes), nil
 }
 
 // Recipe is the resolver for the recipe field.
@@ -143,66 +114,8 @@ func (r *queryResolver) Recipe(ctx context.Context, id string) (*model.Recipe, e
 	if recipe == nil {
 		return nil, nil
 	}
-	recipeModel := &model.Recipe{
-		ID:       recipe.ID.String(),
-		Name:     recipe.Name,
-		PrepMins: int32(recipe.PrepMins),
-		CookMins: int32(recipe.CookMins),
-		Portions: int32(recipe.Portions),
-	}
+	recipeModel := mapRecipe(recipe)
 	return recipeModel, nil
-}
-
-// MyRecipes is the resolver for the myRecipes field.
-func (r *queryResolver) MyRecipes(ctx context.Context) ([]*model.Recipe, error) {
-	logger := logging.FromContext(ctx)
-	claims, err := auth.ClaimsFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	recipes, err := r.RecipeService.GetRecipesByUserID(ctx, claims.UserID)
-	if err != nil {
-		logger.Error("Failed to get recipes for user", "error", err)
-		return nil, err
-	}
-	var recipeModels []*model.Recipe
-	for _, recipe := range recipes {
-		recipeModel := model.Recipe{
-			ID:       recipe.ID.String(),
-			Name:     recipe.Name,
-			PrepMins: int32(recipe.PrepMins),
-			CookMins: int32(recipe.CookMins),
-			Portions: int32(recipe.Portions),
-		}
-		recipeModels = append(recipeModels, &recipeModel)
-	}
-	return recipeModels, nil
-}
-
-// MyDeletedRecipes is the resolver for the myDeletedRecipes field.
-func (r *queryResolver) MyDeletedRecipes(ctx context.Context) ([]*model.Recipe, error) {
-	logger := logging.FromContext(ctx)
-	claims, err := auth.ClaimsFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	recipes, err := r.RecipeService.GetDeletedRecipesByUserID(ctx, claims.UserID)
-	if err != nil {
-		logger.Error("Failed to get deleted recipes for user", "error", err)
-		return nil, err
-	}
-	var recipeModels []*model.Recipe
-	for _, recipe := range recipes {
-		recipeModel := model.Recipe{
-			ID:       recipe.ID.String(),
-			Name:     recipe.Name,
-			PrepMins: int32(recipe.PrepMins),
-			CookMins: int32(recipe.CookMins),
-			Portions: int32(recipe.Portions),
-		}
-		recipeModels = append(recipeModels, &recipeModel)
-	}
-	return recipeModels, nil
 }
 
 // IngredientUsages is the resolver for the ingredientUsages field.
@@ -271,8 +184,9 @@ func (r *recipeResolver) User(ctx context.Context, obj *model.Recipe) (*model.Us
 		return nil, fmt.Errorf("user not found for recipe")
 	}
 	return &model.User{
-		ID:    user.ID.String(),
-		Email: user.Email,
+		ID:       user.ID.String(),
+		Email:    user.Email,
+		Username: user.Username,
 	}, nil
 }
 
@@ -298,3 +212,26 @@ func (r *recipeResolver) Source(ctx context.Context, obj *model.Recipe) (*model.
 func (r *Resolver) Recipe() graph.RecipeResolver { return &recipeResolver{r} }
 
 type recipeResolver struct{ *Resolver }
+
+func mapRecipes(recipes []*recipe.Recipe) []*model.Recipe {
+	var result []*model.Recipe
+
+	for _, recipe := range recipes {
+		result = append(result, mapRecipe(recipe))
+	}
+
+	return result
+}
+
+func mapRecipe(recipe *recipe.Recipe) *model.Recipe {
+	if recipe == nil {
+		return nil
+	}
+	return &model.Recipe{
+		ID:       recipe.ID.String(),
+		Name:     recipe.Name,
+		PrepMins: int32(recipe.PrepMins),
+		CookMins: int32(recipe.CookMins),
+		Portions: int32(recipe.Portions),
+	}
+}

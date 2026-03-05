@@ -25,6 +25,7 @@ func TestAuthResolver_SignUp(t *testing.T) {
 		input := model.SignUpInput{
 			Email:    "test@example.com",
 			Password: "securepassword",
+			Username: "testuser",
 		}
 
 		// Act
@@ -34,6 +35,7 @@ func TestAuthResolver_SignUp(t *testing.T) {
 		// Assert
 		require.NoError(t, err)
 		require.Equal(t, input.Email, authPayload.User.Email)
+		require.Equal(t, input.Username, authPayload.User.Username)
 		require.NotEmpty(t, authPayload.User.ID)
 		require.NotEmpty(t, authPayload.Jwt)
 	})
@@ -52,7 +54,7 @@ func TestAuthResolver_SignIn(t *testing.T) {
 
 		// First, create a user to sign in
 		ctx := context.Background()
-		createdUser, _, err := authService.SignUp("test@example.com", "securepassword", ctx)
+		createdUser, _, err := authService.SignUp("test@example.com", "securepassword", "testuser", ctx)
 		require.NoError(t, err)
 
 		input := model.SignInInput{
@@ -66,6 +68,7 @@ func TestAuthResolver_SignIn(t *testing.T) {
 		// Assert
 		require.NoError(t, err)
 		require.Equal(t, createdUser.Email, authPayload.User.Email)
+		require.Equal(t, createdUser.Username, authPayload.User.Username)
 		require.Equal(t, createdUser.ID.String(), authPayload.User.ID)
 		require.NotEmpty(t, authPayload.Jwt)
 	})

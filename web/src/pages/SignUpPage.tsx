@@ -1,6 +1,6 @@
 import { Alert, PageTitle } from "@/components";
 import Link from "@/components/ui/Link";
-import AuthForm from "@/features/auth/components/AuthForm";
+import SignUpForm from "@/features/auth/components/SignUpForm";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useSignUp } from "@/features/auth/hooks/useSignUp";
 import { Page } from "@/layout";
@@ -20,9 +20,9 @@ export default function SignUpPage() {
         return (<Navigate to={from} />);
     }
 
-    const handleSubmit = (values: { email: string; password: string }) => {
+    const handleSubmit = (values: { email: string; password: string; username: string }) => {
         mutate(
-            { input: { email: values.email, password: values.password } },
+            { input: { email: values.email, password: values.password, username: values.username } },
             {
                 onSuccess: () => {
                     navigate(from, { replace: true });
@@ -36,8 +36,7 @@ export default function SignUpPage() {
             <PageTitle text={commonStrings.auth.signUp} />
             {error && <Alert message={extractErrorMessage(error)} closable />}
             <p className="text-center">Already have an account? <Link onClick={() => navigate("/auth/signin", { state: { from: location } })} text={commonStrings.auth.signIn}/></p>
-            <AuthForm
-                formType="signup"
+            <SignUpForm
                 onSubmit={handleSubmit}
                 isSubmitting={isPending}
             />

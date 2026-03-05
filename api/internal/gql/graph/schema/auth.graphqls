@@ -6,6 +6,7 @@ extend type Mutation {
 input SignUpInput {
     email: String!
     password: String!
+    username: String!
 }
 
 input SignInInput {

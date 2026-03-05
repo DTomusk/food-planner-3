@@ -1,6 +1,8 @@
 query GetMyRecipes {
-    myRecipes {
-        name
-        id
+    me {
+        recipes(filter: { status: ACTIVE }) {
+            name
+            id
+        }
     }
 }

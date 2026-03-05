@@ -19,15 +19,17 @@ func TestSignUp_Success(t *testing.T) {
 
 		email := "blah@test.com"
 		password := "securepassword"
+		username := "testuser"
 
 		// Act
-		user, token, err := authService.SignUp(email, password, context.Background())
+		user, token, err := authService.SignUp(email, password, username, context.Background())
 
 		// Assert
 		require.NoError(t, err)
 		require.Equal(t, email, user.Email)
 		require.NotEmpty(t, user.ID)
 		require.NotEqual(t, "securepassword", user.PasswordHash)
+		require.Equal(t, username, user.Username)
 		require.NotEmpty(t, token)
 	})
 }
@@ -40,9 +42,10 @@ func TestSignup_InvalidEmail(t *testing.T) {
 		authService := NewAuthService(tx, userService, jwtService)
 		invalidEmail := "invalid-email"
 		password := "securepassword"
+		username := "testuser"
 
 		// Act
-		_, _, err := authService.SignUp(invalidEmail, password, context.Background())
+		_, _, err := authService.SignUp(invalidEmail, password, username, context.Background())
 
 		// Assert
 		require.Error(t, err)
@@ -60,7 +63,7 @@ func TestSignup_ShortPassword(t *testing.T) {
 		invalidPassword := "123"
 
 		// Act
-		_, _, err := authService.SignUp(email, invalidPassword, context.Background())
+		_, _, err := authService.SignUp(email, invalidPassword, "testuser", context.Background())
 
 		// Assert
 		require.Error(t, err)
@@ -79,7 +82,7 @@ func TestSignup_LongPassword(t *testing.T) {
 		invalidPassword := "12345678901234567890123456789012345678901234567890123456789012345"
 
 		// Act
-		_, _, err := authService.SignUp(email, invalidPassword, context.Background())
+		_, _, err := authService.SignUp(email, invalidPassword, "testuser", context.Background())
 
 		// Assert
 		require.Error(t, err)
@@ -96,12 +99,13 @@ func TestSignUp_DuplicateEmail(t *testing.T) {
 
 		email := "blah@test.com"
 		password := "securepassword"
+		username := "testuser"
 
-		_, _, err := authService.SignUp(email, password, context.Background())
+		_, _, err := authService.SignUp(email, password, username, context.Background())
 		require.NoError(t, err)
 
 		// Act
-		_, _, err = authService.SignUp(email, password, context.Background())
+		_, _, err = authService.SignUp(email, password, username, context.Background())
 		// Assert
 		require.Error(t, err)
 		require.Equal(t, ErrEmailAlreadyInUse, err)
@@ -117,8 +121,9 @@ func TestSignIn_Success(t *testing.T) {
 
 		email := "test@example.com"
 		password := "securepassword"
+		username := "testuser"
 
-		createdUser, _, err := authService.SignUp(email, password, context.Background())
+		createdUser, _, err := authService.SignUp(email, password, username, context.Background())
 		require.NoError(t, err)
 
 		// Act
@@ -159,8 +164,9 @@ func TestSignIn_WrongPassword(t *testing.T) {
 		authService := NewAuthService(tx, userService, jwtService)
 		email := "example@test.com"
 		correctPassword := "correctpassword"
+		username := "testuser"
 
-		_, _, err := authService.SignUp(email, correctPassword, context.Background())
+		_, _, err := authService.SignUp(email, correctPassword, username, context.Background())
 		require.NoError(t, err)
 
 		// Act

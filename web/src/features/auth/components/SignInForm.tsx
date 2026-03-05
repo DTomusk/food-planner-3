@@ -1,4 +1,3 @@
-// Note: separate this if sign in and up diverge
 import { Button, Form } from "@/components";
 import FormField from "@/components/form/FormField";
 import Container from "@/components/layout/Container";
@@ -6,22 +5,25 @@ import Input from "@/components/ui/Input";
 import { commonStrings } from "@/lib/strings";
 import { useForm } from "react-hook-form";
 
-type AuthFormProps = {
-    onSubmit: (values: { email: string; password: string }) => void;
+type SignInFormProps = {
+    onSubmit: (values: SignInFormValues) => void;
     isSubmitting?: boolean;
-    formType: "signin" | "signup";
 }
 
-export default function AuthForm({
+type SignInFormValues = {
+    email: string;
+    password: string;
+}
+
+export default function SignInForm({
     onSubmit,
     isSubmitting = false,
-    formType,
-}: AuthFormProps) {
+}: SignInFormProps) {
     const {
         register,
         handleSubmit,
         formState: { errors },
-    } = useForm<{ email: string; password: string }>();
+    } = useForm<SignInFormValues>();
     return (
         <Container size="sm">
         <Form onSubmit={handleSubmit(onSubmit)}>
@@ -32,7 +34,7 @@ export default function AuthForm({
                 <Input type="password" placeholder="Password" {...register("password", { required: "Password is required" })} />
             </FormField>      
             <Button disabled={isSubmitting} type="submit" loading={isSubmitting}>
-                {formType === "signin" ? commonStrings.auth.signIn : commonStrings.auth.signUp}
+                {commonStrings.auth.signIn}
             </Button>
         </Form>
         </Container>

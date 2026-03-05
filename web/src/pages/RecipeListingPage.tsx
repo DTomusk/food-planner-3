@@ -21,26 +21,26 @@ export default function RecipeListingPage() {
             <PageTitle text="Recipes" />
             <Container size="md">
                 <Stack space="lg">
-            {!isAuthenticated && <Alert type="info" message="Please sign in to add a new recipe." />}
-            {isAuthenticated && 
-            <Inline>
-                <Stack space="sm">
-                    <Button onClick={() => navigate("/recipes/create")} 
-                    aria-label="Add new recipe" variant="primary">
-                        <Inline>
-                        <Plus /> {commonStrings.recipe.add}
-                        </Inline>
-                    </Button>
-                </Stack>
-            </Inline>}
-            {isLoading && <Spinner/>}
-            {error && <Alert message={extractErrorMessage(error)} closable />}
-            {data && (
-                <>
-                    <SectionTitle text="Top recipes" />
-                    <RecipeList recipes={data.recipes} />
-                </>
-            )}
+                {!isAuthenticated && <Alert type="info" message="Please sign in to add a new recipe." />}
+                {isAuthenticated && 
+                <Inline>
+                    <Stack space="sm">
+                        <Button onClick={() => navigate("/recipes/create")} 
+                        aria-label="Add new recipe" variant="primary">
+                            <Inline>
+                            <Plus /> {commonStrings.recipe.add}
+                            </Inline>
+                        </Button>
+                    </Stack>
+                </Inline>}
+                {isLoading && <Spinner/>}
+                {error && <Alert message={extractErrorMessage(error)} closable />}
+                {data && (
+                    <>
+                        <SectionTitle text="Top recipes" />
+                        <RecipeList recipes={data.recipes} />
+                    </>
+                )}
                 </Stack>
             </Container>
         </Page>
