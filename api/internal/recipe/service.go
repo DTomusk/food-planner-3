@@ -154,7 +154,7 @@ func (s *Service) GetRecipeByID(ctx context.Context, id string) (*Recipe, error)
 	return s.Repo.GetRecipeByID(ctx, s.txRunner.DB(), id)
 }
 
-func (s *Service) GetRecipesByUserID(ctx context.Context, userID string) ([]*Recipe, error) {
+func (s *Service) GetRecipesByUserID(ctx context.Context, userID string, status RecipeStatus, viewerID *string) ([]*Recipe, error) {
 	return s.Repo.GetRecipesByUserID(ctx, s.txRunner.DB(), userID)
 }
 

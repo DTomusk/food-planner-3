@@ -13,8 +13,8 @@ func AuthDirective(
 	obj interface{},
 	next graphql.Resolver,
 ) (interface{}, error) {
-	_, err := auth.ClaimsFromContext(ctx)
-	if err != nil {
+	_, ok := auth.ClaimsFromContext(ctx)
+	if !ok {
 		return nil, gqlerror.Errorf("unauthorized")
 	}
 	return next(ctx)

@@ -18,9 +18,9 @@ import (
 // CreateRecipe is the resolver for the createRecipe field.
 func (r *mutationResolver) CreateRecipe(ctx context.Context, input model.CreateRecipeInput) (*model.Recipe, error) {
 	logger := logging.FromContext(ctx)
-	claims, err := auth.ClaimsFromContext(ctx)
-	if err != nil {
-		return nil, err
+	claims, ok := auth.ClaimsFromContext(ctx)
+	if !ok {
+		return nil, fmt.Errorf("unauthenticated")
 	}
 
 	ingredientUsageRequests := make([]recipe.CreateIngredientUsageRequest, len(input.IngredientUsages))
@@ -60,9 +60,9 @@ func (r *mutationResolver) CreateRecipe(ctx context.Context, input model.CreateR
 // DeleteRecipe is the resolver for the deleteRecipe field.
 func (r *mutationResolver) DeleteRecipe(ctx context.Context, input model.DeleteRecipeInput) (*model.Recipe, error) {
 	logger := logging.FromContext(ctx)
-	claims, err := auth.ClaimsFromContext(ctx)
-	if err != nil {
-		return nil, err
+	claims, ok := auth.ClaimsFromContext(ctx)
+	if !ok {
+		return nil, fmt.Errorf("unauthenticated")
 	}
 
 	recipe, err := r.RecipeService.DeleteRecipe(ctx, input.ID, claims.UserID)
@@ -77,9 +77,9 @@ func (r *mutationResolver) DeleteRecipe(ctx context.Context, input model.DeleteR
 // UndeleteRecipe is the resolver for the undeleteRecipe field.
 func (r *mutationResolver) UndeleteRecipe(ctx context.Context, input model.UndeleteRecipeInput) (*model.Recipe, error) {
 	logger := logging.FromContext(ctx)
-	claims, err := auth.ClaimsFromContext(ctx)
-	if err != nil {
-		return nil, err
+	claims, ok := auth.ClaimsFromContext(ctx)
+	if !ok {
+		return nil, fmt.Errorf("unauthenticated")
 	}
 
 	recipe, err := r.RecipeService.UndeleteRecipe(ctx, input.ID, claims.UserID)

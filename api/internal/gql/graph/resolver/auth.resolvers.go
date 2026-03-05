@@ -17,12 +17,8 @@ func (r *mutationResolver) Signup(ctx context.Context, input model.SignUpInput) 
 		return nil, err
 	}
 	return &model.AuthPayload{
-		User: &model.User{
-			ID:       user.ID.String(),
-			Email:    user.Email,
-			Username: user.Username,
-		},
-		Jwt: token,
+		User: mapUser(user),
+		Jwt:  token,
 	}, nil
 }
 
@@ -33,11 +29,7 @@ func (r *mutationResolver) Signin(ctx context.Context, input model.SignInInput) 
 		return nil, err
 	}
 	return &model.AuthPayload{
-		User: &model.User{
-			ID:       user.ID.String(),
-			Email:    user.Email,
-			Username: user.Username,
-		},
-		Jwt: token,
+		User: mapUser(user),
+		Jwt:  token,
 	}, nil
 }

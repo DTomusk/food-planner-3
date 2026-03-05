@@ -12,10 +12,7 @@ func ContextWithClaims(ctx context.Context, claims *Claims) context.Context {
 	return context.WithValue(ctx, UserClaimsContextKey, claims)
 }
 
-func ClaimsFromContext(ctx context.Context) (*Claims, error) {
+func ClaimsFromContext(ctx context.Context) (*Claims, bool) {
 	claims, ok := ctx.Value(UserClaimsContextKey).(*Claims)
-	if !ok || claims == nil {
-		return nil, ErrUnauthenticated
-	}
-	return claims, nil
+	return claims, ok && claims != nil
 }

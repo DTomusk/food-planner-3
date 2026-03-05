@@ -35,9 +35,9 @@ func TestMiddleware_InvalidAuthHeaderFormat(t *testing.T) {
 
 	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		handlerCalled = true
-		var err error
-		claimsInContext, err = ClaimsFromContext(r.Context())
-		require.Error(t, err)
+		var ok bool
+		claimsInContext, ok = ClaimsFromContext(r.Context())
+		require.False(t, ok, "claims should not be present in context for invalid auth header format")
 	})
 
 	req := httptest.NewRequest("GET", "/", nil)
@@ -59,9 +59,9 @@ func TestMiddleware_InvalidToken(t *testing.T) {
 
 	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		handlerCalled = true
-		var err error
-		claimsInContext, err = ClaimsFromContext(r.Context())
-		require.Error(t, err)
+		var ok bool
+		claimsInContext, ok = ClaimsFromContext(r.Context())
+		require.False(t, ok, "claims should not be present in context for invalid token")
 	})
 
 	req := httptest.NewRequest("GET", "/", nil)
@@ -86,8 +86,8 @@ func TestMiddleware_ValidToken(t *testing.T) {
 	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		handlerCalled = true
 
-		claims, err := ClaimsFromContext(r.Context())
-		require.NoError(t, err)
+		claims, ok := ClaimsFromContext(r.Context())
+		require.True(t, ok, "claims should be present in context for valid token")
 
 		claimsInContext = claims
 	})
