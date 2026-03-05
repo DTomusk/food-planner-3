@@ -260,6 +260,8 @@ func TestCreateAndDeleteRecipe(t *testing.T) {
 		testUser, err := seeds.SeedTestUser(ctx, tx)
 		require.NoError(t, err, "Failed to seed test user")
 
+		testUserIdPtr := testutil.PtrString(testUser.ID.String())
+
 		s := NewService(txRunner, NewRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100), nil)
 		ingredientRequest := CreateIngredientUsageRequest{
 			IngredientID: ingredientID.String(),
@@ -304,7 +306,7 @@ func TestCreateAndDeleteRecipe(t *testing.T) {
 		require.Nil(t, got, "Expected to not find deleted recipe by ID")
 
 		// Act 4 - Get deleted recipes for user
-		deletedRecipes, err := s.GetDeletedRecipesByUserID(ctx, testUser.ID.String())
+		deletedRecipes, err := s.GetRecipesByUserID(ctx, testUser.ID.String(), StatusDeleted, testUserIdPtr)
 
 		// Assert
 		require.NoError(t, err, "Expected no error when getting deleted recipes by user ID")
@@ -327,7 +329,7 @@ func TestCreateAndDeleteRecipe(t *testing.T) {
 		require.Equal(t, recipe.ID, got.ID, "Expected undeleted recipe ID to match created recipe ID")
 
 		// Act 7 - Get deleted recipes for user again
-		deletedRecipes, err = s.GetDeletedRecipesByUserID(ctx, testUser.ID.String())
+		deletedRecipes, err = s.GetRecipesByUserID(ctx, testUser.ID.String(), StatusDeleted, testUserIdPtr)
 
 		// Assert
 		require.NoError(t, err, "Expected no error when getting deleted recipes by user ID")
