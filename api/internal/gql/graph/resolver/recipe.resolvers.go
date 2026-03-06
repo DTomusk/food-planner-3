@@ -59,36 +59,38 @@ func (r *mutationResolver) CreateRecipe(ctx context.Context, input model.CreateR
 
 // DeleteRecipe is the resolver for the deleteRecipe field.
 func (r *mutationResolver) DeleteRecipe(ctx context.Context, input model.DeleteRecipeInput) (*model.Recipe, error) {
-	logger := logging.FromContext(ctx)
-	claims, ok := auth.ClaimsFromContext(ctx)
-	if !ok {
-		return nil, fmt.Errorf("unauthenticated")
-	}
+	// logger := logging.FromContext(ctx)
+	// claims, ok := auth.ClaimsFromContext(ctx)
+	// if !ok {
+	// 	return nil, fmt.Errorf("unauthenticated")
+	// }
 
-	recipe, err := r.RecipeService.DeleteRecipe(ctx, input.ID, claims.UserID)
-	if err != nil {
-		logger.Error("Failed to delete recipe", "error", err)
-		return nil, err
-	}
+	// recipe, err := r.RecipeService.DeleteRecipe(ctx, input.ID, claims.UserID)
+	// if err != nil {
+	// 	logger.Error("Failed to delete recipe", "error", err)
+	// 	return nil, err
+	// }
 
-	return mapRecipe(recipe), nil
+	// return mapRecipe(recipe), nil
+	return nil, nil
 }
 
 // UndeleteRecipe is the resolver for the undeleteRecipe field.
 func (r *mutationResolver) UndeleteRecipe(ctx context.Context, input model.UndeleteRecipeInput) (*model.Recipe, error) {
-	logger := logging.FromContext(ctx)
-	claims, ok := auth.ClaimsFromContext(ctx)
-	if !ok {
-		return nil, fmt.Errorf("unauthenticated")
-	}
+	// logger := logging.FromContext(ctx)
+	// claims, ok := auth.ClaimsFromContext(ctx)
+	// if !ok {
+	// 	return nil, fmt.Errorf("unauthenticated")
+	// }
 
-	recipe, err := r.RecipeService.UndeleteRecipe(ctx, input.ID, claims.UserID)
-	if err != nil {
-		logger.Error("Failed to undelete recipe", "error", err)
-		return nil, err
-	}
+	// recipe, err := r.RecipeService.UndeleteRecipe(ctx, input.ID, claims.UserID)
+	// if err != nil {
+	// 	logger.Error("Failed to undelete recipe", "error", err)
+	// 	return nil, err
+	// }
 
-	return mapRecipe(recipe), nil
+	// return mapRecipe(recipe), nil
+	return nil, nil
 }
 
 // Recipes is the resolver for the recipes field.
@@ -169,25 +171,26 @@ func (r *recipeResolver) IngredientUsages(ctx context.Context, obj *model.Recipe
 // User is the resolver for the user field.
 func (r *recipeResolver) User(ctx context.Context, obj *model.Recipe) (*model.User, error) {
 	// Called twice, could eager load user when loading recipe if we
-	recipe, err := r.RecipeService.GetRecipeByID(ctx, obj.ID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get recipe for user resolver: %w", err)
-	}
-	if recipe == nil {
-		return nil, fmt.Errorf("recipe not found for user resolver")
-	}
-	user, err := r.UserService.GetUserByID(ctx, recipe.UserID.String())
-	if err != nil {
-		return nil, fmt.Errorf("failed to get user for recipe: %w", err)
-	}
-	if user == nil {
-		return nil, fmt.Errorf("user not found for recipe")
-	}
-	return &model.User{
-		ID:       user.ID.String(),
-		Email:    user.Email,
-		Username: user.Username,
-	}, nil
+	// recipe, err := r.RecipeService.GetRecipeByID(ctx, obj.ID)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to get recipe for user resolver: %w", err)
+	// }
+	// if recipe == nil {
+	// 	return nil, fmt.Errorf("recipe not found for user resolver")
+	// }
+	// user, err := r.UserService.GetUserByID(ctx, recipe.UserID.String())
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to get user for recipe: %w", err)
+	// }
+	// if user == nil {
+	// 	return nil, fmt.Errorf("user not found for recipe")
+	// }
+	// return &model.User{
+	// 	ID:       user.ID.String(),
+	// 	Email:    user.Email,
+	// 	Username: user.Username,
+	// }, nil
+	return nil, nil
 }
 
 // Source is the resolver for the source field.
@@ -213,7 +216,7 @@ func (r *Resolver) Recipe() graph.RecipeResolver { return &recipeResolver{r} }
 
 type recipeResolver struct{ *Resolver }
 
-func mapRecipes(recipes []*recipe.Recipe) []*model.Recipe {
+func mapRecipes(recipes []*recipe.RecipeVersion) []*model.Recipe {
 	var result []*model.Recipe
 
 	for _, recipe := range recipes {
@@ -223,7 +226,7 @@ func mapRecipes(recipes []*recipe.Recipe) []*model.Recipe {
 	return result
 }
 
-func mapRecipe(recipe *recipe.Recipe) *model.Recipe {
+func mapRecipe(recipe *recipe.RecipeVersion) *model.Recipe {
 	if recipe == nil {
 		return nil
 	}

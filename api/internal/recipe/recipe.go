@@ -6,46 +6,73 @@ import (
 	"github.com/google/uuid"
 )
 
-type Recipe struct {
-	ID          uuid.UUID
-	UserID      uuid.UUID
+type RecipeContainer struct {
+	ID               uuid.UUID
+	UserID           uuid.UUID
+	CurrentVersionID uuid.UUID
+
+	CreatedAt time.Time
+	DeletedAt *time.Time
+}
+
+type RecipeVersion struct {
+	ID       uuid.UUID
+	RecipeID uuid.UUID
+	Version  int
+
 	Name        string
 	Ingredients []*IngredientUsage
 	PrepMins    int
 	CookMins    int
 	Portions    int
 	Source      *RecipeSource
-	DeletedOn   *time.Time
+
+	CreatedAt time.Time
 }
 
-func NewRecipe(name string, userID uuid.UUID, ingredients []*IngredientUsage, prepMins, cookMins, portions int, source *RecipeSource) (*Recipe, error) {
+func NewRecipe(name string, userID uuid.UUID, ingredients []*IngredientUsage, prepMins, cookMins, portions int, source *RecipeSource) (*RecipeContainer, *RecipeVersion, error) {
 	if name == "" {
-		return nil, ErrEmptyName
+		return nil, nil, ErrEmptyName
 	}
 	if len(ingredients) == 0 {
-		return nil, ErrNoIngredients
+		return nil, nil, ErrNoIngredients
 	}
 	if prepMins < 0 {
-		return nil, ErrInvalidPrepMins
+		return nil, nil, ErrInvalidPrepMins
 	}
 	if cookMins < 0 {
-		return nil, ErrInvalidCookMins
+		return nil, nil, ErrInvalidCookMins
 	}
 	if portions <= 0 {
-		return nil, ErrInvalidPortions
+		return nil, nil, ErrInvalidPortions
 	}
-	return &Recipe{
-		ID:          uuid.New(),
-		UserID:      userID,
+
+	recipeID := uuid.New()
+	versionID := uuid.New()
+	now := time.Now()
+
+	recipe := &RecipeContainer{
+		ID:               recipeID,
+		UserID:           userID,
+		CurrentVersionID: versionID,
+		CreatedAt:        now,
+	}
+
+	version := &RecipeVersion{
+		ID:          versionID,
+		RecipeID:    recipeID,
+		Version:     1,
 		Name:        name,
 		Ingredients: ingredients,
 		PrepMins:    prepMins,
 		CookMins:    cookMins,
 		Portions:    portions,
 		Source:      source,
-	}, nil
+		CreatedAt:   now,
+	}
+	return recipe, version, nil
 }
 
-func (r *Recipe) String() string {
+func (r *RecipeVersion) String() string {
 	return r.Name
 }

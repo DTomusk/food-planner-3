@@ -28,7 +28,7 @@ func NewService(txRunner db.TxRunner, repo *Repo, ingredientService *ingredient.
 	}
 }
 
-func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest) (*Recipe, error) {
+func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest) (*RecipeVersion, error) {
 	logger := logging.FromContext(ctx).With("method", "CreateRecipe", "request", request)
 	logger.Debug("Creating recipe")
 	// Basic request validation
@@ -56,7 +56,7 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 		return nil, err
 	}
 
-	recipe, err := NewRecipe(
+	recipeContainer, recipeVersion, err := NewRecipe(
 		request.Name,
 		userID,
 		ingredientUsages,
@@ -71,17 +71,16 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 	}
 
 	// Persist recipe
-	// We should use a transaction
 	err = s.txRunner.WithTx(ctx, func(tx *sql.Tx) error {
 		var err error
-		recipe, err = s.Repo.CreateRecipe(ctx, tx, recipe)
+		recipeVersion, err = s.Repo.CreateRecipe(ctx, tx, recipeContainer, recipeVersion)
 		return err
 	})
 	if err != nil {
 		logger.Error("Error persisting recipe", "error", err)
 		return nil, err
 	}
-	return recipe, nil
+	return recipeVersion, nil
 }
 
 func (s *Service) validateAndConvertIngredientUsages(ctx context.Context, logger *slog.Logger, ingredientUsageRequests []CreateIngredientUsageRequest) ([]*IngredientUsage, error) {
@@ -146,29 +145,30 @@ func (s *Service) validateAndConvertRecipeSource(sourceRequest *CreateRecipeSour
 	}
 }
 
-func (s *Service) GetAllRecipes(ctx context.Context) ([]*Recipe, error) {
+func (s *Service) GetAllRecipes(ctx context.Context) ([]*RecipeVersion, error) {
 	return s.Repo.GetAllRecipes(ctx, s.txRunner.DB())
 }
 
-func (s *Service) GetRecipeByID(ctx context.Context, id string) (*Recipe, error) {
+func (s *Service) GetRecipeByID(ctx context.Context, id string) (*RecipeVersion, error) {
 	return s.Repo.GetRecipeByID(ctx, s.txRunner.DB(), id)
 }
 
-func (s *Service) GetRecipesByUserID(ctx context.Context, userID string, status RecipeStatus, viewerID *string) ([]*Recipe, error) {
-	switch status {
-	case StatusActive:
-		return s.Repo.GetRecipesByUserID(ctx, s.txRunner.DB(), userID)
-	case StatusDeleted:
-		if viewerID == nil {
-			return nil, ErrUnauthorized
-		}
-		if *viewerID != userID {
-			return nil, ErrUnauthorized
-		}
-		return s.Repo.GetDeletedRecipesByUserID(ctx, s.txRunner.DB(), userID)
-	default:
-		return nil, ErrInvalidStatus
-	}
+func (s *Service) GetRecipesByUserID(ctx context.Context, userID string, status RecipeStatus, viewerID *string) ([]*RecipeVersion, error) {
+	// switch status {
+	// case StatusActive:
+	// 	return s.Repo.GetRecipesByUserID(ctx, s.txRunner.DB(), userID)
+	// case StatusDeleted:
+	// 	if viewerID == nil {
+	// 		return nil, ErrUnauthorized
+	// 	}
+	// 	if *viewerID != userID {
+	// 		return nil, ErrUnauthorized
+	// 	}
+	// 	return s.Repo.GetDeletedRecipesByUserID(ctx, s.txRunner.DB(), userID)
+	// default:
+	// 	return nil, ErrInvalidStatus
+	// }
+	return s.Repo.GetRecipesByUserID(ctx, s.txRunner.DB(), userID)
 }
 
 func (s *Service) GetIngredientUsagesByRecipeID(ctx context.Context, recipeID string) ([]*IngredientUsage, error) {
@@ -179,48 +179,48 @@ func (s *Service) GetRecipeSourceByRecipeID(ctx context.Context, recipeID string
 	return s.Repo.GetRecipeSourceByRecipeID(ctx, s.txRunner.DB(), recipeID)
 }
 
-func (s *Service) DeleteRecipe(ctx context.Context, recipeID, userID string) (*Recipe, error) {
-	// Get the recipe to ensure it exists and belongs to the user
-	recipe, err := s.GetRecipeByID(ctx, recipeID)
-	if err != nil {
-		return nil, err
-	}
-	if recipe == nil {
-		return nil, ErrRecipeNotFound
-	}
-	if recipe.UserID.String() != userID {
-		return nil, ErrUnauthorized
-	}
-	dbRecipe, err := s.Repo.DeleteRecipe(ctx, s.txRunner.DB(), recipeID)
-	if err != nil {
-		return nil, err
-	}
-	return dbRecipe, nil
-}
+// func (s *Service) DeleteRecipe(ctx context.Context, recipeID, userID string) (*RecipeVersion, error) {
+// 	// Get the recipe to ensure it exists and belongs to the user
+// 	recipe, err := s.GetRecipeByID(ctx, recipeID)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	if recipe == nil {
+// 		return nil, ErrRecipeNotFound
+// 	}
+// 	if recipe.UserID.String() != userID {
+// 		return nil, ErrUnauthorized
+// 	}
+// 	dbRecipe, err := s.Repo.DeleteRecipe(ctx, s.txRunner.DB(), recipeID)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return dbRecipe, nil
+// }
 
-func (s *Service) UndeleteRecipe(ctx context.Context, recipeID, userID string) (*Recipe, error) {
-	// Get the recipe to ensure it exists and belongs to the user
-	recipe, err := s.Repo.GetDeletedRecipeByID(ctx, s.txRunner.DB(), recipeID)
-	if err != nil {
-		return nil, err
-	}
-	if recipe == nil {
-		return nil, ErrRecipeNotFound
-	}
-	if recipe.UserID.String() != userID {
-		return nil, ErrUnauthorized
-	}
-	dbRecipe, err := s.Repo.UndeleteRecipe(ctx, s.txRunner.DB(), recipeID)
-	if err != nil {
-		return nil, err
-	}
-	return dbRecipe, nil
-}
+// func (s *Service) UndeleteRecipe(ctx context.Context, recipeID, userID string) (*RecipeVersion, error) {
+// 	// Get the recipe to ensure it exists and belongs to the user
+// 	recipe, err := s.Repo.GetDeletedRecipeByID(ctx, s.txRunner.DB(), recipeID)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	if recipe == nil {
+// 		return nil, ErrRecipeNotFound
+// 	}
+// 	if recipe.UserID.String() != userID {
+// 		return nil, ErrUnauthorized
+// 	}
+// 	dbRecipe, err := s.Repo.UndeleteRecipe(ctx, s.txRunner.DB(), recipeID)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return dbRecipe, nil
+// }
 
-func (s *Service) DeleteOldRecipes(ctx context.Context) (int64, error) {
-	// To prevent this being called incorrectly
-	if s.RecipeRetentionDays == nil {
-		return 0, ErrRetentionNotSet
-	}
-	return s.Repo.DeleteOldRecipes(ctx, s.txRunner.DB(), *s.RecipeRetentionDays)
-}
+// func (s *Service) DeleteOldRecipes(ctx context.Context) (int64, error) {
+// 	// To prevent this being called incorrectly
+// 	if s.RecipeRetentionDays == nil {
+// 		return 0, ErrRetentionNotSet
+// 	}
+// 	return s.Repo.DeleteOldRecipes(ctx, s.txRunner.DB(), *s.RecipeRetentionDays)
+// }

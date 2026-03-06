@@ -4,9 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"foodplanner/internal/config"
-	"foodplanner/internal/db"
-	"foodplanner/internal/ingredient"
-	"foodplanner/internal/recipe"
 	"log"
 	"os"
 	"os/signal"
@@ -39,16 +36,16 @@ func main() {
 	}
 	log.Println("Successfully connected to the database")
 
-	txRunner := db.NewDBTxRunner(database)
+	// txRunner := db.NewDBTxRunner(database)
 
-	ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), cfg.IngredientUpsertBatchSize)
-	recipeService := recipe.NewService(txRunner, recipe.NewRepo(), ingredientService, &cfg.RecipeRetentionDays)
+	// ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), cfg.IngredientUpsertBatchSize)
+	// recipeService := recipe.NewService(txRunner, recipe.NewRepo(), ingredientService, &cfg.RecipeRetentionDays)
 
 	log.Println("Starting recipe deletion...")
 
-	deletedCount, err := recipeService.DeleteOldRecipes(ctx)
-	if err != nil {
-		log.Fatalf("Failed to delete old recipes: %v", err)
-	}
-	log.Printf("Successfully deleted %d old recipes", deletedCount)
+	// deletedCount, err := recipeService.DeleteOldRecipes(ctx)
+	// if err != nil {
+	// 	log.Fatalf("Failed to delete old recipes: %v", err)
+	// }
+	// log.Printf("Successfully deleted %d old recipes", deletedCount)
 }
