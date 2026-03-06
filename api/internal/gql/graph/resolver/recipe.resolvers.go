@@ -49,12 +49,22 @@ func (r *mutationResolver) CreateRecipe(ctx context.Context, input model.CreateR
 		Portions:    int(input.Portions),
 		Source:      recipeSourceRequest,
 	}
-	recipe, err := r.RecipeService.CreateRecipe(ctx, request)
+	recipeContainer, recipeVersion, err := r.RecipeService.CreateRecipe(ctx, request)
 	if err != nil {
 		logger.Error("Failed to create recipe", "error", err)
 		return nil, err
 	}
-	return mapRecipe(recipe), nil
+	return &model.Recipe{
+		ID:        recipeContainer.ID.String(),
+		CreatedAt: recipeContainer.CreatedAt,
+		CurrentVersion: &model.RecipeVersion{
+			ID:       recipeVersion.ID.String(),
+			Name:     recipeVersion.Name,
+			PrepMins: int32(recipeVersion.PrepMins),
+			CookMins: int32(recipeVersion.CookMins),
+			Portions: int32(recipeVersion.Portions),
+		},
+	}, nil
 }
 
 // Recipes is the resolver for the recipes field.

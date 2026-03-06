@@ -54,7 +54,7 @@ func TestCreateAndGetRecipe(t *testing.T) {
 		require.NoError(t, err, "Failed to create recipe")
 
 		// Act
-		_, err = r.CreateRecipe(context.Background(), tx, recipeContainer, recipeVersion)
+		_, _, err = r.CreateRecipe(context.Background(), tx, recipeContainer, recipeVersion)
 		require.NoError(t, err, "Failed to create recipe in database")
 
 		got, err := r.GetRecipeByID(context.Background(), tx, recipeVersion.ID.String())

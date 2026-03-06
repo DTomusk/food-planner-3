@@ -14,46 +14,76 @@ func NewRepo() *Repo {
 
 // Creates a new recipe including ingredient usages
 // Returns recipe fields, ingredient usages can be loaded lazily
-func (r *Repo) CreateRecipe(ctx context.Context, tx *sql.Tx, recipeContainer *RecipeContainer, recipeVersion *RecipeVersion) (*RecipeVersion, error) {
-	var dbRecipe RecipeVersion
-	query := `INSERT INTO recipe_versions 
-	(id, name, prep_mins, cook_mins, portions) 
-	VALUES ($1, $2, $3, $4, $5) 
-	RETURNING id, name, prep_mins, cook_mins, portions`
+func (r *Repo) CreateRecipe(ctx context.Context, tx *sql.Tx, recipeContainer *RecipeContainer, recipeVersion *RecipeVersion) (*RecipeContainer, *RecipeVersion, error) {
+	var dbRecipeContainer RecipeContainer
+	containerQuery := `INSERT INTO recipe_containers 
+	(id, user_id) 
+	VALUES ($1, $2) 
+	RETURNING id, user_id, created_at`
 	err := tx.QueryRowContext(
 		ctx,
-		query,
-		recipeVersion.ID,
+		containerQuery,
+		recipeContainer.ID,
 		recipeContainer.UserID,
+	).Scan(
+		&dbRecipeContainer.ID,
+		&dbRecipeContainer.UserID,
+		&dbRecipeContainer.CreatedAt,
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var dbRecipeVersion RecipeVersion
+	versionQuery := `INSERT INTO recipe_versions 
+	(id, recipe_id, name, prep_mins, cook_mins, portions) 
+	VALUES ($1, $2, $3, $4, $5, $6) 
+	RETURNING id, name, prep_mins, cook_mins, portions, created_at`
+	err = tx.QueryRowContext(
+		ctx,
+		versionQuery,
+		recipeVersion.ID,
+		recipeContainer.ID,
 		recipeVersion.Name,
 		recipeVersion.PrepMins,
 		recipeVersion.CookMins,
 		recipeVersion.Portions,
 	).Scan(
-		&dbRecipe.ID,
-		&dbRecipe.Name,
-		&dbRecipe.PrepMins,
-		&dbRecipe.CookMins,
-		&dbRecipe.Portions,
+		&dbRecipeVersion.ID,
+		&dbRecipeVersion.Name,
+		&dbRecipeVersion.PrepMins,
+		&dbRecipeVersion.CookMins,
+		&dbRecipeVersion.Portions,
+		&dbRecipeVersion.CreatedAt,
 	)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
+
+	setCurrentVersionQuery := `UPDATE recipe_containers SET current_version_id = $1 WHERE id = $2`
+	_, err = tx.ExecContext(ctx, setCurrentVersionQuery, dbRecipeVersion.ID, dbRecipeContainer.ID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	dbRecipeContainer.CurrentVersionID = dbRecipeVersion.ID
+
 	usageQuery := `INSERT INTO ingredient_usages (id, recipe_version_id, ingredient_id, quantity, unit) VALUES ($1, $2, $3, $4, $5)`
+	// TODO: may want to batch
 	for _, usage := range recipeVersion.Ingredients {
 		_, err := tx.ExecContext(ctx, usageQuery, usage.ID, recipeVersion.ID, usage.IngredientID, usage.Quantity, usage.Unit)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 	if recipeVersion.Source != nil {
 		sourceQuery := `INSERT INTO recipe_sources (recipe_version_id, type, url, book_title, book_page, instructions) VALUES ($1, $2, $3, $4, $5, $6)`
 		_, err = tx.ExecContext(ctx, sourceQuery, recipeVersion.ID, int(recipeVersion.Source.Type), recipeVersion.Source.URL, recipeVersion.Source.BookTitle, recipeVersion.Source.BookPage, recipeVersion.Source.Instructions)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
-	return &dbRecipe, nil
+	return &dbRecipeContainer, &dbRecipeVersion, nil
 }
 
 func (r *Repo) GetRecipeByID(ctx context.Context, db db.DBTX, id string) (*RecipeVersion, error) {

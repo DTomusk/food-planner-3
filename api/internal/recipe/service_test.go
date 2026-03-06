@@ -54,14 +54,19 @@ func TestCreateRecipe(t *testing.T) {
 		}
 
 		// Act
-		recipe, err := s.CreateRecipe(ctx, request)
+		recipeContainer, recipeVersion, err := s.CreateRecipe(ctx, request)
 
 		// Assert
 		require.NoError(t, err, "Expected no error when creating recipe")
-		require.Equal(t, "Vanilla Ice Cream", recipe.Name, "Expected recipe name to match the request")
-		require.Equal(t, 15, recipe.PrepMins, "Expected prep minutes to match the request")
-		require.Equal(t, 0, recipe.CookMins, "Expected cook minutes to match the request")
-		require.Equal(t, 6, recipe.Portions, "Expected portions to match the request")
+
+		require.Equal(t, recipeContainer.UserID, uuid.MustParse(request.UserID), "Expected user ID to match the request")
+		require.Equal(t, recipeContainer.ID, recipeVersion.RecipeID, "Expected recipe ID to match the version's recipe ID")
+		require.NotNil(t, recipeContainer.CreatedAt, "Expected CreatedAt to be set")
+
+		require.Equal(t, "Vanilla Ice Cream", recipeVersion.Name, "Expected recipe name to match the request")
+		require.Equal(t, 15, recipeVersion.PrepMins, "Expected prep minutes to match the request")
+		require.Equal(t, 0, recipeVersion.CookMins, "Expected cook minutes to match the request")
+		require.Equal(t, 6, recipeVersion.Portions, "Expected portions to match the request")
 	})
 }
 
@@ -96,7 +101,7 @@ func TestCreateRecipeWithDuplicateIngredients(t *testing.T) {
 			CookMins:    0,
 			Portions:    6,
 		}
-		_, err = s.CreateRecipe(ctx, request)
+		_, _, err = s.CreateRecipe(ctx, request)
 		require.ErrorIs(t, err, ErrDuplicateIngredient)
 	})
 }
@@ -124,7 +129,7 @@ func TestCreateRecipeWithNonexistentIngredient(t *testing.T) {
 			CookMins:    0,
 			Portions:    6,
 		}
-		_, err = s.CreateRecipe(ctx, request)
+		_, _, err = s.CreateRecipe(ctx, request)
 		require.ErrorIs(t, err, ErrIngredientNotFound)
 	})
 }
@@ -158,7 +163,7 @@ func TestCreateRecipeWithInvalidUnit(t *testing.T) {
 			CookMins:    0,
 			Portions:    6,
 		}
-		_, err = s.CreateRecipe(ctx, request)
+		_, _, err = s.CreateRecipe(ctx, request)
 		require.ErrorIs(t, err, ErrInvalidUnit)
 	})
 }
@@ -192,7 +197,7 @@ func TestCreateRecipeNotPreferredUnit(t *testing.T) {
 			CookMins:    0,
 			Portions:    6,
 		}
-		_, err = s.CreateRecipe(ctx, request)
+		_, _, err = s.CreateRecipe(ctx, request)
 		require.ErrorIs(t, err, ErrInvalidUnit)
 	})
 }
@@ -233,7 +238,7 @@ func TestCreateRecipe_NoSource(t *testing.T) {
 		}
 
 		// Act
-		_, err = s.CreateRecipe(ctx, request)
+		_, _, err = s.CreateRecipe(ctx, request)
 
 		// Assert
 		require.NoError(t, err)

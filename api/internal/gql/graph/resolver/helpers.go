@@ -39,12 +39,8 @@ func mapRecipe(recipe *recipe.RecipeVersion) *model.Recipe {
 	if recipe == nil {
 		return nil
 	}
-	return nil
-	// return &model.Recipe{
-	// 	ID:       recipe.ID.String(),
-	// 	Name:     recipe.Name,
-	// 	PrepMins: int32(recipe.PrepMins),
-	// 	CookMins: int32(recipe.CookMins),
-	// 	Portions: int32(recipe.Portions),
-	// }
+	return &model.Recipe{
+		ID:        recipe.RecipeID.String(),
+		CreatedAt: recipe.CreatedAt,
+	}
 }
