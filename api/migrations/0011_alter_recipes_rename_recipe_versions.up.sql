@@ -1,0 +1,1 @@
+ALTER TABLE recipes RENAME TO recipe_versions;
