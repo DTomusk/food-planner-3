@@ -41,7 +41,7 @@ func (r *Repo) CreateRecipe(ctx context.Context, tx *sql.Tx, recipe *Recipe) (*R
 	if err != nil {
 		return nil, err
 	}
-	usageQuery := `INSERT INTO ingredient_usages (id, recipe_id, ingredient_id, quantity, unit) VALUES ($1, $2, $3, $4, $5)`
+	usageQuery := `INSERT INTO ingredient_usages (id, recipe_version_id, ingredient_id, quantity, unit) VALUES ($1, $2, $3, $4, $5)`
 	for _, usage := range recipe.Ingredients {
 		_, err := tx.ExecContext(ctx, usageQuery, usage.ID, recipe.ID, usage.IngredientID, usage.Quantity, usage.Unit)
 		if err != nil {
@@ -49,7 +49,7 @@ func (r *Repo) CreateRecipe(ctx context.Context, tx *sql.Tx, recipe *Recipe) (*R
 		}
 	}
 	if recipe.Source != nil {
-		sourceQuery := `INSERT INTO recipe_sources (recipe_id, type, url, book_title, book_page, instructions) VALUES ($1, $2, $3, $4, $5, $6)`
+		sourceQuery := `INSERT INTO recipe_sources (recipe_version_id, type, url, book_title, book_page, instructions) VALUES ($1, $2, $3, $4, $5, $6)`
 		_, err = tx.ExecContext(ctx, sourceQuery, recipe.ID, int(recipe.Source.Type), recipe.Source.URL, recipe.Source.BookTitle, recipe.Source.BookPage, recipe.Source.Instructions)
 		if err != nil {
 			return nil, err
@@ -125,7 +125,7 @@ func (r *Repo) IngredientExists(ctx context.Context, db db.DBTX, ingredientID st
 }
 
 func (r *Repo) GetIngredientUsagesForRecipe(ctx context.Context, db db.DBTX, recipeID string) ([]*IngredientUsage, error) {
-	rows, err := db.QueryContext(ctx, "SELECT id, ingredient_id, quantity, unit FROM ingredient_usages WHERE recipe_id = $1", recipeID)
+	rows, err := db.QueryContext(ctx, "SELECT id, ingredient_id, quantity, unit FROM ingredient_usages WHERE recipe_version_id = $1", recipeID)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +144,7 @@ func (r *Repo) GetIngredientUsagesForRecipe(ctx context.Context, db db.DBTX, rec
 
 func (r *Repo) GetRecipeSourceByRecipeID(ctx context.Context, db db.DBTX, recipeID string) (*RecipeSource, error) {
 	var source RecipeSource
-	row := db.QueryRowContext(ctx, "SELECT type, url, book_title, book_page, instructions FROM recipe_sources WHERE recipe_id = $1", recipeID)
+	row := db.QueryRowContext(ctx, "SELECT type, url, book_title, book_page, instructions FROM recipe_sources WHERE recipe_version_id = $1", recipeID)
 	err := row.Scan(&source.Type, &source.URL, &source.BookTitle, &source.BookPage, &source.Instructions)
 	if err != nil {
 		if err == sql.ErrNoRows {
