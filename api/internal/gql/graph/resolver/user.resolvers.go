@@ -13,7 +13,6 @@ import (
 	"foodplanner/internal/gql/graph/model"
 	"foodplanner/internal/logging"
 	"foodplanner/internal/recipe"
-	"foodplanner/internal/user"
 )
 
 // User is the resolver for the user field.
@@ -78,23 +77,12 @@ func (r *Resolver) User() graph.UserResolver { return &userResolver{r} }
 
 type userResolver struct{ *Resolver }
 
-func mapUsers(users []*user.User) []*model.User {
-	var result []*model.User
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
 
-	for _, user := range users {
-		result = append(result, mapUser(user))
-	}
-
-	return result
-}
-
-func mapUser(user *user.User) *model.User {
-	if user == nil {
-		return nil
-	}
-	return &model.User{
-		ID:       user.ID.String(),
-		Email:    user.Email,
-		Username: user.Username,
-	}
-}
+ */
