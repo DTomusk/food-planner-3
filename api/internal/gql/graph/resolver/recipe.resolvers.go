@@ -49,22 +49,12 @@ func (r *mutationResolver) CreateRecipe(ctx context.Context, input model.CreateR
 		Portions:    int(input.Portions),
 		Source:      recipeSourceRequest,
 	}
-	recipeContainer, recipeVersion, err := r.RecipeService.CreateRecipe(ctx, request)
+	recipeContainer, err := r.RecipeService.CreateRecipe(ctx, request)
 	if err != nil {
 		logger.Error("Failed to create recipe", "error", err)
 		return nil, err
 	}
-	return &model.Recipe{
-		ID:        recipeContainer.ID.String(),
-		CreatedAt: recipeContainer.CreatedAt,
-		CurrentVersion: &model.RecipeVersion{
-			ID:       recipeVersion.ID.String(),
-			Name:     recipeVersion.Name,
-			PrepMins: int32(recipeVersion.PrepMins),
-			CookMins: int32(recipeVersion.CookMins),
-			Portions: int32(recipeVersion.Portions),
-		},
-	}, nil
+	return mapRecipe(recipeContainer), nil
 }
 
 // Recipes is the resolver for the recipes field.
@@ -96,7 +86,11 @@ func (r *queryResolver) Recipe(ctx context.Context, id string) (*model.Recipe, e
 
 // Author is the resolver for the author field.
 func (r *recipeResolver) Author(ctx context.Context, obj *model.Recipe) (*model.User, error) {
-	panic(fmt.Errorf("not implemented: Author - author"))
+	user, err := r.UserService.GetUserByID(ctx, obj.AuthorID)
+	if err != nil {
+		return nil, err
+	}
+	return mapUser(user), nil
 }
 
 // CurrentVersion is the resolver for the currentVersion field.

@@ -10,6 +10,7 @@ type RecipeContainer struct {
 	ID               uuid.UUID
 	UserID           uuid.UUID
 	CurrentVersionID uuid.UUID
+	CurrentVersion   *RecipeVersion
 
 	CreatedAt time.Time
 	DeletedAt *time.Time
@@ -30,33 +31,34 @@ type RecipeVersion struct {
 	CreatedAt time.Time
 }
 
-func NewRecipe(name string, userID uuid.UUID, ingredients []*IngredientUsage, prepMins, cookMins, portions int, source *RecipeSource) (*RecipeContainer, *RecipeVersion, error) {
+func NewRecipe(
+	name string,
+	userID uuid.UUID,
+	ingredients []*IngredientUsage,
+	prepMins,
+	cookMins,
+	portions int,
+	source *RecipeSource,
+) (*RecipeContainer, error) {
 	if name == "" {
-		return nil, nil, ErrEmptyName
+		return nil, ErrEmptyName
 	}
 	if len(ingredients) == 0 {
-		return nil, nil, ErrNoIngredients
+		return nil, ErrNoIngredients
 	}
 	if prepMins < 0 {
-		return nil, nil, ErrInvalidPrepMins
+		return nil, ErrInvalidPrepMins
 	}
 	if cookMins < 0 {
-		return nil, nil, ErrInvalidCookMins
+		return nil, ErrInvalidCookMins
 	}
 	if portions <= 0 {
-		return nil, nil, ErrInvalidPortions
+		return nil, ErrInvalidPortions
 	}
 
 	recipeID := uuid.New()
 	versionID := uuid.New()
 	now := time.Now()
-
-	recipe := &RecipeContainer{
-		ID:               recipeID,
-		UserID:           userID,
-		CurrentVersionID: versionID,
-		CreatedAt:        now,
-	}
 
 	version := &RecipeVersion{
 		ID:          versionID,
@@ -70,7 +72,16 @@ func NewRecipe(name string, userID uuid.UUID, ingredients []*IngredientUsage, pr
 		Source:      source,
 		CreatedAt:   now,
 	}
-	return recipe, version, nil
+
+	recipe := &RecipeContainer{
+		ID:               recipeID,
+		UserID:           userID,
+		CurrentVersionID: versionID,
+		CurrentVersion:   version,
+		CreatedAt:        now,
+	}
+
+	return recipe, nil
 }
 
 func (r *RecipeVersion) String() string {

@@ -28,35 +28,35 @@ func NewService(txRunner db.TxRunner, repo *Repo, ingredientService *ingredient.
 	}
 }
 
-func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest) (*RecipeContainer, *RecipeVersion, error) {
+func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest) (*RecipeContainer, error) {
 	logger := logging.FromContext(ctx).With("method", "CreateRecipe", "request", request)
 	logger.Debug("Creating recipe")
 	// Basic request validation
 	// We might want to enforce unique name per user
 	if len(strings.TrimSpace(request.Name)) == 0 {
-		return nil, nil, ErrEmptyName
+		return nil, ErrEmptyName
 	}
 	if len(request.Ingredients) == 0 {
-		return nil, nil, ErrNoIngredients
+		return nil, ErrNoIngredients
 	}
 
 	ingredientUsages, err := s.validateAndConvertIngredientUsages(ctx, logger, request.Ingredients)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	recipeSource, err := s.validateAndConvertRecipeSource(&request.Source)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	userID, err := uuid.Parse(request.UserID)
 	if err != nil {
 		logger.Error("Error parsing user ID", "error", err)
-		return nil, nil, err
+		return nil, err
 	}
 
-	recipeContainer, recipeVersion, err := NewRecipe(
+	recipeContainer, err := NewRecipe(
 		request.Name,
 		userID,
 		ingredientUsages,
@@ -67,20 +67,20 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 	)
 	if err != nil {
 		logger.Error("Error creating recipe", "error", err)
-		return nil, nil, err
+		return nil, err
 	}
 
 	// Persist recipe
 	err = s.txRunner.WithTx(ctx, func(tx *sql.Tx) error {
 		var err error
-		recipeContainer, recipeVersion, err = s.Repo.CreateRecipe(ctx, tx, recipeContainer, recipeVersion)
+		recipeContainer, err = s.Repo.CreateRecipe(ctx, tx, recipeContainer)
 		return err
 	})
 	if err != nil {
 		logger.Error("Error persisting recipe", "error", err)
-		return nil, nil, err
+		return nil, err
 	}
-	return recipeContainer, recipeVersion, nil
+	return recipeContainer, nil
 }
 
 func (s *Service) validateAndConvertIngredientUsages(ctx context.Context, logger *slog.Logger, ingredientUsageRequests []CreateIngredientUsageRequest) ([]*IngredientUsage, error) {
@@ -145,15 +145,15 @@ func (s *Service) validateAndConvertRecipeSource(sourceRequest *CreateRecipeSour
 	}
 }
 
-func (s *Service) GetAllRecipes(ctx context.Context) ([]*RecipeVersion, error) {
+func (s *Service) GetAllRecipes(ctx context.Context) ([]*RecipeContainer, error) {
 	return s.Repo.GetAllRecipes(ctx, s.txRunner.DB())
 }
 
-func (s *Service) GetRecipeByID(ctx context.Context, id string) (*RecipeVersion, error) {
+func (s *Service) GetRecipeByID(ctx context.Context, id string) (*RecipeContainer, error) {
 	return s.Repo.GetRecipeByID(ctx, s.txRunner.DB(), id)
 }
 
-func (s *Service) GetRecipesByUserID(ctx context.Context, userID string, status RecipeStatus, viewerID *string) ([]*RecipeVersion, error) {
+func (s *Service) GetRecipesByUserID(ctx context.Context, userID string, status RecipeStatus, viewerID *string) ([]*RecipeContainer, error) {
 	// switch status {
 	// case StatusActive:
 	// 	return s.Repo.GetRecipesByUserID(ctx, s.txRunner.DB(), userID)

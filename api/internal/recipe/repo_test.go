@@ -42,7 +42,7 @@ func TestCreateAndGetRecipe(t *testing.T) {
 			URL:  testutil.PtrString("https://example.com/pancakes"),
 		}
 
-		recipeContainer, recipeVersion, err := NewRecipe(
+		recipeContainer, err := NewRecipe(
 			"Chocolate Cake",
 			testUser.ID,
 			[]*IngredientUsage{ingredientUsage},
@@ -54,16 +54,17 @@ func TestCreateAndGetRecipe(t *testing.T) {
 		require.NoError(t, err, "Failed to create recipe")
 
 		// Act
-		_, _, err = r.CreateRecipe(context.Background(), tx, recipeContainer, recipeVersion)
+		_, err = r.CreateRecipe(context.Background(), tx, recipeContainer)
 		require.NoError(t, err, "Failed to create recipe in database")
 
-		got, err := r.GetRecipeByID(context.Background(), tx, recipeVersion.ID.String())
+		gotContainer, err := r.GetRecipeByID(context.Background(), tx, recipeContainer.ID.String())
 		require.NoError(t, err, "Failed to get recipe by ID")
 
 		// Assert
-		require.NotNil(t, got, "Expected to find recipe by ID")
-		require.Equal(t, recipeVersion.ID, got.ID, "Expected recipe ID to match")
-		require.Equal(t, got.Name, "Chocolate Cake", "Expected recipe name to match")
+		require.NotNil(t, gotContainer, "Expected to find recipe by ID")
+		require.NotNil(t, gotContainer.CurrentVersion, "Expected to find recipe version by ID")
+		require.Equal(t, recipeContainer.CurrentVersion.ID, gotContainer.CurrentVersion.ID, "Expected recipe ID to match")
+		require.Equal(t, gotContainer.CurrentVersion.Name, "Chocolate Cake", "Expected recipe name to match")
 	})
 }
 
@@ -73,10 +74,10 @@ func TestGetRecipe_DoesNotErrorWhenNotFound(t *testing.T) {
 		r := NewRepo()
 
 		// Act
-		recipe, err := r.GetRecipeByID(context.Background(), tx, "04061e4e-6d4c-41d1-abcf-8b214927e1ed")
+		recipeContainer, err := r.GetRecipeByID(context.Background(), tx, "04061e4e-6d4c-41d1-abcf-8b214927e1ed")
 
 		// Assert
 		require.NoError(t, err)
-		require.Nil(t, recipe)
+		require.Nil(t, recipeContainer)
 	})
 }
