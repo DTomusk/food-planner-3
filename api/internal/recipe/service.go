@@ -153,6 +153,10 @@ func (s *Service) GetRecipeByID(ctx context.Context, id string) (*RecipeContaine
 	return s.Repo.GetRecipeByID(ctx, s.txRunner.DB(), id)
 }
 
+func (s *Service) GetRecipeVersionByID(ctx context.Context, id string) (*RecipeVersion, error) {
+	return s.Repo.GetRecipeVersionByID(ctx, s.txRunner.DB(), id)
+}
+
 func (s *Service) GetRecipesByUserID(ctx context.Context, userID string, status RecipeStatus, viewerID *string) ([]*RecipeContainer, error) {
 	// switch status {
 	// case StatusActive:

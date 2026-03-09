@@ -36,8 +36,8 @@ func (r *Repo) CreateRecipe(ctx context.Context, tx *sql.Tx, recipeContainer *Re
 
 	var dbRecipeVersion RecipeVersion
 	versionQuery := `INSERT INTO recipe_versions 
-	(id, recipe_id, name, prep_mins, cook_mins, portions) 
-	VALUES ($1, $2, $3, $4, $5, $6) 
+	(id, recipe_id, name, prep_mins, cook_mins, portions, version) 
+	VALUES ($1, $2, $3, $4, $5, $6, 1) 
 	RETURNING id, name, prep_mins, cook_mins, portions, created_at`
 	recipeVersion := recipeContainer.CurrentVersion
 	err = tx.QueryRowContext(
@@ -94,14 +94,14 @@ func (r *Repo) GetRecipeByID(ctx context.Context, db db.DBTX, id string) (*Recip
 	row := db.QueryRowContext(ctx,
 		`SELECT 
 		rc.id, rc.user_id, rc.created_at, rc.current_version_id,
-		rv.id, rv.name, rv.prep_mins, rv.cook_mins, rv.portions, rv.created_at
+		rv.id, rv.name, rv.prep_mins, rv.cook_mins, rv.portions, rv.created_at, rv.version
 		FROM recipe_containers rc
 		JOIN recipe_versions rv ON rc.current_version_id = rv.id
 		WHERE rc.id = $1`,
 		id,
 	)
 	err := row.Scan(&recipeContainer.ID, &recipeContainer.UserID, &recipeContainer.CreatedAt, &recipeContainer.CurrentVersionID,
-		&recipeVersion.ID, &recipeVersion.Name, &recipeVersion.PrepMins, &recipeVersion.CookMins, &recipeVersion.Portions, &recipeVersion.CreatedAt)
+		&recipeVersion.ID, &recipeVersion.Name, &recipeVersion.PrepMins, &recipeVersion.CookMins, &recipeVersion.Portions, &recipeVersion.CreatedAt, &recipeVersion.Version)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -135,7 +135,7 @@ func (r *Repo) GetAllRecipes(ctx context.Context, db db.DBTX) ([]*RecipeContaine
 	rows, err := db.QueryContext(ctx,
 		`SELECT 
 		rc.id, rc.user_id, rc.created_at, rc.current_version_id,
-		rv.id, rv.name, rv.prep_mins, rv.cook_mins, rv.portions, rv.created_at
+		rv.id, rv.name, rv.prep_mins, rv.cook_mins, rv.portions, rv.created_at, rv.version
 		FROM recipe_containers rc
 		JOIN recipe_versions rv ON rc.current_version_id = rv.id
 		`,
@@ -150,7 +150,7 @@ func (r *Repo) GetAllRecipes(ctx context.Context, db db.DBTX) ([]*RecipeContaine
 		var recipeContainer RecipeContainer
 		var recipeVersion RecipeVersion
 		if err := rows.Scan(&recipeContainer.ID, &recipeContainer.UserID, &recipeContainer.CreatedAt, &recipeContainer.CurrentVersionID,
-			&recipeVersion.ID, &recipeVersion.Name, &recipeVersion.PrepMins, &recipeVersion.CookMins, &recipeVersion.Portions, &recipeVersion.CreatedAt); err != nil {
+			&recipeVersion.ID, &recipeVersion.Name, &recipeVersion.PrepMins, &recipeVersion.CookMins, &recipeVersion.Portions, &recipeVersion.CreatedAt, &recipeVersion.Version); err != nil {
 			return nil, err
 		}
 		recipeContainer.CurrentVersion = &recipeVersion
@@ -228,7 +228,7 @@ func (r *Repo) GetRecipesByUserID(ctx context.Context, db db.DBTX, userID string
 	rows, err := db.QueryContext(ctx,
 		`SELECT 
 		rc.id, rc.user_id, rc.created_at, rc.current_version_id,
-		rv.id, rv.name, rv.prep_mins, rv.cook_mins, rv.portions, rv.created_at
+		rv.id, rv.name, rv.prep_mins, rv.cook_mins, rv.portions, rv.created_at, rv.version
 		FROM recipe_containers rc
 		JOIN recipe_versions rv ON rc.current_version_id = rv.id
 		WHERE rc.user_id = $1`,
@@ -244,7 +244,7 @@ func (r *Repo) GetRecipesByUserID(ctx context.Context, db db.DBTX, userID string
 		var recipeContainer RecipeContainer
 		var recipeVersion RecipeVersion
 		if err := rows.Scan(&recipeContainer.ID, &recipeContainer.UserID, &recipeContainer.CreatedAt, &recipeContainer.CurrentVersionID,
-			&recipeVersion.ID, &recipeVersion.Name, &recipeVersion.PrepMins, &recipeVersion.CookMins, &recipeVersion.Portions, &recipeVersion.CreatedAt); err != nil {
+			&recipeVersion.ID, &recipeVersion.Name, &recipeVersion.PrepMins, &recipeVersion.CookMins, &recipeVersion.Portions, &recipeVersion.CreatedAt, &recipeVersion.Version); err != nil {
 			return nil, err
 		}
 		recipeContainer.CurrentVersion = &recipeVersion
@@ -276,3 +276,16 @@ func (r *Repo) GetRecipesByUserID(ctx context.Context, db db.DBTX, userID string
 // 	}
 // 	return recipes, nil
 // }
+
+func (r *Repo) GetRecipeVersionByID(ctx context.Context, db db.DBTX, id string) (*RecipeVersion, error) {
+	var recipeVersion RecipeVersion
+	row := db.QueryRowContext(ctx, `SELECT id, recipe_id, name, prep_mins, cook_mins, portions, created_at, version FROM recipe_versions WHERE id = $1`, id)
+	err := row.Scan(&recipeVersion.ID, &recipeVersion.RecipeID, &recipeVersion.Name, &recipeVersion.PrepMins, &recipeVersion.CookMins, &recipeVersion.Portions, &recipeVersion.CreatedAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &recipeVersion, nil
+}

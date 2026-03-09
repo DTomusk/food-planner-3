@@ -95,7 +95,18 @@ func (r *recipeResolver) Author(ctx context.Context, obj *model.Recipe) (*model.
 
 // CurrentVersion is the resolver for the currentVersion field.
 func (r *recipeResolver) CurrentVersion(ctx context.Context, obj *model.Recipe) (*model.RecipeVersion, error) {
-	panic(fmt.Errorf("not implemented: CurrentVersion - currentVersion"))
+	if obj.CurrentVersion != nil {
+		return obj.CurrentVersion, nil
+	}
+
+	recipeVersion, err := r.RecipeService.GetRecipeVersionByID(ctx, obj.CurrentVersionID)
+	if err != nil {
+		return nil, err
+	}
+	if recipeVersion == nil {
+		return nil, nil
+	}
+	return mapRecipeVersion(recipeVersion), nil
 }
 
 // Versions is the resolver for the versions field.
