@@ -3,7 +3,11 @@ package recipe
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"foodplanner/internal/db"
+	"strings"
+
+	"github.com/google/uuid"
 )
 
 type Repo struct{}
@@ -70,17 +74,14 @@ func (r *Repo) CreateRecipe(ctx context.Context, tx *sql.Tx, recipeContainer *Re
 	dbRecipeContainer.CurrentVersionID = dbRecipeVersion.ID
 	dbRecipeContainer.CurrentVersion = &dbRecipeVersion
 
-	usageQuery := `INSERT INTO ingredient_usages (id, recipe_version_id, ingredient_id, quantity, unit) VALUES ($1, $2, $3, $4, $5)`
-	// TODO: may want to batch
-	for _, usage := range recipeVersion.Ingredients {
-		_, err := tx.ExecContext(ctx, usageQuery, usage.ID, recipeVersion.ID, usage.IngredientID, usage.Quantity, usage.Unit)
-		if err != nil {
-			return nil, err
-		}
+	err = r.InsertIngredientUsages(ctx, tx, recipeVersion.Ingredients, dbRecipeVersion.ID)
+	if err != nil {
+		return nil, err
 	}
+
 	if recipeVersion.Source != nil {
 		sourceQuery := `INSERT INTO recipe_sources (recipe_version_id, type, url, book_title, book_page, instructions) VALUES ($1, $2, $3, $4, $5, $6)`
-		_, err = tx.ExecContext(ctx, sourceQuery, recipeVersion.ID, int(recipeVersion.Source.Type), recipeVersion.Source.URL, recipeVersion.Source.BookTitle, recipeVersion.Source.BookPage, recipeVersion.Source.Instructions)
+		_, err = tx.ExecContext(ctx, sourceQuery, dbRecipeVersion.ID, int(recipeVersion.Source.Type), recipeVersion.Source.URL, recipeVersion.Source.BookTitle, recipeVersion.Source.BookPage, recipeVersion.Source.Instructions)
 		if err != nil {
 			return nil, err
 		}
@@ -88,9 +89,32 @@ func (r *Repo) CreateRecipe(ctx context.Context, tx *sql.Tx, recipeContainer *Re
 	return &dbRecipeContainer, nil
 }
 
+func (r *Repo) InsertIngredientUsages(ctx context.Context, tx *sql.Tx, ingredientUsages []*IngredientUsage, recipeVersionId uuid.UUID) error {
+	if len(ingredientUsages) == 0 {
+		return nil
+	}
+	var (
+		query  = "INSERT INTO ingredient_usages (id, recipe_version_id, ingredient_id, quantity, unit) VALUES"
+		args   []any
+		values []string
+	)
+
+	for i, u := range ingredientUsages {
+		start := i*5 + 1
+		values = append(values, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)", start, start+1, start+2, start+3, start+4))
+		args = append(args, u.ID, recipeVersionId, u.IngredientID, u.Quantity, int(u.Unit))
+	}
+
+	query += " " + strings.Join(values, ", ") + ";"
+
+	_, err := tx.ExecContext(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (r *Repo) GetRecipeByID(ctx context.Context, db db.DBTX, id string) (*RecipeContainer, error) {
-	var recipeContainer RecipeContainer
-	var recipeVersion RecipeVersion
 	row := db.QueryRowContext(ctx,
 		`SELECT 
 		rc.id, rc.user_id, rc.created_at, rc.current_version_id,
@@ -100,36 +124,15 @@ func (r *Repo) GetRecipeByID(ctx context.Context, db db.DBTX, id string) (*Recip
 		WHERE rc.id = $1`,
 		id,
 	)
-	err := row.Scan(&recipeContainer.ID, &recipeContainer.UserID, &recipeContainer.CreatedAt, &recipeContainer.CurrentVersionID,
-		&recipeVersion.ID, &recipeVersion.Name, &recipeVersion.PrepMins, &recipeVersion.CookMins, &recipeVersion.Portions, &recipeVersion.CreatedAt, &recipeVersion.Version)
+	rc, err := scanRecipeContainerWithVersion(row)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
 		return nil, err
 	}
-	recipeContainer.CurrentVersion = &recipeVersion
-	return &recipeContainer, nil
+	return rc, nil
 }
-
-// func (r *Repo) GetDeletedRecipeByID(ctx context.Context, db db.DBTX, id string) (*RecipeVersion, error) {
-// 	var recipe RecipeVersion
-// 	row := db.QueryRowContext(ctx,
-// 		`SELECT id, name, prep_mins, cook_mins, portions
-// 		FROM recipe_versions
-// 		WHERE id = $1
-// 		AND deleted_on IS NOT NULL`,
-// 		id,
-// 	)
-// 	err := row.Scan(&recipe.ID, &recipe.Name, &recipe.PrepMins, &recipe.CookMins, &recipe.Portions)
-// 	if err != nil {
-// 		if err == sql.ErrNoRows {
-// 			return nil, nil
-// 		}
-// 		return nil, err
-// 	}
-// 	return &recipe, nil
-// }
 
 func (r *Repo) GetAllRecipes(ctx context.Context, db db.DBTX) ([]*RecipeContainer, error) {
 	rows, err := db.QueryContext(ctx,
@@ -147,14 +150,11 @@ func (r *Repo) GetAllRecipes(ctx context.Context, db db.DBTX) ([]*RecipeContaine
 
 	var recipes []*RecipeContainer
 	for rows.Next() {
-		var recipeContainer RecipeContainer
-		var recipeVersion RecipeVersion
-		if err := rows.Scan(&recipeContainer.ID, &recipeContainer.UserID, &recipeContainer.CreatedAt, &recipeContainer.CurrentVersionID,
-			&recipeVersion.ID, &recipeVersion.Name, &recipeVersion.PrepMins, &recipeVersion.CookMins, &recipeVersion.Portions, &recipeVersion.CreatedAt, &recipeVersion.Version); err != nil {
+		rc, err := scanRecipeContainerWithVersion(rows)
+		if err != nil {
 			return nil, err
 		}
-		recipeContainer.CurrentVersion = &recipeVersion
-		recipes = append(recipes, &recipeContainer)
+		recipes = append(recipes, rc)
 	}
 	return recipes, nil
 }
@@ -196,34 +196,6 @@ func (r *Repo) GetRecipeSourceByRecipeID(ctx context.Context, db db.DBTX, recipe
 	return &source, nil
 }
 
-// func (r *Repo) DeleteRecipe(ctx context.Context, db db.DBTX, recipeID string) (*RecipeVersion, error) {
-// 	var recipe RecipeVersion
-// 	row := db.QueryRowContext(ctx, "UPDATE recipe_versions SET deleted_on = NOW() WHERE id = $1 RETURNING id, user_id, name, prep_mins, cook_mins, portions, deleted_on", recipeID)
-// 	err := row.Scan(&recipe.ID, &recipe.UserID, &recipe.Name, &recipe.PrepMins, &recipe.CookMins, &recipe.Portions, &recipe.DeletedOn)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return &recipe, nil
-// }
-
-// func (r *Repo) UndeleteRecipe(ctx context.Context, db db.DBTX, recipeID string) (*RecipeVersion, error) {
-// 	var recipe RecipeVersion
-// 	row := db.QueryRowContext(ctx, "UPDATE recipe_versions SET deleted_on = NULL WHERE id = $1 RETURNING id, user_id, name, prep_mins, cook_mins, portions, deleted_on", recipeID)
-// 	err := row.Scan(&recipe.ID, &recipe.UserID, &recipe.Name, &recipe.PrepMins, &recipe.CookMins, &recipe.Portions, &recipe.DeletedOn)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return &recipe, nil
-// }
-
-// func (s *Repo) DeleteOldRecipes(ctx context.Context, db db.DBTX, retentionDays int) (int64, error) {
-// 	result, err := db.ExecContext(ctx, "DELETE FROM recipe_versions WHERE deleted_on IS NOT NULL AND deleted_on < NOW() - $1 * INTERVAL '1 day'", retentionDays)
-// 	if err != nil {
-// 		return 0, err
-// 	}
-// 	return result.RowsAffected()
-// }
-
 func (r *Repo) GetRecipesByUserID(ctx context.Context, db db.DBTX, userID string) ([]*RecipeContainer, error) {
 	rows, err := db.QueryContext(ctx,
 		`SELECT 
@@ -241,46 +213,28 @@ func (r *Repo) GetRecipesByUserID(ctx context.Context, db db.DBTX, userID string
 
 	var recipes []*RecipeContainer
 	for rows.Next() {
-		var recipeContainer RecipeContainer
-		var recipeVersion RecipeVersion
-		if err := rows.Scan(&recipeContainer.ID, &recipeContainer.UserID, &recipeContainer.CreatedAt, &recipeContainer.CurrentVersionID,
-			&recipeVersion.ID, &recipeVersion.Name, &recipeVersion.PrepMins, &recipeVersion.CookMins, &recipeVersion.Portions, &recipeVersion.CreatedAt, &recipeVersion.Version); err != nil {
+		rc, err := scanRecipeContainerWithVersion(rows)
+		if err != nil {
 			return nil, err
 		}
-		recipeContainer.CurrentVersion = &recipeVersion
-		recipes = append(recipes, &recipeContainer)
+		recipes = append(recipes, rc)
 	}
 	return recipes, nil
 }
 
-// func (r *Repo) GetDeletedRecipesByUserID(ctx context.Context, db db.DBTX, userID string) ([]*RecipeVersion, error) {
-// 	rows, err := db.QueryContext(ctx,
-// 		`SELECT id, user_id, name, prep_mins, cook_mins, portions, deleted_on
-// 		FROM recipe_versions
-// 		WHERE user_id = $1
-// 		AND deleted_on IS NOT NULL`,
-// 		userID,
-// 	)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	defer rows.Close()
-
-// 	var recipes []*RecipeVersion
-// 	for rows.Next() {
-// 		var recipe RecipeVersion
-// 		if err := rows.Scan(&recipe.ID, &recipe.UserID, &recipe.Name, &recipe.PrepMins, &recipe.CookMins, &recipe.Portions, &recipe.DeletedOn); err != nil {
-// 			return nil, err
-// 		}
-// 		recipes = append(recipes, &recipe)
-// 	}
-// 	return recipes, nil
-// }
-
 func (r *Repo) GetRecipeVersionByID(ctx context.Context, db db.DBTX, id string) (*RecipeVersion, error) {
 	var recipeVersion RecipeVersion
 	row := db.QueryRowContext(ctx, `SELECT id, recipe_id, name, prep_mins, cook_mins, portions, created_at, version FROM recipe_versions WHERE id = $1`, id)
-	err := row.Scan(&recipeVersion.ID, &recipeVersion.RecipeID, &recipeVersion.Name, &recipeVersion.PrepMins, &recipeVersion.CookMins, &recipeVersion.Portions, &recipeVersion.CreatedAt)
+	err := row.Scan(
+		&recipeVersion.ID,
+		&recipeVersion.RecipeID,
+		&recipeVersion.Name,
+		&recipeVersion.PrepMins,
+		&recipeVersion.CookMins,
+		&recipeVersion.Portions,
+		&recipeVersion.CreatedAt,
+		&recipeVersion.Version,
+	)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -288,4 +242,32 @@ func (r *Repo) GetRecipeVersionByID(ctx context.Context, db db.DBTX, id string) 
 		return nil, err
 	}
 	return &recipeVersion, nil
+}
+
+func scanRecipeContainerWithVersion(
+	scanner interface{ Scan(dest ...any) error },
+) (*RecipeContainer, error) {
+
+	var rc RecipeContainer
+	var rv RecipeVersion
+
+	err := scanner.Scan(
+		&rc.ID,
+		&rc.UserID,
+		&rc.CreatedAt,
+		&rc.CurrentVersionID,
+		&rv.ID,
+		&rv.Name,
+		&rv.PrepMins,
+		&rv.CookMins,
+		&rv.Portions,
+		&rv.CreatedAt,
+		&rv.Version,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	rc.CurrentVersion = &rv
+	return &rc, nil
 }
