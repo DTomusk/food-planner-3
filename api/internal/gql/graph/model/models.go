@@ -14,6 +14,7 @@ type Recipe struct {
 
 type RecipeVersion struct {
 	ID        string
+	RecipeID  string
 	Recipe    *Recipe
 	Version   int32
 	Name      string

@@ -175,56 +175,14 @@ func (s *Service) GetRecipesByUserID(ctx context.Context, userID string, status 
 	return s.Repo.GetRecipesByUserID(ctx, s.txRunner.DB(), userID)
 }
 
-func (s *Service) GetIngredientUsagesByRecipeID(ctx context.Context, recipeID string) ([]*IngredientUsage, error) {
-	return s.Repo.GetIngredientUsagesForRecipe(ctx, s.txRunner.DB(), recipeID)
+func (s *Service) GetIngredientUsagesByRecipeVersionID(ctx context.Context, recipeVersionID string) ([]*IngredientUsage, error) {
+	return s.Repo.GetIngredientUsagesForRecipeVersion(ctx, s.txRunner.DB(), recipeVersionID)
 }
 
-func (s *Service) GetRecipeSourceByRecipeID(ctx context.Context, recipeID string) (*RecipeSource, error) {
-	return s.Repo.GetRecipeSourceByRecipeID(ctx, s.txRunner.DB(), recipeID)
+func (s *Service) GetRecipeSourceByRecipeVersionID(ctx context.Context, recipeVersionID string) (*RecipeSource, error) {
+	return s.Repo.GetRecipeSourceByRecipeVersionID(ctx, s.txRunner.DB(), recipeVersionID)
 }
 
-// func (s *Service) DeleteRecipe(ctx context.Context, recipeID, userID string) (*RecipeVersion, error) {
-// 	// Get the recipe to ensure it exists and belongs to the user
-// 	recipe, err := s.GetRecipeByID(ctx, recipeID)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	if recipe == nil {
-// 		return nil, ErrRecipeNotFound
-// 	}
-// 	if recipe.UserID.String() != userID {
-// 		return nil, ErrUnauthorized
-// 	}
-// 	dbRecipe, err := s.Repo.DeleteRecipe(ctx, s.txRunner.DB(), recipeID)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return dbRecipe, nil
-// }
-
-// func (s *Service) UndeleteRecipe(ctx context.Context, recipeID, userID string) (*RecipeVersion, error) {
-// 	// Get the recipe to ensure it exists and belongs to the user
-// 	recipe, err := s.Repo.GetDeletedRecipeByID(ctx, s.txRunner.DB(), recipeID)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	if recipe == nil {
-// 		return nil, ErrRecipeNotFound
-// 	}
-// 	if recipe.UserID.String() != userID {
-// 		return nil, ErrUnauthorized
-// 	}
-// 	dbRecipe, err := s.Repo.UndeleteRecipe(ctx, s.txRunner.DB(), recipeID)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return dbRecipe, nil
-// }
-
-// func (s *Service) DeleteOldRecipes(ctx context.Context) (int64, error) {
-// 	// To prevent this being called incorrectly
-// 	if s.RecipeRetentionDays == nil {
-// 		return 0, ErrRetentionNotSet
-// 	}
-// 	return s.Repo.DeleteOldRecipes(ctx, s.txRunner.DB(), *s.RecipeRetentionDays)
-// }
+func (s *Service) GetRecipeVersionsByRecipeID(ctx context.Context, recipeID string) ([]*RecipeVersion, error) {
+	return s.Repo.GetRecipeVersionsByRecipeID(ctx, s.txRunner.DB(), recipeID)
+}

@@ -111,22 +111,93 @@ func (r *recipeResolver) CurrentVersion(ctx context.Context, obj *model.Recipe) 
 
 // Versions is the resolver for the versions field.
 func (r *recipeResolver) Versions(ctx context.Context, obj *model.Recipe) ([]*model.RecipeVersion, error) {
-	panic(fmt.Errorf("not implemented: Versions - versions"))
+	versions, err := r.RecipeService.GetRecipeVersionsByRecipeID(ctx, obj.ID)
+	if err != nil {
+		return nil, err
+	}
+	var result []*model.RecipeVersion
+	for _, version := range versions {
+		result = append(result, mapRecipeVersion(version))
+	}
+	return result, nil
 }
 
 // Recipe is the resolver for the recipe field.
 func (r *recipeVersionResolver) Recipe(ctx context.Context, obj *model.RecipeVersion) (*model.Recipe, error) {
-	panic(fmt.Errorf("not implemented: Recipe - recipe"))
+	recipe, err := r.RecipeService.GetRecipeByID(ctx, obj.RecipeID)
+	if err != nil {
+		return nil, err
+	}
+	if recipe == nil {
+		return nil, nil
+	}
+	return mapRecipe(recipe), nil
 }
 
 // IngredientUsages is the resolver for the ingredientUsages field.
 func (r *recipeVersionResolver) IngredientUsages(ctx context.Context, obj *model.RecipeVersion) ([]*model.IngredientUsage, error) {
-	panic(fmt.Errorf("not implemented: IngredientUsages - ingredientUsages"))
+	logger := logging.FromContext(ctx).With("recipe_id", obj.ID)
+	ingredientUsages, err := r.RecipeService.GetIngredientUsagesByRecipeVersionID(ctx, obj.ID)
+	if err != nil {
+		logger.Error("Failed to get ingredient usages for recipe", "error", err)
+		return nil, err
+	}
+
+	ingredientIDs := make([]string, len(ingredientUsages))
+	for i, usage := range ingredientUsages {
+		ingredientIDs[i] = usage.IngredientID.String()
+	}
+
+	// Eagerly load ingredients, separate into data loader later
+	ingredients, err := r.IngredientsService.GetIngredientsByIDs(ctx, logger, ingredientIDs)
+	if err != nil {
+		logger.Error("Failed to get ingredients for ingredient usages", "error", err)
+		return nil, err
+	}
+	ingredientMap := make(map[string]*model.Ingredient)
+	for _, ingredient := range ingredients {
+		ingredientMap[ingredient.ID.String()] = &model.Ingredient{
+			ID:            ingredient.ID.String(),
+			Name:          ingredient.Name,
+			Counter:       ingredient.Counter,
+			Plural:        ingredient.Plural,
+			CounterPlural: ingredient.CounterPlural,
+		}
+	}
+
+	var ingredientUsageModels []*model.IngredientUsage
+	for _, usage := range ingredientUsages {
+		usageModel := &model.IngredientUsage{
+			ID:       usage.ID.String(),
+			Quantity: usage.Quantity,
+			Unit: &model.Unit{
+				Val:    int32(usage.Unit),
+				Name:   usage.Unit.String(),
+				Symbol: usage.Unit.Symbol(),
+			},
+			Ingredient: ingredientMap[usage.IngredientID.String()],
+		}
+		ingredientUsageModels = append(ingredientUsageModels, usageModel)
+	}
+	return ingredientUsageModels, nil
 }
 
 // Source is the resolver for the source field.
 func (r *recipeVersionResolver) Source(ctx context.Context, obj *model.RecipeVersion) (*model.RecipeSource, error) {
-	panic(fmt.Errorf("not implemented: Source - source"))
+	recipeSource, err := r.RecipeService.GetRecipeSourceByRecipeVersionID(ctx, obj.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get recipe source for recipe: %w", err)
+	}
+	if recipeSource == nil {
+		return &model.RecipeSource{Type: 0}, nil
+	}
+	return &model.RecipeSource{
+		Type:         int32(recipeSource.Type),
+		URL:          recipeSource.URL,
+		BookTitle:    recipeSource.BookTitle,
+		BookPage:     recipeSource.BookPage,
+		Instructions: recipeSource.Instructions,
+	}, nil
 }
 
 // Recipe returns graph.RecipeResolver implementation.
