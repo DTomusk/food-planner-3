@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"strconv"
-	"time"
 )
 
 type AuthPayload struct {
@@ -64,14 +63,6 @@ type Mutation struct {
 type Query struct {
 }
 
-type Recipe struct {
-	ID             string           `json:"id"`
-	Author         *User            `json:"author"`
-	CreatedAt      time.Time        `json:"createdAt"`
-	CurrentVersion *RecipeVersion   `json:"currentVersion"`
-	Versions       []*RecipeVersion `json:"versions"`
-}
-
 type RecipeFilter struct {
 	Status *RecipeStatus `json:"status,omitempty"`
 }
@@ -82,19 +73,6 @@ type RecipeSource struct {
 	BookTitle    *string `json:"bookTitle,omitempty"`
 	BookPage     *int32  `json:"bookPage,omitempty"`
 	Instructions *string `json:"instructions,omitempty"`
-}
-
-type RecipeVersion struct {
-	ID               string             `json:"id"`
-	Recipe           *Recipe            `json:"recipe"`
-	Version          int32              `json:"version"`
-	Name             string             `json:"name"`
-	IngredientUsages []*IngredientUsage `json:"ingredientUsages"`
-	PrepMins         int32              `json:"prepMins"`
-	CookMins         int32              `json:"cookMins"`
-	Portions         int32              `json:"portions"`
-	Source           *RecipeSource      `json:"source"`
-	CreatedAt        time.Time          `json:"createdAt"`
 }
 
 type SignInInput struct {

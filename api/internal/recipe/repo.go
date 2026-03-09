@@ -91,8 +91,7 @@ func (r *Repo) GetRecipeByID(ctx context.Context, db db.DBTX, id string) (*Recip
 	row := db.QueryRowContext(ctx,
 		`SELECT id, name, prep_mins, cook_mins, portions
 		FROM recipe_versions 
-		WHERE id = $1
-		AND deleted_on IS NULL`,
+		WHERE id = $1`,
 		id,
 	)
 	err := row.Scan(&recipe.ID, &recipe.Name, &recipe.PrepMins, &recipe.CookMins, &recipe.Portions)
@@ -213,7 +212,7 @@ func (r *Repo) GetRecipeSourceByRecipeID(ctx context.Context, db db.DBTX, recipe
 
 func (r *Repo) GetRecipesByUserID(ctx context.Context, db db.DBTX, userID string) ([]*RecipeVersion, error) {
 	rows, err := db.QueryContext(ctx,
-		`SELECT id, user_id, name, prep_mins, cook_mins, portions, deleted_on
+		`SELECT id, user_id, name, prep_mins, cook_mins, portions
 		FROM recipe_versions
 		WHERE user_id = $1`,
 		userID,
