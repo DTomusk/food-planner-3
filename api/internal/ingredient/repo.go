@@ -14,6 +14,11 @@ import (
 
 type IngredientRepo struct{}
 
+const (
+	selectIngredientColumnsBaseQuery = "SELECT id, name, preferred_unit, file_key, counter, plural, counter_plural FROM reference.ingredients"
+	selectIngredientsByIDsQuery      = selectIngredientColumnsBaseQuery + " WHERE id = ANY($1)"
+)
+
 func NewIngredientRepo() *IngredientRepo {
 	return &IngredientRepo{}
 }
@@ -35,7 +40,7 @@ func (r *IngredientRepo) IngredientExists(ctx context.Context, db db.DBTX, ingre
 }
 
 func (r *IngredientRepo) GetAllIngredients(ctx context.Context, db db.DBTX) ([]*Ingredient, error) {
-	rows, err := db.QueryContext(ctx, "SELECT id, name, preferred_unit, file_key, counter, plural, counter_plural FROM reference.ingredients")
+	rows, err := db.QueryContext(ctx, selectIngredientColumnsBaseQuery)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -73,8 +78,7 @@ func (r *IngredientRepo) GetIngredientsByIDs(ctx context.Context, db db.DBTX, in
 	if len(ingredientIDs) == 0 {
 		return []*Ingredient{}, nil
 	}
-	query := "SELECT id, name, preferred_unit, file_key, counter, plural, counter_plural FROM reference.ingredients WHERE id = ANY($1)"
-	rows, err := db.QueryContext(ctx, query, pq.Array(ingredientIDs))
+	rows, err := db.QueryContext(ctx, selectIngredientsByIDsQuery, pq.Array(ingredientIDs))
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil

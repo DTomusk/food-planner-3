@@ -12,6 +12,18 @@ import (
 
 type Repo struct{}
 
+const (
+	selectRecipeContainerWithVersionBaseQuery = `SELECT 
+	rc.id, rc.user_id, rc.created_at, rc.current_version_id,
+	rv.id, rv.name, rv.prep_mins, rv.cook_mins, rv.portions, rv.created_at, rv.version
+	FROM recipe_containers rc
+	JOIN recipe_versions rv ON rc.current_version_id = rv.id`
+	selectRecipeContainerWithVersionByIDQuery = selectRecipeContainerWithVersionBaseQuery + `
+	WHERE rc.id = $1`
+	selectRecipeContainerWithVersionByUserIDQuery = selectRecipeContainerWithVersionBaseQuery + `
+	WHERE rc.user_id = $1`
+)
+
 func NewRepo() *Repo {
 	return &Repo{}
 }
@@ -116,12 +128,7 @@ func (r *Repo) InsertIngredientUsages(ctx context.Context, tx *sql.Tx, ingredien
 
 func (r *Repo) GetRecipeByID(ctx context.Context, db db.DBTX, id string) (*RecipeContainer, error) {
 	row := db.QueryRowContext(ctx,
-		`SELECT 
-		rc.id, rc.user_id, rc.created_at, rc.current_version_id,
-		rv.id, rv.name, rv.prep_mins, rv.cook_mins, rv.portions, rv.created_at, rv.version
-		FROM recipe_containers rc
-		JOIN recipe_versions rv ON rc.current_version_id = rv.id
-		WHERE rc.id = $1`,
+		selectRecipeContainerWithVersionByIDQuery,
 		id,
 	)
 	rc, err := scanRecipeContainerWithVersion(row)
@@ -136,12 +143,7 @@ func (r *Repo) GetRecipeByID(ctx context.Context, db db.DBTX, id string) (*Recip
 
 func (r *Repo) GetAllRecipes(ctx context.Context, db db.DBTX) ([]*RecipeContainer, error) {
 	rows, err := db.QueryContext(ctx,
-		`SELECT 
-		rc.id, rc.user_id, rc.created_at, rc.current_version_id,
-		rv.id, rv.name, rv.prep_mins, rv.cook_mins, rv.portions, rv.created_at, rv.version
-		FROM recipe_containers rc
-		JOIN recipe_versions rv ON rc.current_version_id = rv.id
-		`,
+		selectRecipeContainerWithVersionBaseQuery,
 	)
 	if err != nil {
 		return nil, err
@@ -198,12 +200,7 @@ func (r *Repo) GetRecipeSourceByRecipeID(ctx context.Context, db db.DBTX, recipe
 
 func (r *Repo) GetRecipesByUserID(ctx context.Context, db db.DBTX, userID string) ([]*RecipeContainer, error) {
 	rows, err := db.QueryContext(ctx,
-		`SELECT 
-		rc.id, rc.user_id, rc.created_at, rc.current_version_id,
-		rv.id, rv.name, rv.prep_mins, rv.cook_mins, rv.portions, rv.created_at, rv.version
-		FROM recipe_containers rc
-		JOIN recipe_versions rv ON rc.current_version_id = rv.id
-		WHERE rc.user_id = $1`,
+		selectRecipeContainerWithVersionByUserIDQuery,
 		userID,
 	)
 	if err != nil {
