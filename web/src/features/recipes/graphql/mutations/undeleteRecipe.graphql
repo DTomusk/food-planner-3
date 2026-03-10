@@ -1,6 +1,0 @@
-mutation UndeleteRecipe($input: UndeleteRecipeInput!) {
-    undeleteRecipe(input: $input) {
-        id
-        name
-    }
-}

@@ -1,8 +1,10 @@
 query GetMyRecipes {
     me {
-        recipes(filter: { status: ACTIVE }) {
-            name
+        recipes {
             id
+            currentVersion {
+                name
+            }
         }
     }
 }

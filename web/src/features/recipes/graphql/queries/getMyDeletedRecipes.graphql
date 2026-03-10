@@ -1,8 +1,0 @@
-query GetMyDeletedRecipes {
-    me {
-        recipes(filter: { status: DELETED }) {
-            name
-            id
-        }
-    }
-}

@@ -1,32 +1,34 @@
 query GetRecipe($id: ID!) {
     recipe(id: $id) {
-        name
         id
-        user {
+        author {
             id
             username
         }
-        ingredientUsages {
-            quantity
-            unit {
-                symbol
+        currentVersion {
+            name
+            ingredientUsages {
+                quantity
+                unit {
+                    symbol
+                }
+                ingredient {
+                    name
+                    counter
+                    plural
+                    counterPlural
+                }
             }
-            ingredient {
-                name
-                counter
-                plural
-                counterPlural
+            prepMins
+            cookMins
+            portions
+            source {
+                type
+                url
+                bookTitle
+                bookPage
+                instructions
             }
-        }
-        prepMins
-        cookMins
-        portions
-        source {
-            type
-            url
-            bookTitle
-            bookPage
-            instructions
         }
     }
 }
