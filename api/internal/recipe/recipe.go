@@ -40,12 +40,43 @@ func NewRecipe(
 	portions int,
 	source *RecipeSource,
 ) (*RecipeContainer, error) {
+	recipeID := uuid.New()
+	now := time.Now()
+
+	version, err := NewRecipeVersion(recipeID, 1, name, ingredients, prepMins, cookMins, portions, source)
+	if err != nil {
+		return nil, err
+	}
+
+	recipe := &RecipeContainer{
+		ID:               recipeID,
+		UserID:           userID,
+		CurrentVersionID: version.ID,
+		CurrentVersion:   version,
+		CreatedAt:        now,
+	}
+
+	return recipe, nil
+}
+
+func NewRecipeVersion(
+	recipeID uuid.UUID,
+	version int,
+	name string,
+	ingredients []*IngredientUsage,
+	prepMins,
+	cookMins,
+	portions int,
+	source *RecipeSource,
+) (*RecipeVersion, error) {
 	if name == "" {
 		return nil, ErrEmptyName
 	}
+
 	if len(ingredients) == 0 {
 		return nil, ErrNoIngredients
 	}
+
 	if prepMins < 0 {
 		return nil, ErrInvalidPrepMins
 	}
@@ -56,14 +87,11 @@ func NewRecipe(
 		return nil, ErrInvalidPortions
 	}
 
-	recipeID := uuid.New()
-	versionID := uuid.New()
 	now := time.Now()
-
-	version := &RecipeVersion{
-		ID:          versionID,
+	return &RecipeVersion{
+		ID:          uuid.New(),
 		RecipeID:    recipeID,
-		Version:     1,
+		Version:     version,
 		Name:        name,
 		Ingredients: ingredients,
 		PrepMins:    prepMins,
@@ -71,17 +99,7 @@ func NewRecipe(
 		Portions:    portions,
 		Source:      source,
 		CreatedAt:   now,
-	}
-
-	recipe := &RecipeContainer{
-		ID:               recipeID,
-		UserID:           userID,
-		CurrentVersionID: versionID,
-		CurrentVersion:   version,
-		CreatedAt:        now,
-	}
-
-	return recipe, nil
+	}, nil
 }
 
 func (r *RecipeVersion) String() string {

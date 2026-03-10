@@ -23,3 +23,8 @@ type CreateRecipeSourceRequest struct {
 	BookPage     *int32  `json:"book_page,omitempty"`
 	Instructions *string `json:"instructions,omitempty"`
 }
+
+type UpdateRecipeRequest struct {
+	RecipeId string              `json:"recipe_id" validate:"required,uuid4"`
+	Request  CreateRecipeRequest `json:"request" validate:"required,dive"`
+}

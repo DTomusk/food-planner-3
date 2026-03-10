@@ -44,20 +44,9 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 	logger.Debug("Creating recipe")
 	// Basic request validation
 	// We might want to enforce unique name per user
-	if len(strings.TrimSpace(request.Name)) == 0 {
-		return nil, ErrEmptyName
-	}
-	if len(request.Ingredients) == 0 {
-		return nil, ErrNoIngredients
-	}
-
-	ingredientUsages, err := s.validateAndConvertIngredientUsages(ctx, logger, request.Ingredients)
+	ingredientUsages, recipeSource, err := s.validateRecipeRequest(ctx, logger, request)
 	if err != nil {
-		return nil, err
-	}
-
-	recipeSource, err := s.validateAndConvertRecipeSource(&request.Source)
-	if err != nil {
+		logger.Error("Error validating recipe request", "error", err)
 		return nil, err
 	}
 
@@ -83,8 +72,7 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 
 	// Persist recipe
 	err = s.txRunner.WithTx(ctx, func(tx *sql.Tx) error {
-		var err error
-		recipeContainer, err = s.recipeRepo.createRecipe(ctx, tx, recipeContainer)
+		recipeContainer, err := s.recipeRepo.createRecipe(ctx, tx, recipeContainer)
 		if err != nil {
 			return err
 		}
@@ -99,6 +87,79 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 		return nil, err
 	}
 	return recipeContainer, nil
+}
+
+func (s *Service) validateRecipeRequest(ctx context.Context, logger *slog.Logger, request CreateRecipeRequest) ([]*IngredientUsage, *RecipeSource, error) {
+	if len(strings.TrimSpace(request.Name)) == 0 {
+		return nil, nil, ErrEmptyName
+	}
+	if len(request.Ingredients) == 0 {
+		return nil, nil, ErrNoIngredients
+	}
+
+	ingredientUsages, err := s.validateAndConvertIngredientUsages(ctx, logger, request.Ingredients)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	recipeSource, err := s.validateAndConvertRecipeSource(&request.Source)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return ingredientUsages, recipeSource, nil
+}
+
+func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest) (*RecipeContainer, error) {
+	// Get recipe container and ensure user owns the recipe
+	logger := logging.FromContext(ctx).With("method", "UpdateRecipe", "request", request)
+	existingRecipe, err := s.recipeRepo.getRecipeByID(ctx, s.txRunner.DB(), request.RecipeId)
+	if err != nil {
+		return nil, err
+	}
+	if existingRecipe == nil {
+		return nil, ErrRecipeNotFound
+	}
+	if existingRecipe.UserID.String() != request.Request.UserID {
+		return nil, ErrUnauthorized
+	}
+	// Validate request
+	ingredientUsages, recipeSource, err := s.validateRecipeRequest(ctx, logger, request.Request)
+	if err != nil {
+		return nil, err
+	}
+	// Instantiate entity
+	recipeVersion, err := NewRecipeVersion(
+		existingRecipe.ID,
+		existingRecipe.CurrentVersion.Version+1,
+		request.Request.Name,
+		ingredientUsages,
+		request.Request.PrepMins,
+		request.Request.CookMins,
+		request.Request.Portions,
+		recipeSource,
+	)
+	if err != nil {
+		return nil, err
+	}
+	// Persist
+	err = s.txRunner.WithTx(ctx, func(tx *sql.Tx) error {
+		err := s.recipeVersionRepo.createRecipeVersion(ctx, tx, recipeVersion)
+		if err != nil {
+			return err
+		}
+		err = s.ingredientUsageRepo.insertIngredientUsages(ctx, tx, ingredientUsages, recipeVersion.ID)
+		if err != nil {
+			return err
+		}
+		// Update current version id on recipe container
+		return nil
+	})
+	if err != nil {
+		logger.Error("Error persisting recipe", "error", err)
+		return nil, err
+	}
+	return nil, nil
 }
 
 func (s *Service) validateAndConvertIngredientUsages(ctx context.Context, logger *slog.Logger, ingredientUsageRequests []CreateIngredientUsageRequest) ([]*IngredientUsage, error) {
