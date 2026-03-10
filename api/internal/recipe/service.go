@@ -81,16 +81,14 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 		return nil, err
 	}
 
-	var fetchedContainer *RecipeContainer
-
 	// Persist recipe
 	err = s.txRunner.WithTx(ctx, func(tx *sql.Tx) error {
 		var err error
-		fetchedContainer, err = s.recipeRepo.createRecipe(ctx, tx, recipeContainer)
+		recipeContainer, err = s.recipeRepo.createRecipe(ctx, tx, recipeContainer)
 		if err != nil {
 			return err
 		}
-		err = s.ingredientUsageRepo.insertIngredientUsages(ctx, tx, recipeContainer.CurrentVersion.Ingredients, recipeContainer.CurrentVersion.ID)
+		err = s.ingredientUsageRepo.insertIngredientUsages(ctx, tx, ingredientUsages, recipeContainer.CurrentVersion.ID)
 		if err != nil {
 			return err
 		}
@@ -100,7 +98,7 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 		logger.Error("Error persisting recipe", "error", err)
 		return nil, err
 	}
-	return fetchedContainer, nil
+	return recipeContainer, nil
 }
 
 func (s *Service) validateAndConvertIngredientUsages(ctx context.Context, logger *slog.Logger, ingredientUsageRequests []CreateIngredientUsageRequest) ([]*IngredientUsage, error) {
