@@ -15,7 +15,7 @@ type Repo struct{}
 const (
 	selectRecipeContainerWithVersionBaseQuery = `SELECT 
 	rc.id, rc.user_id, rc.created_at, rc.current_version_id,
-	rv.id, rv.name, rv.prep_mins, rv.cook_mins, rv.portions, rv.created_at, rv.version
+	rv.id, rv.recipe_id, rv.name, rv.prep_mins, rv.cook_mins, rv.portions, rv.created_at, rv.version
 	FROM recipe_containers rc
 	JOIN recipe_versions rv ON rc.current_version_id = rv.id`
 	selectRecipeContainerWithVersionByIDQuery = selectRecipeContainerWithVersionBaseQuery + `
@@ -54,7 +54,7 @@ func (r *Repo) CreateRecipe(ctx context.Context, tx *sql.Tx, recipeContainer *Re
 	versionQuery := `INSERT INTO recipe_versions 
 	(id, recipe_id, name, prep_mins, cook_mins, portions, version) 
 	VALUES ($1, $2, $3, $4, $5, $6, 1) 
-	RETURNING id, name, prep_mins, cook_mins, portions, created_at`
+	RETURNING id, recipe_id, name, prep_mins, cook_mins, portions, created_at`
 	recipeVersion := recipeContainer.CurrentVersion
 	err = tx.QueryRowContext(
 		ctx,
@@ -67,6 +67,7 @@ func (r *Repo) CreateRecipe(ctx context.Context, tx *sql.Tx, recipeContainer *Re
 		recipeVersion.Portions,
 	).Scan(
 		&dbRecipeVersion.ID,
+		&dbRecipeVersion.RecipeID,
 		&dbRecipeVersion.Name,
 		&dbRecipeVersion.PrepMins,
 		&dbRecipeVersion.CookMins,
@@ -293,6 +294,7 @@ func scanRecipeContainerWithVersion(
 		&rc.CreatedAt,
 		&rc.CurrentVersionID,
 		&rv.ID,
+		&rv.RecipeID,
 		&rv.Name,
 		&rv.PrepMins,
 		&rv.CookMins,

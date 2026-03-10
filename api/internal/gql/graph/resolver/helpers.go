@@ -54,6 +54,7 @@ func mapRecipeVersion(recipeVersion *recipe.RecipeVersion) *model.RecipeVersion 
 	}
 	return &model.RecipeVersion{
 		ID:        recipeVersion.ID.String(),
+		RecipeID:  recipeVersion.RecipeID.String(),
 		Name:      recipeVersion.Name,
 		PrepMins:  int32(recipeVersion.PrepMins),
 		CookMins:  int32(recipeVersion.CookMins),

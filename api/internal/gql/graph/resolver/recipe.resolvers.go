@@ -124,11 +124,18 @@ func (r *recipeResolver) Versions(ctx context.Context, obj *model.Recipe) ([]*mo
 
 // Recipe is the resolver for the recipe field.
 func (r *recipeVersionResolver) Recipe(ctx context.Context, obj *model.RecipeVersion) (*model.Recipe, error) {
+	logger := logging.FromContext(ctx).With("recipe_id", obj.RecipeID)
+	if obj.RecipeID == "" {
+		logger.Warn("Recipe version has no associated recipe ID", "recipe_version_id", obj.ID)
+		return nil, nil
+	}
 	recipe, err := r.RecipeService.GetRecipeByID(ctx, obj.RecipeID)
 	if err != nil {
+		logger.Error("Failed to get recipe for recipe version", "error", err)
 		return nil, err
 	}
 	if recipe == nil {
+		logger.Warn("No recipe found for recipe version", "recipe_version_id", obj.ID, "recipe_id", obj.RecipeID)
 		return nil, nil
 	}
 	return mapRecipe(recipe), nil
