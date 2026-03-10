@@ -14,15 +14,23 @@ import (
 
 type Service struct {
 	txRunner            db.TxRunner
-	Repo                *Repo
+	RecipeRepo          *RecipeRepo
+	RecipeVersionRepo   *RecipeVersionRepo
 	IngredientService   *ingredient.IngredientService
 	RecipeRetentionDays *int
 }
 
-func NewService(txRunner db.TxRunner, repo *Repo, ingredientService *ingredient.IngredientService, recipeRetentionDays *int) *Service {
+func NewService(
+	txRunner db.TxRunner,
+	repo *RecipeRepo,
+	recipeVersionRepo *RecipeVersionRepo,
+	ingredientService *ingredient.IngredientService,
+	recipeRetentionDays *int,
+) *Service {
 	return &Service{
 		txRunner:            txRunner,
-		Repo:                repo,
+		RecipeRepo:          repo,
+		RecipeVersionRepo:   recipeVersionRepo,
 		IngredientService:   ingredientService,
 		RecipeRetentionDays: recipeRetentionDays,
 	}
@@ -73,7 +81,7 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 	// Persist recipe
 	err = s.txRunner.WithTx(ctx, func(tx *sql.Tx) error {
 		var err error
-		recipeContainer, err = s.Repo.CreateRecipe(ctx, tx, recipeContainer)
+		recipeContainer, err = s.RecipeRepo.CreateRecipe(ctx, tx, recipeContainer)
 		return err
 	})
 	if err != nil {
@@ -146,29 +154,29 @@ func (s *Service) validateAndConvertRecipeSource(sourceRequest *CreateRecipeSour
 }
 
 func (s *Service) GetAllRecipes(ctx context.Context) ([]*RecipeContainer, error) {
-	return s.Repo.GetAllRecipes(ctx, s.txRunner.DB())
+	return s.RecipeRepo.GetAllRecipes(ctx, s.txRunner.DB())
 }
 
 func (s *Service) GetRecipeByID(ctx context.Context, id string) (*RecipeContainer, error) {
-	return s.Repo.GetRecipeByID(ctx, s.txRunner.DB(), id)
+	return s.RecipeRepo.GetRecipeByID(ctx, s.txRunner.DB(), id)
 }
 
 func (s *Service) GetRecipeVersionByID(ctx context.Context, id string) (*RecipeVersion, error) {
-	return s.Repo.GetRecipeVersionByID(ctx, s.txRunner.DB(), id)
+	return s.RecipeVersionRepo.GetRecipeVersionByID(ctx, s.txRunner.DB(), id)
 }
 
 func (s *Service) GetRecipesByUserID(ctx context.Context, userID string) ([]*RecipeContainer, error) {
-	return s.Repo.GetRecipesByUserID(ctx, s.txRunner.DB(), userID)
+	return s.RecipeRepo.GetRecipesByUserID(ctx, s.txRunner.DB(), userID)
 }
 
 func (s *Service) GetIngredientUsagesByRecipeVersionID(ctx context.Context, recipeVersionID string) ([]*IngredientUsage, error) {
-	return s.Repo.GetIngredientUsagesForRecipeVersion(ctx, s.txRunner.DB(), recipeVersionID)
+	return s.RecipeRepo.GetIngredientUsagesForRecipeVersion(ctx, s.txRunner.DB(), recipeVersionID)
 }
 
 func (s *Service) GetRecipeSourceByRecipeVersionID(ctx context.Context, recipeVersionID string) (*RecipeSource, error) {
-	return s.Repo.GetRecipeSourceByRecipeVersionID(ctx, s.txRunner.DB(), recipeVersionID)
+	return s.RecipeVersionRepo.GetRecipeSourceByRecipeVersionID(ctx, s.txRunner.DB(), recipeVersionID)
 }
 
 func (s *Service) GetRecipeVersionsByRecipeID(ctx context.Context, recipeID string) ([]*RecipeVersion, error) {
-	return s.Repo.GetRecipeVersionsByRecipeID(ctx, s.txRunner.DB(), recipeID)
+	return s.RecipeVersionRepo.GetRecipeVersionsByRecipeID(ctx, s.txRunner.DB(), recipeID)
 }

@@ -18,7 +18,7 @@ import (
 func TestCreateAndGetRecipe(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
-		r := NewRepo()
+		r := NewRecipeRepo()
 		ingredientID := uuid.New()
 		testIngredient := ingredient.Ingredient{
 			ID:            ingredientID,
@@ -72,7 +72,7 @@ func TestCreateAndGetRecipe(t *testing.T) {
 func TestGetRecipe_DoesNotErrorWhenNotFound(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
-		r := NewRepo()
+		r := NewRecipeRepo()
 
 		// Act
 		recipeContainer, err := r.GetRecipeByID(context.Background(), tx, "04061e4e-6d4c-41d1-abcf-8b214927e1ed")
@@ -86,7 +86,7 @@ func TestGetRecipe_DoesNotErrorWhenNotFound(t *testing.T) {
 func TestGetRecipesByUserID(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
-		r := NewRepo()
+		r := NewRecipeRepo()
 		ingredientID := uuid.New()
 		testIngredient := ingredient.Ingredient{
 			ID:            ingredientID,
@@ -158,58 +158,10 @@ func TestGetRecipesByUserID(t *testing.T) {
 	})
 }
 
-func TestGetRecipeVersionsByRecipeID(t *testing.T) {
-	testutil.WithTx(t, func(tx *sql.Tx) {
-		// Arrange
-		r := NewRepo()
-		ingredientID := uuid.New()
-		testIngredient := ingredient.Ingredient{
-			ID:            ingredientID,
-			FileKey:       "test_ingredient",
-			Name:          "Test Ingredient",
-			PreferredUnit: 1,
-		}
-		err := seeds.InsertIngredient(context.Background(), tx, &testIngredient)
-		require.NoError(t, err)
-
-		testUser, err := seeds.SeedTestUser(context.Background(), tx)
-		require.NoError(t, err)
-
-		ingredientUsage, err := NewIngredientUsage(CreateIngredientUsageRequest{
-			IngredientID: ingredientID.String(),
-			Quantity:     200,
-			Unit:         1,
-		})
-		require.NoError(t, err)
-
-		recipeContainer, err := NewRecipe(
-			"Versioned Recipe",
-			testUser.ID,
-			[]*IngredientUsage{ingredientUsage},
-			30,
-			60,
-			8,
-			nil,
-		)
-		require.NoError(t, err)
-		created, err := r.CreateRecipe(context.Background(), tx, recipeContainer)
-		require.NoError(t, err)
-
-		// Act
-		versions, err := r.GetRecipeVersionsByRecipeID(context.Background(), tx, created.ID.String())
-
-		// Assert
-		require.NoError(t, err)
-		require.Len(t, versions, 1, "Expected to find 1 version initially")
-		require.Equal(t, 1, versions[0].Version, "Expected version number to be 1")
-		require.Equal(t, "Versioned Recipe", versions[0].Name)
-	})
-}
-
 func TestGetIngredientUsagesForRecipeVersion(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
-		r := NewRepo()
+		r := NewRecipeRepo()
 		ingredientID := uuid.New()
 		testIngredient := ingredient.Ingredient{
 			ID:            ingredientID,
@@ -254,61 +206,10 @@ func TestGetIngredientUsagesForRecipeVersion(t *testing.T) {
 	})
 }
 
-func TestGetRecipeSourceByRecipeVersionID(t *testing.T) {
-	testutil.WithTx(t, func(tx *sql.Tx) {
-		// Arrange
-		r := NewRepo()
-		ingredientID := uuid.New()
-		testIngredient := ingredient.Ingredient{
-			ID:            ingredientID,
-			FileKey:       "test_ingredient",
-			Name:          "Test Ingredient",
-			PreferredUnit: 1,
-		}
-		err := seeds.InsertIngredient(context.Background(), tx, &testIngredient)
-		require.NoError(t, err)
-
-		testUser, err := seeds.SeedTestUser(context.Background(), tx)
-		require.NoError(t, err)
-
-		ingredientUsage, err := NewIngredientUsage(CreateIngredientUsageRequest{
-			IngredientID: ingredientID.String(),
-			Quantity:     200,
-			Unit:         1,
-		})
-		require.NoError(t, err)
-
-		source, err := NewURLSource("https://example.com/recipe")
-		require.NoError(t, err)
-
-		recipeContainer, err := NewRecipe(
-			"Recipe With Source",
-			testUser.ID,
-			[]*IngredientUsage{ingredientUsage},
-			30,
-			60,
-			8,
-			source,
-		)
-		require.NoError(t, err)
-		created, err := r.CreateRecipe(context.Background(), tx, recipeContainer)
-		require.NoError(t, err)
-
-		// Act
-		retrievedSource, err := r.GetRecipeSourceByRecipeVersionID(context.Background(), tx, created.CurrentVersion.ID.String())
-
-		// Assert
-		require.NoError(t, err)
-		require.NotNil(t, retrievedSource, "Expected to find recipe source")
-		require.Equal(t, URL, retrievedSource.Type)
-		require.Equal(t, "https://example.com/recipe", *retrievedSource.URL)
-	})
-}
-
 func TestInsertIngredientUsages(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
-		r := NewRepo()
+		r := NewRecipeRepo()
 		ingredientID1 := uuid.New()
 		ingredientID2 := uuid.New()
 
