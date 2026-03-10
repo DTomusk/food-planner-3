@@ -149,6 +149,10 @@ func (r *recipeVersionResolver) IngredientUsages(ctx context.Context, obj *model
 		logger.Error("Failed to get ingredient usages for recipe", "error", err)
 		return nil, err
 	}
+	if ingredientUsages == nil {
+		logger.Error("No ingredient usages found for recipe", "recipe_version_id", obj.ID)
+		return nil, nil
+	}
 
 	ingredientIDs := make([]string, len(ingredientUsages))
 	for i, usage := range ingredientUsages {
