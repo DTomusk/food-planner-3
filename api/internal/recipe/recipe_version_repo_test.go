@@ -50,11 +50,11 @@ func TestGetRecipeSourceByRecipeVersionID(t *testing.T) {
 			source,
 		)
 		require.NoError(t, err)
-		created, err := recipeRepo.CreateRecipe(context.Background(), tx, recipeContainer)
+		created, err := recipeRepo.createRecipe(context.Background(), tx, recipeContainer)
 		require.NoError(t, err)
 
 		// Act
-		retrievedSource, err := r.GetRecipeSourceByRecipeVersionID(context.Background(), tx, created.CurrentVersion.ID.String())
+		retrievedSource, err := r.getRecipeSourceByRecipeVersionID(context.Background(), tx, created.CurrentVersion.ID.String())
 
 		// Assert
 		require.NoError(t, err)

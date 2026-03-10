@@ -6,13 +6,13 @@ import (
 	"foodplanner/internal/db"
 )
 
-type RecipeVersionRepo struct{}
+type recipeVersionRepo struct{}
 
-func NewRecipeVersionRepo() *RecipeVersionRepo {
-	return &RecipeVersionRepo{}
+func NewRecipeVersionRepo() *recipeVersionRepo {
+	return &recipeVersionRepo{}
 }
 
-func (r *RecipeVersionRepo) GetRecipeVersionByID(ctx context.Context, db db.DBTX, id string) (*RecipeVersion, error) {
+func (r *recipeVersionRepo) getRecipeVersionByID(ctx context.Context, db db.DBTX, id string) (*RecipeVersion, error) {
 	var recipeVersion RecipeVersion
 	row := db.QueryRowContext(ctx, `SELECT id, recipe_id, name, prep_mins, cook_mins, portions, created_at, version FROM recipe_versions WHERE id = $1`, id)
 	err := row.Scan(
@@ -34,7 +34,7 @@ func (r *RecipeVersionRepo) GetRecipeVersionByID(ctx context.Context, db db.DBTX
 	return &recipeVersion, nil
 }
 
-func (r *RecipeVersionRepo) GetRecipeVersionsByRecipeID(ctx context.Context, db db.DBTX, recipeID string) ([]*RecipeVersion, error) {
+func (r *recipeVersionRepo) getRecipeVersionsByRecipeID(ctx context.Context, db db.DBTX, recipeID string) ([]*RecipeVersion, error) {
 	rows, err := db.QueryContext(ctx, `SELECT id, recipe_id, name, prep_mins, cook_mins, portions, created_at, version FROM recipe_versions WHERE recipe_id = $1 ORDER BY created_at DESC`, recipeID)
 	if err != nil {
 		return nil, err
@@ -64,7 +64,7 @@ func (r *RecipeVersionRepo) GetRecipeVersionsByRecipeID(ctx context.Context, db 
 	return versions, nil
 }
 
-func (r *RecipeVersionRepo) GetRecipeSourceByRecipeVersionID(ctx context.Context, db db.DBTX, recipeVersionID string) (*RecipeSource, error) {
+func (r *recipeVersionRepo) getRecipeSourceByRecipeVersionID(ctx context.Context, db db.DBTX, recipeVersionID string) (*RecipeSource, error) {
 	var source RecipeSource
 	row := db.QueryRowContext(ctx, "SELECT type, url, book_title, book_page, instructions FROM recipe_sources WHERE recipe_version_id = $1", recipeVersionID)
 	err := row.Scan(&source.Type, &source.URL, &source.BookTitle, &source.BookPage, &source.Instructions)

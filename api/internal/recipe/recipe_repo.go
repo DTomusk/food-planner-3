@@ -3,14 +3,10 @@ package recipe
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"foodplanner/internal/db"
-	"strings"
-
-	"github.com/google/uuid"
 )
 
-type RecipeRepo struct{}
+type recipeRepo struct{}
 
 const (
 	selectRecipeContainerWithVersionBaseQuery = `SELECT 
@@ -24,13 +20,13 @@ const (
 	WHERE rc.user_id = $1`
 )
 
-func NewRecipeRepo() *RecipeRepo {
-	return &RecipeRepo{}
+func NewRecipeRepo() *recipeRepo {
+	return &recipeRepo{}
 }
 
 // Creates a new recipe including ingredient usages
 // Returns recipe fields, ingredient usages can be loaded lazily
-func (r *RecipeRepo) CreateRecipe(ctx context.Context, tx *sql.Tx, recipeContainer *RecipeContainer) (*RecipeContainer, error) {
+func (r *recipeRepo) createRecipe(ctx context.Context, tx *sql.Tx, recipeContainer *RecipeContainer) (*RecipeContainer, error) {
 	var dbRecipeContainer RecipeContainer
 	containerQuery := `INSERT INTO recipe_containers 
 	(id, user_id) 
@@ -87,11 +83,7 @@ func (r *RecipeRepo) CreateRecipe(ctx context.Context, tx *sql.Tx, recipeContain
 	dbRecipeContainer.CurrentVersionID = dbRecipeVersion.ID
 	dbRecipeContainer.CurrentVersion = &dbRecipeVersion
 
-	err = r.InsertIngredientUsages(ctx, tx, recipeVersion.Ingredients, dbRecipeVersion.ID)
-	if err != nil {
-		return nil, err
-	}
-
+	// TODO: recipe sources should have its own repo
 	if recipeVersion.Source != nil {
 		sourceQuery := `INSERT INTO recipe_sources (recipe_version_id, type, url, book_title, book_page, instructions) VALUES ($1, $2, $3, $4, $5, $6)`
 		_, err = tx.ExecContext(ctx, sourceQuery, dbRecipeVersion.ID, int(recipeVersion.Source.Type), recipeVersion.Source.URL, recipeVersion.Source.BookTitle, recipeVersion.Source.BookPage, recipeVersion.Source.Instructions)
@@ -102,32 +94,7 @@ func (r *RecipeRepo) CreateRecipe(ctx context.Context, tx *sql.Tx, recipeContain
 	return &dbRecipeContainer, nil
 }
 
-func (r *RecipeRepo) InsertIngredientUsages(ctx context.Context, tx *sql.Tx, ingredientUsages []*IngredientUsage, recipeVersionId uuid.UUID) error {
-	if len(ingredientUsages) == 0 {
-		return nil
-	}
-	var (
-		query  = "INSERT INTO ingredient_usages (id, recipe_version_id, ingredient_id, quantity, unit) VALUES"
-		args   []any
-		values []string
-	)
-
-	for i, u := range ingredientUsages {
-		start := i*5 + 1
-		values = append(values, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)", start, start+1, start+2, start+3, start+4))
-		args = append(args, u.ID, recipeVersionId, u.IngredientID, u.Quantity, int(u.Unit))
-	}
-
-	query += " " + strings.Join(values, ", ") + ";"
-
-	_, err := tx.ExecContext(ctx, query, args...)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (r *RecipeRepo) GetRecipeByID(ctx context.Context, db db.DBTX, id string) (*RecipeContainer, error) {
+func (r *recipeRepo) getRecipeByID(ctx context.Context, db db.DBTX, id string) (*RecipeContainer, error) {
 	row := db.QueryRowContext(ctx,
 		selectRecipeContainerWithVersionByIDQuery,
 		id,
@@ -142,7 +109,7 @@ func (r *RecipeRepo) GetRecipeByID(ctx context.Context, db db.DBTX, id string) (
 	return rc, nil
 }
 
-func (r *RecipeRepo) GetAllRecipes(ctx context.Context, db db.DBTX) ([]*RecipeContainer, error) {
+func (r *recipeRepo) getAllRecipes(ctx context.Context, db db.DBTX) ([]*RecipeContainer, error) {
 	rows, err := db.QueryContext(ctx,
 		selectRecipeContainerWithVersionBaseQuery,
 	)
@@ -165,28 +132,7 @@ func (r *RecipeRepo) GetAllRecipes(ctx context.Context, db db.DBTX) ([]*RecipeCo
 	return recipes, nil
 }
 
-func (r *RecipeRepo) GetIngredientUsagesForRecipeVersion(ctx context.Context, db db.DBTX, recipeVersionID string) ([]*IngredientUsage, error) {
-	rows, err := db.QueryContext(ctx, "SELECT id, ingredient_id, quantity, unit FROM ingredient_usages WHERE recipe_version_id = $1", recipeVersionID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var usages []*IngredientUsage
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	for rows.Next() {
-		var usage IngredientUsage
-		if err := rows.Scan(&usage.ID, &usage.IngredientID, &usage.Quantity, &usage.Unit); err != nil {
-			return nil, err
-		}
-		usages = append(usages, &usage)
-	}
-	return usages, nil
-}
-
-func (r *RecipeRepo) GetRecipesByUserID(ctx context.Context, db db.DBTX, userID string) ([]*RecipeContainer, error) {
+func (r *recipeRepo) getRecipesByUserID(ctx context.Context, db db.DBTX, userID string) ([]*RecipeContainer, error) {
 	rows, err := db.QueryContext(ctx,
 		selectRecipeContainerWithVersionByUserIDQuery,
 		userID,

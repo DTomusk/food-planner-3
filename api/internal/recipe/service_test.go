@@ -36,6 +36,7 @@ func TestCreateRecipe(t *testing.T) {
 			NewRecipeRepo(),
 			NewRecipeVersionRepo(),
 			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
+			NewIngredientUsageRepo(),
 			nil,
 		)
 		ingredientRequest := CreateIngredientUsageRequest{
@@ -99,6 +100,7 @@ func TestCreateRecipeWithDuplicateIngredients(t *testing.T) {
 			NewRecipeRepo(),
 			NewRecipeVersionRepo(),
 			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
+			NewIngredientUsageRepo(),
 			nil,
 		)
 		ingredientRequest := CreateIngredientUsageRequest{
@@ -132,6 +134,7 @@ func TestCreateRecipeWithNonexistentIngredient(t *testing.T) {
 			NewRecipeRepo(),
 			NewRecipeVersionRepo(),
 			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
+			NewIngredientUsageRepo(),
 			nil,
 		)
 
@@ -174,6 +177,7 @@ func TestCreateRecipeWithInvalidUnit(t *testing.T) {
 			NewRecipeRepo(),
 			NewRecipeVersionRepo(),
 			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
+			NewIngredientUsageRepo(),
 			nil,
 		)
 		ingredientRequest := CreateIngredientUsageRequest{
@@ -214,6 +218,7 @@ func TestCreateRecipeNotPreferredUnit(t *testing.T) {
 			NewRecipeRepo(),
 			NewRecipeVersionRepo(),
 			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
+			NewIngredientUsageRepo(),
 			nil,
 		)
 		ingredientRequest := CreateIngredientUsageRequest{
@@ -258,6 +263,7 @@ func TestCreateRecipe_NoSource(t *testing.T) {
 			NewRecipeRepo(),
 			NewRecipeVersionRepo(),
 			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
+			NewIngredientUsageRepo(),
 			nil,
 		)
 		ingredientRequest := CreateIngredientUsageRequest{

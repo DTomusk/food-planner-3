@@ -46,10 +46,16 @@ func main() {
 
 	ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), cfg.IngredientUpsertBatchSize)
 
-	recipeService := recipe.NewService(txRunner, recipe.NewRecipeRepo(), recipe.NewRecipeVersionRepo(), ingredientService, nil)
+	recipeService := recipe.NewService(
+		txRunner,
+		recipe.NewRecipeRepo(),
+		recipe.NewRecipeVersionRepo(),
+		ingredientService,
+		recipe.NewIngredientUsageRepo(),
+		nil,
+	)
 
-	userRepo := user.NewUserRepo()
-	userService := user.NewUserService(txRunner.DB(), userRepo)
+	userService := user.NewUserService(txRunner.DB(), user.NewUserRepo())
 	jwtService := auth.NewJWTService(cfg.JWTSecret, cfg.JWTExpirationMinutes)
 	authService := auth.NewAuthService(txRunner.DB(), userService, jwtService)
 
