@@ -127,7 +127,7 @@ type ComplexityRoot struct {
 	User struct {
 		Email    func(childComplexity int) int
 		ID       func(childComplexity int) int
-		Recipes  func(childComplexity int, filter *model.RecipeFilter) int
+		Recipes  func(childComplexity int) int
 		Username func(childComplexity int) int
 	}
 }
@@ -160,7 +160,7 @@ type RecipeVersionResolver interface {
 	Source(ctx context.Context, obj *model.RecipeVersion) (*model.RecipeSource, error)
 }
 type UserResolver interface {
-	Recipes(ctx context.Context, obj *model.User, filter *model.RecipeFilter) ([]*model.Recipe, error)
+	Recipes(ctx context.Context, obj *model.User) ([]*model.Recipe, error)
 }
 
 type executableSchema struct {
@@ -503,12 +503,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_User_recipes_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.User.Recipes(childComplexity, args["filter"].(*model.RecipeFilter)), true
+		return e.complexity.User.Recipes(childComplexity), true
 	case "User.username":
 		if e.complexity.User.Username == nil {
 			break
@@ -527,11 +522,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateIngredientUsageInput,
 		ec.unmarshalInputCreateRecipeInput,
 		ec.unmarshalInputCreateRecipeSourceInput,
-		ec.unmarshalInputDeleteRecipeInput,
-		ec.unmarshalInputRecipeFilter,
 		ec.unmarshalInputSignInInput,
 		ec.unmarshalInputSignUpInput,
-		ec.unmarshalInputUndeleteRecipeInput,
 	)
 	first := true
 
@@ -715,17 +707,6 @@ func (ec *executionContext) field_Query_user_args(ctx context.Context, rawArgs m
 		return nil, err
 	}
 	args["id"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_User_recipes_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalORecipeFilter2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipeFilter)
-	if err != nil {
-		return nil, err
-	}
-	args["filter"] = arg0
 	return args, nil
 }
 
@@ -2584,8 +2565,7 @@ func (ec *executionContext) _User_recipes(ctx context.Context, field graphql.Col
 		field,
 		ec.fieldContext_User_recipes,
 		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.User().Recipes(ctx, obj, fc.Args["filter"].(*model.RecipeFilter))
+			return ec.resolvers.User().Recipes(ctx, obj)
 		},
 		nil,
 		ec.marshalNRecipe2ᚕᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipeᚄ,
@@ -2594,7 +2574,7 @@ func (ec *executionContext) _User_recipes(ctx context.Context, field graphql.Col
 	)
 }
 
-func (ec *executionContext) fieldContext_User_recipes(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_User_recipes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "User",
 		Field:      field,
@@ -2615,17 +2595,6 @@ func (ec *executionContext) fieldContext_User_recipes(ctx context.Context, field
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Recipe", field.Name)
 		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_User_recipes_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
 	}
 	return fc, nil
 }
@@ -4234,60 +4203,6 @@ func (ec *executionContext) unmarshalInputCreateRecipeSourceInput(ctx context.Co
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputDeleteRecipeInput(ctx context.Context, obj any) (model.DeleteRecipeInput, error) {
-	var it model.DeleteRecipeInput
-	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"id"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "id":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-			data, err := ec.unmarshalNID2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ID = data
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputRecipeFilter(ctx context.Context, obj any) (model.RecipeFilter, error) {
-	var it model.RecipeFilter
-	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"status"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "status":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("status"))
-			data, err := ec.unmarshalORecipeStatus2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipeStatus(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Status = data
-		}
-	}
-
-	return it, nil
-}
-
 func (ec *executionContext) unmarshalInputSignInInput(ctx context.Context, obj any) (model.SignInInput, error) {
 	var it model.SignInInput
 	asMap := map[string]any{}
@@ -4357,33 +4272,6 @@ func (ec *executionContext) unmarshalInputSignUpInput(ctx context.Context, obj a
 				return it, err
 			}
 			it.Username = data
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputUndeleteRecipeInput(ctx context.Context, obj any) (model.UndeleteRecipeInput, error) {
-	var it model.UndeleteRecipeInput
-	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"id"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "id":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-			data, err := ec.unmarshalNID2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ID = data
 		}
 	}
 
@@ -6351,30 +6239,6 @@ func (ec *executionContext) marshalORecipe2ᚖfoodplannerᚋinternalᚋgqlᚋgra
 		return graphql.Null
 	}
 	return ec._Recipe(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalORecipeFilter2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipeFilter(ctx context.Context, v any) (*model.RecipeFilter, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := ec.unmarshalInputRecipeFilter(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalORecipeStatus2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipeStatus(ctx context.Context, v any) (*model.RecipeStatus, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var res = new(model.RecipeStatus)
-	err := res.UnmarshalGQL(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalORecipeStatus2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipeStatus(ctx context.Context, sel ast.SelectionSet, v *model.RecipeStatus) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return v
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v any) (*string, error) {

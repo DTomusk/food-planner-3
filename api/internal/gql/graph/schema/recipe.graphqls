@@ -43,15 +43,6 @@ type RecipeSource {
   instructions: String
 }
 
-enum RecipeStatus {
-  ACTIVE
-  DELETED
-}
-
-input RecipeFilter {
-  status: RecipeStatus
-}
-
 extend type Query {
   recipes: [Recipe!]!
   recipe(id: ID!): Recipe
@@ -78,14 +69,6 @@ input CreateRecipeSourceInput {
   bookTitle: String
   bookPage: Int
   instructions: String
-}
-
-input DeleteRecipeInput {
-  id: ID!
-}
-
-input UndeleteRecipeInput {
-  id: ID!
 }
 
 extend type Mutation {

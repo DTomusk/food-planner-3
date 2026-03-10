@@ -2,7 +2,7 @@ type User {
     id: ID!
     email: String!
     username: String!
-    recipes(filter: RecipeFilter): [Recipe!]! @goField(forceResolver: true)
+    recipes: [Recipe!]! @goField(forceResolver: true)
 }
 
 extend type Query {

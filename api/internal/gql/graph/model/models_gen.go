@@ -2,13 +2,6 @@
 
 package model
 
-import (
-	"bytes"
-	"fmt"
-	"io"
-	"strconv"
-)
-
 type AuthPayload struct {
 	Jwt  string `json:"jwt"`
 	User *User  `json:"user"`
@@ -37,10 +30,6 @@ type CreateRecipeSourceInput struct {
 	Instructions *string `json:"instructions,omitempty"`
 }
 
-type DeleteRecipeInput struct {
-	ID string `json:"id"`
-}
-
 type Ingredient struct {
 	ID            string  `json:"id"`
 	Name          string  `json:"name"`
@@ -63,10 +52,6 @@ type Mutation struct {
 type Query struct {
 }
 
-type RecipeFilter struct {
-	Status *RecipeStatus `json:"status,omitempty"`
-}
-
 type RecipeSource struct {
 	Type         int32   `json:"type"`
 	URL          *string `json:"url,omitempty"`
@@ -86,10 +71,6 @@ type SignUpInput struct {
 	Username string `json:"username"`
 }
 
-type UndeleteRecipeInput struct {
-	ID string `json:"id"`
-}
-
 type Unit struct {
 	Val    int32  `json:"val"`
 	Name   string `json:"name"`
@@ -101,59 +82,4 @@ type User struct {
 	Email    string    `json:"email"`
 	Username string    `json:"username"`
 	Recipes  []*Recipe `json:"recipes"`
-}
-
-type RecipeStatus string
-
-const (
-	RecipeStatusActive  RecipeStatus = "ACTIVE"
-	RecipeStatusDeleted RecipeStatus = "DELETED"
-)
-
-var AllRecipeStatus = []RecipeStatus{
-	RecipeStatusActive,
-	RecipeStatusDeleted,
-}
-
-func (e RecipeStatus) IsValid() bool {
-	switch e {
-	case RecipeStatusActive, RecipeStatusDeleted:
-		return true
-	}
-	return false
-}
-
-func (e RecipeStatus) String() string {
-	return string(e)
-}
-
-func (e *RecipeStatus) UnmarshalGQL(v any) error {
-	str, ok := v.(string)
-	if !ok {
-		return fmt.Errorf("enums must be strings")
-	}
-
-	*e = RecipeStatus(str)
-	if !e.IsValid() {
-		return fmt.Errorf("%s is not a valid RecipeStatus", str)
-	}
-	return nil
-}
-
-func (e RecipeStatus) MarshalGQL(w io.Writer) {
-	fmt.Fprint(w, strconv.Quote(e.String()))
-}
-
-func (e *RecipeStatus) UnmarshalJSON(b []byte) error {
-	s, err := strconv.Unquote(string(b))
-	if err != nil {
-		return err
-	}
-	return e.UnmarshalGQL(s)
-}
-
-func (e RecipeStatus) MarshalJSON() ([]byte, error) {
-	var buf bytes.Buffer
-	e.MarshalGQL(&buf)
-	return buf.Bytes(), nil
 }
