@@ -3,8 +3,10 @@ query GetUser($id: ID!) {
         id 
         username
         recipes {
-            name 
             id
+            currentVersion {
+                name
+            }
         }
     }
 }

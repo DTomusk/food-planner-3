@@ -8,7 +8,6 @@ export { useRecipes } from "./hooks/useRecipes";
 export { useCreateRecipe } from "./hooks/useCreateRecipe";
 export { useRecipe } from "./hooks/useRecipe";
 export { useMyRecipes } from "./hooks/useMyRecipes";
-export { useMyDeletedRecipes } from "./hooks/useMyDeletedRecipes";
 
 // Types
 export type { Recipe } from "./types";

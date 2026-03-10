@@ -1,13 +1,13 @@
-import type { GetRecipeQuery } from "@/lib";
-import type { Recipe, User } from "../types";
+import type { GetRecipeQuery, GetRecipesQuery } from "@/lib";
+import type { Recipe, RecipeSummary, User } from "../types";
 
-export function mapRecipe(
+export function mapRecipeDetail(
     gqlRecipe: NonNullable<GetRecipeQuery["recipe"]>
 ): { recipe: Recipe, user: User }  {
     return { recipe:{
         id: gqlRecipe.id,
-        name: gqlRecipe.name,
-        ingredients: gqlRecipe.ingredientUsages.map((iu) => ({
+        name: gqlRecipe.currentVersion.name,
+        ingredients: gqlRecipe.currentVersion.ingredientUsages.map((iu) => ({
             name: iu.ingredient.name,
             quantity: iu.quantity,
             counter: iu.ingredient.counter,
@@ -15,19 +15,28 @@ export function mapRecipe(
             plural: iu.ingredient.plural,
             counterPlural: iu.ingredient.counterPlural,
         })),
-        prepMins: gqlRecipe.prepMins,
-        cookMins: gqlRecipe.cookMins,
-        portions: gqlRecipe.portions,
+        prepMins: gqlRecipe.currentVersion.prepMins,
+        cookMins: gqlRecipe.currentVersion.cookMins,
+        portions: gqlRecipe.currentVersion.portions,
         source: {
-            type: gqlRecipe.source.type === 0 ? "none" : gqlRecipe.source.type === 1 ? "website" : gqlRecipe.source.type === 2 ? "cookbook" : "original",
-            url: gqlRecipe.source.url || undefined,
-            bookTitle: gqlRecipe.source.bookTitle || undefined,
-            bookPage: gqlRecipe.source.bookPage || undefined,
-            instructions: gqlRecipe.source.instructions || undefined,
+            type: gqlRecipe.currentVersion.source.type === 0 ? "none" : gqlRecipe.currentVersion.source.type === 1 ? "website" : gqlRecipe.currentVersion.source.type === 2 ? "cookbook" : "original",
+            url: gqlRecipe.currentVersion.source.url || undefined,
+            bookTitle: gqlRecipe.currentVersion.source.bookTitle || undefined,
+            bookPage: gqlRecipe.currentVersion.source.bookPage || undefined,
+            instructions: gqlRecipe.currentVersion.source.instructions || undefined,
         }} ,
         user: {
-            id: gqlRecipe.user.id,
-            username: gqlRecipe.user.username,
+            id: gqlRecipe.author.id,
+            username: gqlRecipe.author.username,
         } 
     }
+}
+
+export function mapRecipeSummary(
+    gqlRecipes: GetRecipesQuery["recipes"]
+): RecipeSummary[] {
+    return gqlRecipes.map((gqlRecipe) => ({
+        id: gqlRecipe.id,
+        name: gqlRecipe.currentVersion.name,
+    }));
 }
