@@ -23,7 +23,7 @@ export function useUser(id: string) {
                 },
                 recipes: data.user.recipes.map((r) => ({
                     id: r.id,
-                    name: r.name,
+                    name: r.currentVersion.name,
                 }))
             };
         },

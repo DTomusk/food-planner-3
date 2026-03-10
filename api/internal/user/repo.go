@@ -8,6 +8,12 @@ import (
 
 type userRepo struct{}
 
+const (
+	selectUsersBaseQuery   = `SELECT id, email, password_hash, username FROM users`
+	selectUserByEmailQuery = selectUsersBaseQuery + ` WHERE email = $1`
+	selectUserByIDQuery    = selectUsersBaseQuery + ` WHERE id = $1`
+)
+
 func NewUserRepo() *userRepo {
 	return &userRepo{}
 }
@@ -25,8 +31,7 @@ func (r *userRepo) CreateUser(user *User, ctx context.Context, db db.DBTX) (*Use
 // Do not return error if no rows
 func (r *userRepo) GetUserByEmail(email string, ctx context.Context, db db.DBTX) (*User, error) {
 	var user User
-	query := `SELECT id, email, password_hash, username FROM users WHERE email = $1`
-	err := db.QueryRowContext(ctx, query, email).Scan(&user.ID, &user.Email, &user.PasswordHash, &user.Username)
+	err := db.QueryRowContext(ctx, selectUserByEmailQuery, email).Scan(&user.ID, &user.Email, &user.PasswordHash, &user.Username)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -39,8 +44,7 @@ func (r *userRepo) GetUserByEmail(email string, ctx context.Context, db db.DBTX)
 // Return error if no rows
 func (r *userRepo) GetUserByID(id string, ctx context.Context, db db.DBTX) (*User, error) {
 	var user User
-	query := `SELECT id, email, password_hash, username FROM users WHERE id = $1`
-	err := db.QueryRowContext(ctx, query, id).Scan(&user.ID, &user.Email, &user.PasswordHash, &user.Username)
+	err := db.QueryRowContext(ctx, selectUserByIDQuery, id).Scan(&user.ID, &user.Email, &user.PasswordHash, &user.Username)
 	if err != nil {
 		return nil, err
 	}

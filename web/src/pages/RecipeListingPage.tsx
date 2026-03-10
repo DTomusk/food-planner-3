@@ -38,7 +38,7 @@ export default function RecipeListingPage() {
                 {data && (
                     <>
                         <SectionTitle text="Top recipes" />
-                        <RecipeList recipes={data.recipes} />
+                        <RecipeList recipes={data} />
                     </>
                 )}
                 </Stack>

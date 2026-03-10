@@ -12,8 +12,6 @@ import (
 	"foodplanner/internal/gql/graph"
 	"foodplanner/internal/gql/graph/model"
 	"foodplanner/internal/logging"
-	"foodplanner/internal/recipe"
-	"foodplanner/internal/user"
 )
 
 // User is the resolver for the user field.
@@ -50,22 +48,10 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 }
 
 // Recipes is the resolver for the recipes field.
-func (r *userResolver) Recipes(ctx context.Context, obj *model.User, filter *model.RecipeFilter) ([]*model.Recipe, error) {
+func (r *userResolver) Recipes(ctx context.Context, obj *model.User) ([]*model.Recipe, error) {
 	logger := logging.FromContext(ctx)
-	claims, _ := auth.ClaimsFromContext(ctx)
 
-	var viewerID *string
-	if claims != nil {
-		viewerID = &claims.UserID
-	}
-
-	// Default behaviour: ACTIVE
-	status := recipe.StatusActive
-	if filter != nil && filter.Status != nil && *filter.Status == model.RecipeStatusDeleted {
-		status = recipe.StatusDeleted
-	}
-
-	recipes, err := r.RecipeService.GetRecipesByUserID(ctx, obj.ID, status, viewerID)
+	recipes, err := r.RecipeService.GetRecipesByUserID(ctx, obj.ID)
 	if err != nil {
 		logger.Error("Failed to get active recipes for user", "error", err)
 		return nil, err
@@ -77,24 +63,3 @@ func (r *userResolver) Recipes(ctx context.Context, obj *model.User, filter *mod
 func (r *Resolver) User() graph.UserResolver { return &userResolver{r} }
 
 type userResolver struct{ *Resolver }
-
-func mapUsers(users []*user.User) []*model.User {
-	var result []*model.User
-
-	for _, user := range users {
-		result = append(result, mapUser(user))
-	}
-
-	return result
-}
-
-func mapUser(user *user.User) *model.User {
-	if user == nil {
-		return nil
-	}
-	return &model.User{
-		ID:       user.ID.String(),
-		Email:    user.Email,
-		Username: user.Username,
-	}
-}

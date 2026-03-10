@@ -1,12 +1,25 @@
 type Recipe {
   id: ID!
+  author: User! @goField(forceResolver: true)
+  createdAt: Time!
+
+  currentVersion: RecipeVersion! @goField(forceResolver: true)
+  versions: [RecipeVersion!]! @goField(forceResolver: true)
+}
+
+type RecipeVersion {
+  id: ID!
+  recipe: Recipe! @goField(forceResolver: true)
+
+  version: Int!
   name: String!
   ingredientUsages: [IngredientUsage!]! @goField(forceResolver: true)
-  user: User! @goField(forceResolver: true)
   prepMins: Int!
   cookMins: Int!
   portions: Int!
   source: RecipeSource! @goField(forceResolver: true)
+
+  createdAt: Time!
 }
 
 type IngredientUsage {
@@ -28,15 +41,6 @@ type RecipeSource {
   bookTitle: String
   bookPage: Int
   instructions: String
-}
-
-enum RecipeStatus {
-  ACTIVE
-  DELETED
-}
-
-input RecipeFilter {
-  status: RecipeStatus
 }
 
 extend type Query {
@@ -67,17 +71,7 @@ input CreateRecipeSourceInput {
   instructions: String
 }
 
-input DeleteRecipeInput {
-  id: ID!
-}
-
-input UndeleteRecipeInput {
-  id: ID!
-}
-
 extend type Mutation {
   createRecipe(input: CreateRecipeInput!): Recipe! @auth
-  deleteRecipe(input: DeleteRecipeInput!): Recipe! @auth
-  undeleteRecipe(input: UndeleteRecipeInput!): Recipe! @auth
 }
 

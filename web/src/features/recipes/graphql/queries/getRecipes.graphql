@@ -1,6 +1,8 @@
 query GetRecipes {
     recipes {
-        name
         id
+        currentVersion {
+            name
+        }
     }
 }
