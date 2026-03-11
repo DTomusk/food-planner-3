@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"foodplanner/internal/db"
+
+	"github.com/google/uuid"
 )
 
 type recipeRepo struct{}
@@ -26,6 +28,7 @@ func NewRecipeRepo() *recipeRepo {
 
 // Creates a new recipe including ingredient usages
 // Returns recipe fields, ingredient usages can be loaded lazily
+// TODO: orchestration should happen in service, we're leaking recipe version stuff into here
 func (r *recipeRepo) createRecipe(ctx context.Context, tx *sql.Tx, recipeContainer *RecipeContainer) (*RecipeContainer, error) {
 	var dbRecipeContainer RecipeContainer
 	containerQuery := `INSERT INTO recipe_containers 
@@ -47,20 +50,17 @@ func (r *recipeRepo) createRecipe(ctx context.Context, tx *sql.Tx, recipeContain
 	}
 
 	var dbRecipeVersion RecipeVersion
-	versionQuery := `INSERT INTO recipe_versions 
-	(id, recipe_id, name, prep_mins, cook_mins, portions, version) 
-	VALUES ($1, $2, $3, $4, $5, $6, 1) 
-	RETURNING id, recipe_id, name, prep_mins, cook_mins, portions, created_at`
 	recipeVersion := recipeContainer.CurrentVersion
 	err = tx.QueryRowContext(
 		ctx,
-		versionQuery,
+		insertRecipeVersionQuery,
 		recipeVersion.ID,
 		recipeContainer.ID,
 		recipeVersion.Name,
 		recipeVersion.PrepMins,
 		recipeVersion.CookMins,
 		recipeVersion.Portions,
+		recipeVersion.Version,
 	).Scan(
 		&dbRecipeVersion.ID,
 		&dbRecipeVersion.RecipeID,
@@ -92,6 +92,12 @@ func (r *recipeRepo) createRecipe(ctx context.Context, tx *sql.Tx, recipeContain
 		}
 	}
 	return &dbRecipeContainer, nil
+}
+
+func (r *recipeRepo) updateRecipeCurrentVersion(ctx context.Context, tx *sql.Tx, recipeID, versionID uuid.UUID) error {
+	updateQuery := `UPDATE recipe_containers SET current_version_id = $1 WHERE id = $2`
+	_, err := tx.ExecContext(ctx, updateQuery, versionID, recipeID)
+	return err
 }
 
 func (r *recipeRepo) getRecipeByID(ctx context.Context, db db.DBTX, id string) (*RecipeContainer, error) {

@@ -12,6 +12,40 @@ func NewRecipeVersionRepo() *recipeVersionRepo {
 	return &recipeVersionRepo{}
 }
 
+const (
+	insertRecipeVersionQuery = `INSERT INTO recipe_versions 
+	(id, recipe_id, name, prep_mins, cook_mins, portions, version) 
+	VALUES ($1, $2, $3, $4, $5, $6, $7) 
+	RETURNING id, recipe_id, name, prep_mins, cook_mins, portions, created_at`
+)
+
+func (r *recipeVersionRepo) createRecipeVersion(ctx context.Context, tx *sql.Tx, version *RecipeVersion) (*RecipeVersion, error) {
+	var dbRecipeVersion RecipeVersion
+	err := tx.QueryRowContext(
+		ctx,
+		insertRecipeVersionQuery,
+		version.ID,
+		version.RecipeID,
+		version.Name,
+		version.PrepMins,
+		version.CookMins,
+		version.Portions,
+		version.Version,
+	).Scan(
+		&dbRecipeVersion.ID,
+		&dbRecipeVersion.RecipeID,
+		&dbRecipeVersion.Name,
+		&dbRecipeVersion.PrepMins,
+		&dbRecipeVersion.CookMins,
+		&dbRecipeVersion.Portions,
+		&dbRecipeVersion.CreatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &dbRecipeVersion, nil
+}
+
 func (r *recipeVersionRepo) getRecipeVersionByID(ctx context.Context, db db.DBTX, id string) (*RecipeVersion, error) {
 	var recipeVersion RecipeVersion
 	row := db.QueryRowContext(ctx, `SELECT id, recipe_id, name, prep_mins, cook_mins, portions, created_at, version FROM recipe_versions WHERE id = $1`, id)
@@ -64,6 +98,7 @@ func (r *recipeVersionRepo) getRecipeVersionsByRecipeID(ctx context.Context, db 
 	return versions, nil
 }
 
+// TODO: could have a recipe source repo
 func (r *recipeVersionRepo) getRecipeSourceByRecipeVersionID(ctx context.Context, db db.DBTX, recipeVersionID string) (*RecipeSource, error) {
 	var source RecipeSource
 	row := db.QueryRowContext(ctx, "SELECT type, url, book_title, book_page, instructions FROM recipe_sources WHERE recipe_version_id = $1", recipeVersionID)

@@ -143,23 +143,33 @@ func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest)
 		return nil, err
 	}
 	// Persist
+	var dbRecipeContainer *RecipeContainer
 	err = s.txRunner.WithTx(ctx, func(tx *sql.Tx) error {
-		err := s.recipeVersionRepo.createRecipeVersion(ctx, tx, recipeVersion)
+		// Create new recipe version
+		dbVersion, err := s.recipeVersionRepo.createRecipeVersion(ctx, tx, recipeVersion)
 		if err != nil {
 			return err
 		}
+		// Insert ingredients
 		err = s.ingredientUsageRepo.insertIngredientUsages(ctx, tx, ingredientUsages, recipeVersion.ID)
 		if err != nil {
 			return err
 		}
 		// Update current version id on recipe container
+		err = s.recipeRepo.updateRecipeCurrentVersion(ctx, tx, existingRecipe.ID, recipeVersion.ID)
+		if err != nil {
+			return err
+		}
+		// Return updated recipe container
+		dbRecipeContainer, err = s.recipeRepo.getRecipeByID(ctx, tx, existingRecipe.ID.String())
+		dbRecipeContainer.CurrentVersion = dbVersion
 		return nil
 	})
 	if err != nil {
 		logger.Error("Error persisting recipe", "error", err)
 		return nil, err
 	}
-	return nil, nil
+	return dbRecipeContainer, nil
 }
 
 func (s *Service) validateAndConvertIngredientUsages(ctx context.Context, logger *slog.Logger, ingredientUsageRequests []CreateIngredientUsageRequest) ([]*IngredientUsage, error) {
