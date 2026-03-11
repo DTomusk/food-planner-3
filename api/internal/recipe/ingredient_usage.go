@@ -14,33 +14,28 @@ type IngredientUsage struct {
 	Unit         unit.Unit
 }
 
-func newIngredientUsages(requests []CreateIngredientUsageRequest, availableIngredients []*ingredient.Ingredient) ([]*IngredientUsage, error) {
-	ingredientMap := make(map[string]*ingredient.Ingredient, len(availableIngredients))
-	for _, ing := range availableIngredients {
-		ingredientMap[ing.ID.String()] = ing
-	}
-
-	seenIngredients := make(map[string]bool)
-	ingredientUsages := make([]*IngredientUsage, len(requests))
-
-	for i, ingredientRequest := range requests {
-		if seenIngredients[ingredientRequest.IngredientID] {
-			return nil, ErrDuplicateIngredient
+// ingredient_usage.go
+func newIngredientUsages(
+	requests []CreateIngredientUsageRequest,
+	ingredientByID map[string]*ingredient.Ingredient,
+) ([]*IngredientUsage, error) {
+	usages := make([]*IngredientUsage, len(requests))
+	for i, req := range requests {
+		ing := ingredientByID[req.IngredientID]
+		if ing == nil {
+			return nil, ErrIngredientNotFound
 		}
-		seenIngredients[ingredientRequest.IngredientID] = true
-
-		selectedIngredient := ingredientMap[ingredientRequest.IngredientID]
-		if ingredientRequest.Unit != int(selectedIngredient.PreferredUnit) {
+		if req.Unit != int(ing.PreferredUnit) {
 			return nil, ErrInvalidUnit
 		}
 
-		usage, err := NewIngredientUsage(ingredientRequest)
+		usage, err := NewIngredientUsage(req)
 		if err != nil {
 			return nil, err
 		}
-		ingredientUsages[i] = usage
+		usages[i] = usage
 	}
-	return ingredientUsages, nil
+	return usages, nil
 }
 
 func NewIngredientUsage(request CreateIngredientUsageRequest) (*IngredientUsage, error) {

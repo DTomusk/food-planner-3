@@ -172,18 +172,10 @@ func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest)
 	return dbRecipeContainer, nil
 }
 
+// service.go
 func (s *Service) validateAndConvertIngredientUsages(ctx context.Context, logger *slog.Logger, ingredientUsageRequests []CreateIngredientUsageRequest) ([]*IngredientUsage, error) {
-	// Validate ingredients and check for duplicates
-	// TODO: There may be cases where we allow duplicate ingredients (e.g. different sections of the same recipe)
-	// But then ingredient usage table would need a new primary key as composite would no longer be unique
-	ingredientIds := make([]string, len(ingredientUsageRequests))
-	for i, ingredientRequest := range ingredientUsageRequests {
-		ingredientIds[i] = ingredientRequest.IngredientID
-	}
-
 	seen := make(map[string]struct{}, len(ingredientUsageRequests))
 	uniqueIDs := make([]string, 0, len(ingredientUsageRequests))
-
 	for _, req := range ingredientUsageRequests {
 		if _, exists := seen[req.IngredientID]; exists {
 			return nil, ErrDuplicateIngredient
@@ -196,11 +188,16 @@ func (s *Service) validateAndConvertIngredientUsages(ctx context.Context, logger
 	if err != nil {
 		return nil, err
 	}
-
 	if len(dbIngredients) != len(uniqueIDs) {
 		return nil, ErrIngredientNotFound
 	}
-	return newIngredientUsages(ingredientUsageRequests, dbIngredients)
+
+	ingredientByID := make(map[string]*ingredient.Ingredient, len(dbIngredients))
+	for _, ing := range dbIngredients {
+		ingredientByID[ing.ID.String()] = ing
+	}
+
+	return newIngredientUsages(ingredientUsageRequests, ingredientByID)
 }
 
 func (s *Service) GetAllRecipes(ctx context.Context) ([]*RecipeContainer, error) {
