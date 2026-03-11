@@ -176,35 +176,31 @@ func (s *Service) validateAndConvertIngredientUsages(ctx context.Context, logger
 	// Validate ingredients and check for duplicates
 	// TODO: There may be cases where we allow duplicate ingredients (e.g. different sections of the same recipe)
 	// But then ingredient usage table would need a new primary key as composite would no longer be unique
-	seenIngredients := make(map[string]bool)
-	ingredientUsages := make([]*IngredientUsage, len(ingredientUsageRequests))
+	ingredientIds := make([]string, len(ingredientUsageRequests))
 	for i, ingredientRequest := range ingredientUsageRequests {
-		if seenIngredients[ingredientRequest.IngredientID] {
+		ingredientIds[i] = ingredientRequest.IngredientID
+	}
+
+	seen := make(map[string]struct{}, len(ingredientUsageRequests))
+	uniqueIDs := make([]string, 0, len(ingredientUsageRequests))
+
+	for _, req := range ingredientUsageRequests {
+		if _, exists := seen[req.IngredientID]; exists {
 			return nil, ErrDuplicateIngredient
 		}
-		seenIngredients[ingredientRequest.IngredientID] = true
-		// Ensure ingredient exists and get preferred unit for validation
-		// TODO: could batch this to reduce queries
-		ingredients, err := s.ingredientService.GetIngredientsByIDs(ctx, logger, []string{ingredientRequest.IngredientID})
-		if err != nil {
-			logger.Error("Error checking ingredient existence", "ingredient_id", ingredientRequest.IngredientID, "error", err)
-			return nil, err
-		}
-		if len(ingredients) == 0 {
-			return nil, ErrIngredientNotFound
-		}
-		selectedIngredient := ingredients[0]
-		if ingredientRequest.Unit != int(selectedIngredient.PreferredUnit) {
-			return nil, ErrInvalidUnit
-		}
-		// TODO: get ingredient rule and validate usage at instantiation
-		usage, err := NewIngredientUsage(ingredientRequest)
-		if err != nil {
-			return nil, err
-		}
-		ingredientUsages[i] = usage
+		seen[req.IngredientID] = struct{}{}
+		uniqueIDs = append(uniqueIDs, req.IngredientID)
 	}
-	return ingredientUsages, nil
+
+	dbIngredients, err := s.ingredientService.GetIngredientsByIDs(ctx, logger, uniqueIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(dbIngredients) != len(uniqueIDs) {
+		return nil, ErrIngredientNotFound
+	}
+	return newIngredientUsages(ingredientUsageRequests, dbIngredients)
 }
 
 func (s *Service) GetAllRecipes(ctx context.Context) ([]*RecipeContainer, error) {
