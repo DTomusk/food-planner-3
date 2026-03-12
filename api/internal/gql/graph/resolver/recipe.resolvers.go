@@ -25,13 +25,51 @@ func (r *mutationResolver) CreateRecipe(ctx context.Context, input model.CreateR
 		return nil, fmt.Errorf("unauthenticated")
 	}
 
-	ingredientUsageRequests := make([]recipe.CreateIngredientUsageRequest, len(input.IngredientUsages))
-	for i, usage := range input.IngredientUsages {
-		ingredientUsageRequests[i] = recipe.CreateIngredientUsageRequest{
-			IngredientID: usage.IngredientID,
-			Quantity:     usage.Quantity,
-			Unit:         int(usage.Unit),
-		}
+	request, err := toCreateRecipeRequest(&input, claims.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	recipeContainer, err := r.RecipeService.CreateRecipe(ctx, request)
+	if err != nil {
+		logger.Error("Failed to create recipe", "error", err)
+		return nil, err
+	}
+	return mapRecipe(recipeContainer), nil
+}
+
+// UpdateRecipe is the resolver for the updateRecipe field.
+func (r *mutationResolver) UpdateRecipe(ctx context.Context, input model.UpdateRecipeInput) (*model.Recipe, error) {
+	logger := logging.FromContext(ctx)
+	claims, ok := auth.ClaimsFromContext(ctx)
+	if !ok {
+		return nil, fmt.Errorf("unauthenticated")
+	}
+
+	createRequest, err := toCreateRecipeRequest(input.Details, claims.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	request := recipe.UpdateRecipeRequest{
+		RecipeId: input.ID,
+		Request:  createRequest,
+	}
+
+	recipeContainer, err := r.RecipeService.UpdateRecipe(ctx, request)
+	if err != nil {
+		logger.Error("Failed to update recipe", "error", err)
+		return nil, err
+	}
+	return mapRecipe(recipeContainer), nil
+}
+
+func toCreateRecipeRequest(input *model.CreateRecipeInput, userID string) (recipe.CreateRecipeRequest, error) {
+	if input == nil {
+		return recipe.CreateRecipeRequest{}, fmt.Errorf("recipe details are required")
+	}
+	if input.RecipeSource == nil {
+		return recipe.CreateRecipeRequest{}, fmt.Errorf("recipe source is required")
 	}
 
 	recipeSourceRequest := recipe.CreateRecipeSourceRequest{
@@ -42,21 +80,27 @@ func (r *mutationResolver) CreateRecipe(ctx context.Context, input model.CreateR
 		Instructions: input.RecipeSource.Instructions,
 	}
 
-	request := recipe.CreateRecipeRequest{
+	return recipe.CreateRecipeRequest{
 		Name:        input.Name,
-		Ingredients: ingredientUsageRequests,
-		UserID:      claims.UserID,
+		Ingredients: toIngredientUsageRequests(input.IngredientUsages),
+		UserID:      userID,
 		PrepMins:    int(input.PrepMins),
 		CookMins:    int(input.CookMins),
 		Portions:    int(input.Portions),
 		Source:      recipeSourceRequest,
+	}, nil
+}
+
+func toIngredientUsageRequests(usages []*model.CreateIngredientUsageInput) []recipe.CreateIngredientUsageRequest {
+	ingredientUsageRequests := make([]recipe.CreateIngredientUsageRequest, len(usages))
+	for i, usage := range usages {
+		ingredientUsageRequests[i] = recipe.CreateIngredientUsageRequest{
+			IngredientID: usage.IngredientID,
+			Quantity:     usage.Quantity,
+			Unit:         int(usage.Unit),
+		}
 	}
-	recipeContainer, err := r.RecipeService.CreateRecipe(ctx, request)
-	if err != nil {
-		logger.Error("Failed to create recipe", "error", err)
-		return nil, err
-	}
-	return mapRecipe(recipeContainer), nil
+	return ingredientUsageRequests
 }
 
 // Recipes is the resolver for the recipes field.

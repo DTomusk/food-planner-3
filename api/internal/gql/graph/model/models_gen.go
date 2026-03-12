@@ -77,6 +77,11 @@ type Unit struct {
 	Symbol string `json:"symbol"`
 }
 
+type UpdateRecipeInput struct {
+	ID      string             `json:"id"`
+	Details *CreateRecipeInput `json:"details"`
+}
+
 type User struct {
 	ID       string    `json:"id"`
 	Email    string    `json:"email"`

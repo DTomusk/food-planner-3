@@ -78,6 +78,7 @@ type ComplexityRoot struct {
 		Empty        func(childComplexity int) int
 		Signin       func(childComplexity int, input model.SignInInput) int
 		Signup       func(childComplexity int, input model.SignUpInput) int
+		UpdateRecipe func(childComplexity int, input model.UpdateRecipeInput) int
 	}
 
 	Query struct {
@@ -137,6 +138,7 @@ type MutationResolver interface {
 	Signup(ctx context.Context, input model.SignUpInput) (*model.AuthPayload, error)
 	Signin(ctx context.Context, input model.SignInInput) (*model.AuthPayload, error)
 	CreateRecipe(ctx context.Context, input model.CreateRecipeInput) (*model.Recipe, error)
+	UpdateRecipe(ctx context.Context, input model.UpdateRecipeInput) (*model.Recipe, error)
 }
 type QueryResolver interface {
 	Empty(ctx context.Context) (*string, error)
@@ -296,6 +298,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.Signup(childComplexity, args["input"].(model.SignUpInput)), true
+	case "Mutation.updateRecipe":
+		if e.complexity.Mutation.UpdateRecipe == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateRecipe_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateRecipe(childComplexity, args["input"].(model.UpdateRecipeInput)), true
 
 	case "Query._empty":
 		if e.complexity.Query.Empty == nil {
@@ -524,6 +537,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateRecipeSourceInput,
 		ec.unmarshalInputSignInInput,
 		ec.unmarshalInputSignUpInput,
+		ec.unmarshalInputUpdateRecipeInput,
 	)
 	first := true
 
@@ -670,6 +684,17 @@ func (ec *executionContext) field_Mutation_signup_args(ctx context.Context, rawA
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNSignUpInput2foodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐSignUpInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateRecipe_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdateRecipeInput2foodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐUpdateRecipeInput)
 	if err != nil {
 		return nil, err
 	}
@@ -1333,6 +1358,72 @@ func (ec *executionContext) fieldContext_Mutation_createRecipe(ctx context.Conte
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_createRecipe_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateRecipe(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_updateRecipe,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().UpdateRecipe(ctx, fc.Args["input"].(model.UpdateRecipeInput))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				if ec.directives.Auth == nil {
+					var zeroVal *model.Recipe
+					return zeroVal, errors.New("directive auth is not implemented")
+				}
+				return ec.directives.Auth(ctx, nil, directive0)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNRecipe2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipe,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateRecipe(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Recipe_id(ctx, field)
+			case "author":
+				return ec.fieldContext_Recipe_author(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Recipe_createdAt(ctx, field)
+			case "currentVersion":
+				return ec.fieldContext_Recipe_currentVersion(ctx, field)
+			case "versions":
+				return ec.fieldContext_Recipe_versions(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Recipe", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateRecipe_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -4278,6 +4369,40 @@ func (ec *executionContext) unmarshalInputSignUpInput(ctx context.Context, obj a
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUpdateRecipeInput(ctx context.Context, obj any) (model.UpdateRecipeInput, error) {
+	var it model.UpdateRecipeInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id", "details"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		case "details":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("details"))
+			data, err := ec.unmarshalNCreateRecipeInput2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐCreateRecipeInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Details = data
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -4479,6 +4604,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "createRecipe":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createRecipe(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateRecipe":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateRecipe(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -5576,6 +5708,11 @@ func (ec *executionContext) unmarshalNCreateRecipeInput2foodplannerᚋinternal�
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNCreateRecipeInput2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐCreateRecipeInput(ctx context.Context, v any) (*model.CreateRecipeInput, error) {
+	res, err := ec.unmarshalInputCreateRecipeInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNCreateRecipeSourceInput2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐCreateRecipeSourceInput(ctx context.Context, v any) (*model.CreateRecipeSourceInput, error) {
 	res, err := ec.unmarshalInputCreateRecipeSourceInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
@@ -5917,6 +6054,11 @@ func (ec *executionContext) marshalNUnit2ᚖfoodplannerᚋinternalᚋgqlᚋgraph
 		return graphql.Null
 	}
 	return ec._Unit(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNUpdateRecipeInput2foodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐUpdateRecipeInput(ctx context.Context, v any) (model.UpdateRecipeInput, error) {
+	res, err := ec.unmarshalInputUpdateRecipeInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNUser2foodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v model.User) graphql.Marshaler {
