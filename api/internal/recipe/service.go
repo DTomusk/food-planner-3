@@ -72,21 +72,48 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 
 	// Persist recipe
 	err = s.txRunner.WithTx(ctx, func(tx *sql.Tx) error {
-		recipeContainer, err := s.recipeRepo.createRecipe(ctx, tx, recipeContainer)
+		_, err := s.recipeRepo.createRecipeContainer(ctx, tx, recipeContainer)
 		if err != nil {
 			return err
 		}
+
+		_, err = s.recipeVersionRepo.createRecipeVersion(ctx, tx, recipeContainer.CurrentVersion)
+		if err != nil {
+			return err
+		}
+
+		err = s.recipeRepo.updateRecipeCurrentVersion(ctx, tx, recipeContainer.ID, recipeContainer.CurrentVersion.ID)
+		if err != nil {
+			return err
+		}
+
 		err = s.ingredientUsageRepo.insertIngredientUsages(ctx, tx, ingredientUsages, recipeContainer.CurrentVersion.ID)
 		if err != nil {
 			return err
 		}
+
+		if recipeContainer.CurrentVersion.Source != nil {
+			err = s.recipeVersionRepo.insertRecipeSource(ctx, tx, recipeContainer.CurrentVersion.ID, recipeContainer.CurrentVersion.Source)
+			if err != nil {
+				return err
+			}
+		}
+
 		return nil
 	})
 	if err != nil {
 		logger.Error("Error persisting recipe", "error", err)
 		return nil, err
 	}
-	return recipeContainer, nil
+
+	// Consider returning values as they're inserted rather than doing a separate query
+	persistedRecipe, err := s.recipeRepo.getRecipeByID(ctx, s.txRunner.DB(), recipeContainer.ID)
+	if err != nil {
+		logger.Error("Error retrieving persisted recipe", "error", err)
+		return nil, err
+	}
+
+	return persistedRecipe, nil
 }
 
 func (s *Service) validateRecipeRequest(ctx context.Context, logger *slog.Logger, request CreateRecipeRequest) ([]*IngredientUsage, *RecipeSource, error) {
@@ -113,7 +140,7 @@ func (s *Service) validateRecipeRequest(ctx context.Context, logger *slog.Logger
 func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest) (*RecipeContainer, error) {
 	// Get recipe container and ensure user owns the recipe
 	logger := logging.FromContext(ctx).With("method", "UpdateRecipe", "request", request)
-	existingRecipe, err := s.recipeRepo.getRecipeByID(ctx, s.txRunner.DB(), request.RecipeId)
+	existingRecipe, err := s.recipeRepo.getRecipeByID(ctx, s.txRunner.DB(), uuid.MustParse(request.RecipeId))
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +188,7 @@ func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest)
 			return err
 		}
 		// Return updated recipe container
-		dbRecipeContainer, err = s.recipeRepo.getRecipeByID(ctx, tx, existingRecipe.ID.String())
+		dbRecipeContainer, err = s.recipeRepo.getRecipeByID(ctx, tx, existingRecipe.ID)
 		dbRecipeContainer.CurrentVersion = dbVersion
 		return nil
 	})
@@ -204,26 +231,26 @@ func (s *Service) GetAllRecipes(ctx context.Context) ([]*RecipeContainer, error)
 	return s.recipeRepo.getAllRecipes(ctx, s.txRunner.DB())
 }
 
-func (s *Service) GetRecipeByID(ctx context.Context, id string) (*RecipeContainer, error) {
+func (s *Service) GetRecipeByID(ctx context.Context, id uuid.UUID) (*RecipeContainer, error) {
 	return s.recipeRepo.getRecipeByID(ctx, s.txRunner.DB(), id)
 }
 
-func (s *Service) GetRecipeVersionByID(ctx context.Context, id string) (*RecipeVersion, error) {
+func (s *Service) GetRecipeVersionByID(ctx context.Context, id uuid.UUID) (*RecipeVersion, error) {
 	return s.recipeVersionRepo.getRecipeVersionByID(ctx, s.txRunner.DB(), id)
 }
 
-func (s *Service) GetRecipesByUserID(ctx context.Context, userID string) ([]*RecipeContainer, error) {
+func (s *Service) GetRecipesByUserID(ctx context.Context, userID uuid.UUID) ([]*RecipeContainer, error) {
 	return s.recipeRepo.getRecipesByUserID(ctx, s.txRunner.DB(), userID)
 }
 
-func (s *Service) GetIngredientUsagesByRecipeVersionID(ctx context.Context, recipeVersionID string) ([]*IngredientUsage, error) {
+func (s *Service) GetIngredientUsagesByRecipeVersionID(ctx context.Context, recipeVersionID uuid.UUID) ([]*IngredientUsage, error) {
 	return s.ingredientUsageRepo.getIngredientUsagesForRecipeVersion(ctx, s.txRunner.DB(), recipeVersionID)
 }
 
-func (s *Service) GetRecipeSourceByRecipeVersionID(ctx context.Context, recipeVersionID string) (*RecipeSource, error) {
+func (s *Service) GetRecipeSourceByRecipeVersionID(ctx context.Context, recipeVersionID uuid.UUID) (*RecipeSource, error) {
 	return s.recipeVersionRepo.getRecipeSourceByRecipeVersionID(ctx, s.txRunner.DB(), recipeVersionID)
 }
 
-func (s *Service) GetRecipeVersionsByRecipeID(ctx context.Context, recipeID string) ([]*RecipeVersion, error) {
+func (s *Service) GetRecipeVersionsByRecipeID(ctx context.Context, recipeID uuid.UUID) ([]*RecipeVersion, error) {
 	return s.recipeVersionRepo.getRecipeVersionsByRecipeID(ctx, s.txRunner.DB(), recipeID)
 }

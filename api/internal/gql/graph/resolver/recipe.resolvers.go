@@ -13,6 +13,8 @@ import (
 	"foodplanner/internal/gql/graph/model"
 	"foodplanner/internal/logging"
 	"foodplanner/internal/recipe"
+
+	"github.com/google/uuid"
 )
 
 // CreateRecipe is the resolver for the createRecipe field.
@@ -72,7 +74,7 @@ func (r *queryResolver) Recipes(ctx context.Context) ([]*model.Recipe, error) {
 // Recipe is the resolver for the recipe field.
 func (r *queryResolver) Recipe(ctx context.Context, id string) (*model.Recipe, error) {
 	logger := logging.FromContext(ctx).With("recipe_id", id)
-	recipe, err := r.RecipeService.GetRecipeByID(ctx, id)
+	recipe, err := r.RecipeService.GetRecipeByID(ctx, uuid.MustParse(id))
 	if err != nil {
 		logger.Error("Failed to get recipe by ID", "error", err)
 		return nil, err
@@ -99,7 +101,7 @@ func (r *recipeResolver) CurrentVersion(ctx context.Context, obj *model.Recipe) 
 		return obj.CurrentVersion, nil
 	}
 
-	recipeVersion, err := r.RecipeService.GetRecipeVersionByID(ctx, obj.CurrentVersionID)
+	recipeVersion, err := r.RecipeService.GetRecipeVersionByID(ctx, uuid.MustParse(obj.CurrentVersionID))
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +113,7 @@ func (r *recipeResolver) CurrentVersion(ctx context.Context, obj *model.Recipe) 
 
 // Versions is the resolver for the versions field.
 func (r *recipeResolver) Versions(ctx context.Context, obj *model.Recipe) ([]*model.RecipeVersion, error) {
-	versions, err := r.RecipeService.GetRecipeVersionsByRecipeID(ctx, obj.ID)
+	versions, err := r.RecipeService.GetRecipeVersionsByRecipeID(ctx, uuid.MustParse(obj.ID))
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +131,7 @@ func (r *recipeVersionResolver) Recipe(ctx context.Context, obj *model.RecipeVer
 		logger.Warn("Recipe version has no associated recipe ID", "recipe_version_id", obj.ID)
 		return nil, nil
 	}
-	recipe, err := r.RecipeService.GetRecipeByID(ctx, obj.RecipeID)
+	recipe, err := r.RecipeService.GetRecipeByID(ctx, uuid.MustParse(obj.RecipeID))
 	if err != nil {
 		logger.Error("Failed to get recipe for recipe version", "error", err)
 		return nil, err
@@ -144,7 +146,7 @@ func (r *recipeVersionResolver) Recipe(ctx context.Context, obj *model.RecipeVer
 // IngredientUsages is the resolver for the ingredientUsages field.
 func (r *recipeVersionResolver) IngredientUsages(ctx context.Context, obj *model.RecipeVersion) ([]*model.IngredientUsage, error) {
 	logger := logging.FromContext(ctx).With("recipe_id", obj.ID)
-	ingredientUsages, err := r.RecipeService.GetIngredientUsagesByRecipeVersionID(ctx, obj.ID)
+	ingredientUsages, err := r.RecipeService.GetIngredientUsagesByRecipeVersionID(ctx, uuid.MustParse(obj.ID))
 	if err != nil {
 		logger.Error("Failed to get ingredient usages for recipe", "error", err)
 		return nil, err
@@ -195,7 +197,7 @@ func (r *recipeVersionResolver) IngredientUsages(ctx context.Context, obj *model
 
 // Source is the resolver for the source field.
 func (r *recipeVersionResolver) Source(ctx context.Context, obj *model.RecipeVersion) (*model.RecipeSource, error) {
-	recipeSource, err := r.RecipeService.GetRecipeSourceByRecipeVersionID(ctx, obj.ID)
+	recipeSource, err := r.RecipeService.GetRecipeSourceByRecipeVersionID(ctx, uuid.MustParse(obj.ID))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get recipe source for recipe: %w", err)
 	}

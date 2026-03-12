@@ -12,6 +12,8 @@ import (
 	"foodplanner/internal/gql/graph"
 	"foodplanner/internal/gql/graph/model"
 	"foodplanner/internal/logging"
+
+	"github.com/google/uuid"
 )
 
 // User is the resolver for the user field.
@@ -51,7 +53,7 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 func (r *userResolver) Recipes(ctx context.Context, obj *model.User) ([]*model.Recipe, error) {
 	logger := logging.FromContext(ctx)
 
-	recipes, err := r.RecipeService.GetRecipesByUserID(ctx, obj.ID)
+	recipes, err := r.RecipeService.GetRecipesByUserID(ctx, uuid.MustParse(obj.ID))
 	if err != nil {
 		logger.Error("Failed to get active recipes for user", "error", err)
 		return nil, err

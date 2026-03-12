@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"foodplanner/internal/db"
+
+	"github.com/google/uuid"
 )
 
 type recipeVersionRepo struct{}
@@ -46,7 +48,16 @@ func (r *recipeVersionRepo) createRecipeVersion(ctx context.Context, tx *sql.Tx,
 	return &dbRecipeVersion, nil
 }
 
-func (r *recipeVersionRepo) getRecipeVersionByID(ctx context.Context, db db.DBTX, id string) (*RecipeVersion, error) {
+func (r *recipeVersionRepo) insertRecipeSource(ctx context.Context, tx *sql.Tx, recipeVersionID uuid.UUID, source *RecipeSource) error {
+	sourceQuery := `INSERT INTO recipe_sources (recipe_version_id, type, url, book_title, book_page, instructions) VALUES ($1, $2, $3, $4, $5, $6)`
+	_, err := tx.ExecContext(ctx, sourceQuery, recipeVersionID, int(source.Type), source.URL, source.BookTitle, source.BookPage, source.Instructions)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *recipeVersionRepo) getRecipeVersionByID(ctx context.Context, db db.DBTX, id uuid.UUID) (*RecipeVersion, error) {
 	var recipeVersion RecipeVersion
 	row := db.QueryRowContext(ctx, `SELECT id, recipe_id, name, prep_mins, cook_mins, portions, created_at, version FROM recipe_versions WHERE id = $1`, id)
 	err := row.Scan(
@@ -68,7 +79,7 @@ func (r *recipeVersionRepo) getRecipeVersionByID(ctx context.Context, db db.DBTX
 	return &recipeVersion, nil
 }
 
-func (r *recipeVersionRepo) getRecipeVersionsByRecipeID(ctx context.Context, db db.DBTX, recipeID string) ([]*RecipeVersion, error) {
+func (r *recipeVersionRepo) getRecipeVersionsByRecipeID(ctx context.Context, db db.DBTX, recipeID uuid.UUID) ([]*RecipeVersion, error) {
 	rows, err := db.QueryContext(ctx, `SELECT id, recipe_id, name, prep_mins, cook_mins, portions, created_at, version FROM recipe_versions WHERE recipe_id = $1 ORDER BY created_at DESC`, recipeID)
 	if err != nil {
 		return nil, err
@@ -99,7 +110,7 @@ func (r *recipeVersionRepo) getRecipeVersionsByRecipeID(ctx context.Context, db 
 }
 
 // TODO: could have a recipe source repo
-func (r *recipeVersionRepo) getRecipeSourceByRecipeVersionID(ctx context.Context, db db.DBTX, recipeVersionID string) (*RecipeSource, error) {
+func (r *recipeVersionRepo) getRecipeSourceByRecipeVersionID(ctx context.Context, db db.DBTX, recipeVersionID uuid.UUID) (*RecipeSource, error) {
 	var source RecipeSource
 	row := db.QueryRowContext(ctx, "SELECT type, url, book_title, book_page, instructions FROM recipe_sources WHERE recipe_version_id = $1", recipeVersionID)
 	err := row.Scan(&source.Type, &source.URL, &source.BookTitle, &source.BookPage, &source.Instructions)
