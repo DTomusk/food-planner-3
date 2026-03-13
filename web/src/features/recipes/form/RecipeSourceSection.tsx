@@ -8,13 +8,29 @@ import Stack from "@/components/layout/Stack";
 import SectionHelpText from "@/components/form/SectionHelpText";
 import TextArea from "@/components/ui/TextArea";
 
+const sourceTypeFields: Record<RecipeSourceType, (keyof RecipeFormValues)[]> = {
+    [RecipeSourceType.Website]: ["url"],
+    [RecipeSourceType.Cookbook]: ["bookTitle", "bookPage"],
+    [RecipeSourceType.Original]: ["instructions"],
+    [RecipeSourceType.None]: [],
+};
+
 export default function RecipeSourceSection() {
-    const { control, register, formState: { errors } } = useFormContext<RecipeFormValues>();
+    const { control, register, setValue, formState: { errors } } = useFormContext<RecipeFormValues>();
     const sourceType = useWatch({
         control,
         name: "sourceType",
     });
-    
+
+    function handleSourceTypeChange(onChange: (value: RecipeSourceType) => void, next: RecipeSourceType) {
+        if (sourceType && sourceType !== next) {
+            for (const field of sourceTypeFields[sourceType as RecipeSourceType]) {
+                setValue(field as any, "");
+            }
+        }
+        onChange(next);
+    }
+
     return (
         <FormSection title="Source/instructions (optional)" collapsible defaultCollapsed >
             <SectionHelpText>
@@ -30,7 +46,7 @@ export default function RecipeSourceSection() {
                         <input
                         type="radio"
                         checked={field.value === RecipeSourceType.None}
-                        onChange={() => field.onChange(RecipeSourceType.None)}
+                        onChange={() => handleSourceTypeChange(field.onChange, RecipeSourceType.None)}
                         />
                         No source - don't include any source information
                     </label>  
@@ -38,7 +54,7 @@ export default function RecipeSourceSection() {
                         <input
                         type="radio"
                         checked={field.value === RecipeSourceType.Website}
-                        onChange={() => field.onChange(RecipeSourceType.Website)}
+                        onChange={() => handleSourceTypeChange(field.onChange, RecipeSourceType.Website)}
                         />
                         Website - add a link to the recipe
                     </label>
@@ -47,7 +63,7 @@ export default function RecipeSourceSection() {
                         <input
                         type="radio"
                         checked={field.value === RecipeSourceType.Cookbook}
-                        onChange={() => field.onChange(RecipeSourceType.Cookbook)}
+                        onChange={() => handleSourceTypeChange(field.onChange, RecipeSourceType.Cookbook)}
                         />
                         Cookbook - add the name of the cookbook and the page number of the recipe
                     </label>
@@ -56,7 +72,7 @@ export default function RecipeSourceSection() {
                         <input
                         type="radio"
                         checked={field.value === RecipeSourceType.Original}
-                        onChange={() => field.onChange(RecipeSourceType.Original)}
+                        onChange={() => handleSourceTypeChange(field.onChange, RecipeSourceType.Original)}
                         />
                         Original recipe - add your own instructions for the recipe
                     </label>
@@ -74,7 +90,7 @@ export default function RecipeSourceSection() {
                         <Input type="text" placeholder="Name of the cookbook" {...register("bookTitle")} />
                     </FormField>
                     <FormField htmlFor="page" label="Page number" error={errors.bookPage?.message}>
-                        <Input type="number" placeholder="Page number" {...register("bookPage")} />
+                        <Input type="number" placeholder="Page number" {...register("bookPage", { valueAsNumber: true })} />
                     </FormField>
                 </Inline>
             )}
