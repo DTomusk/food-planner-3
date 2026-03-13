@@ -40,7 +40,7 @@ export default function RecipeUpdatePage() {
 
     return (
         <Page>
-            <BackLink to="/recipes" />
+            <BackLink />
             <PageTitle text={commonStrings.recipe.update} />
             {!id && <Container><Alert message="No recipe ID provided." /></Container>}
             {isLoading && <Container><Spinner /></Container>}

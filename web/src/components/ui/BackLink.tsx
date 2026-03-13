@@ -1,17 +1,36 @@
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import Link from "./Link";
 
-interface BackLinkProps {
-    to: string;
-}
-
-export default function BackLink({ to }: BackLinkProps) {
+export default function BackLink() {
     const navigate = useNavigate();
+  const location = useLocation();
+
+  const getFallback = () => {
+    const parts = location.pathname.split("/").filter(Boolean);
+
+    if (parts.length <= 1) {
+      return "/";
+    }
+
+    parts.pop();
+    return "/" + parts.join("/");
+  };
+
+  const handleBack = (e: React.MouseEvent) => {
+    e.preventDefault();
+
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate(getFallback());
+    }
+  };
     return (
-        <button
-            className="text-blue-500 hover:underline cursor-pointer mb-4"
-            onClick={() => navigate(to)}
+        <Link
+            onClick={handleBack}
+            color="primary"
         >
             &larr; Back
-        </button>
+        </Link>
     );
 }
