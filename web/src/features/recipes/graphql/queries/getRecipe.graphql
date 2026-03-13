@@ -10,9 +10,11 @@ query GetRecipe($id: ID!) {
             ingredientUsages {
                 quantity
                 unit {
+                    val
                     symbol
                 }
                 ingredient {
+                    id
                     name
                     counter
                     plural
