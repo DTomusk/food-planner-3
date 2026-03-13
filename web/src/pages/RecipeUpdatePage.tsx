@@ -12,7 +12,7 @@ import { useNavigate, useParams } from "react-router-dom";
 export default function RecipeUpdatePage() {
     const { id } = useParams<{ id: string }>();
     const { data, isLoading, error } = useRecipe(id ?? "");
-    const { mutate, isPending } = useUpdateRecipe();
+    const { mutate, isPending, error: mutateError } = useUpdateRecipe();
     const { data: ingredientsData } = useIngredients();
     const navigate = useNavigate();
 
@@ -45,6 +45,7 @@ export default function RecipeUpdatePage() {
             {!id && <Container><Alert message="No recipe ID provided." /></Container>}
             {isLoading && <Container><Spinner /></Container>}
             {error && <Container><Alert message={extractErrorMessage(error)} closable /></Container>}
+            {mutateError && <Container><Alert message={extractErrorMessage(error)} closable /></Container>}
             {id && data?.formValues && !isLoading && (
                 <RecipeForm
                     key={id}

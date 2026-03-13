@@ -8,15 +8,8 @@ import Stack from "@/components/layout/Stack";
 import SectionHelpText from "@/components/form/SectionHelpText";
 import TextArea from "@/components/ui/TextArea";
 
-const sourceTypeFields: Record<RecipeSourceType, (keyof RecipeFormValues)[]> = {
-    [RecipeSourceType.Website]: ["url"],
-    [RecipeSourceType.Cookbook]: ["bookTitle", "bookPage"],
-    [RecipeSourceType.Original]: ["instructions"],
-    [RecipeSourceType.None]: [],
-};
-
 export default function RecipeSourceSection() {
-    const { control, register, setValue, formState: { errors } } = useFormContext<RecipeFormValues>();
+    const { control, register, resetField, formState: { errors } } = useFormContext<RecipeFormValues>();
     const sourceType = useWatch({
         control,
         name: "sourceType",
@@ -24,8 +17,19 @@ export default function RecipeSourceSection() {
 
     function handleSourceTypeChange(onChange: (value: RecipeSourceType) => void, next: RecipeSourceType) {
         if (sourceType && sourceType !== next) {
-            for (const field of sourceTypeFields[sourceType as RecipeSourceType]) {
-                setValue(field as any, "");
+            switch (sourceType) {
+                case RecipeSourceType.Website:
+                    resetField("url", { defaultValue: "" });
+                    break;
+                case RecipeSourceType.Cookbook:
+                    resetField("bookTitle", { defaultValue: "" });
+                    resetField("bookPage", { defaultValue: undefined });
+                    break;
+                case RecipeSourceType.Original:
+                    resetField("instructions", { defaultValue: "" });
+                    break;
+                default:
+                    break;
             }
         }
         onChange(next);
@@ -90,7 +94,7 @@ export default function RecipeSourceSection() {
                         <Input type="text" placeholder="Name of the cookbook" {...register("bookTitle")} />
                     </FormField>
                     <FormField htmlFor="page" label="Page number" error={errors.bookPage?.message}>
-                        <Input type="number" placeholder="Page number" {...register("bookPage", { valueAsNumber: true })} />
+                        <Input type="number" placeholder="Page number" {...register("bookPage", { setValueAs: (v) => v === "" ? undefined : parseInt(v, 10) })} />
                     </FormField>
                 </Inline>
             )}

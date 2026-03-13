@@ -10,7 +10,7 @@ export const DEFAULT_RECIPE_FORM_VALUES: RecipeFormValues = {
   sourceType: RecipeSourceType.None,
   url: "",
   bookTitle: "",
-  bookPage: 0,
+  bookPage: undefined,
   instructions: "",
 };
 
@@ -52,7 +52,7 @@ export function mapFormValuesToCreateRecipeInput(values: RecipeFormValues): Crea
     cookMins: values.cookMins,
     portions: values.portions,
     recipeSource: {
-      type: toRecipeSourceTypeValue(values.sourceType.toString() as RecipeSourceType),
+      type: toRecipeSourceTypeValue(values.sourceType),
       url: values.sourceType === RecipeSourceType.Website ? values.url : undefined,
       bookTitle: values.sourceType === RecipeSourceType.Cookbook ? values.bookTitle : undefined,
       bookPage: values.sourceType === RecipeSourceType.Cookbook ? values.bookPage : undefined,
@@ -82,7 +82,7 @@ export function mapRecipeToFormValues(
     sourceType: toRecipeSourceType(recipe.currentVersion.source.type),
     url: recipe.currentVersion.source.url ?? "",
     bookTitle: recipe.currentVersion.source.bookTitle ?? "",
-    bookPage: recipe.currentVersion.source.bookPage ?? 0,
+    bookPage: recipe.currentVersion.source.bookPage ?? undefined,
     instructions: recipe.currentVersion.source.instructions ?? "",
   };
 }
