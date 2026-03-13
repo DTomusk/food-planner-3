@@ -1,14 +1,15 @@
+import Inline from "@/components/layout/Inline";
 import NavBar from "./NavBar";
 
 export default function AppLayout({children}: {children: React.ReactNode}) {
     return (
-        <div className="min-h-screen bg-gray-100">
-            <NavBar />
-            <div className="flex flex-col min-h-screen">
-                <main className="flex-1">
+        <div className="min-h-screen w-full">
+            <Inline wrap justify="start" align="start" gap="none" className="min-h-screen w-full">
+                <NavBar />
+                <main className="min-h-screen flex-1 min-w-0 overflow-x-hidden">
                     {children}
                 </main>
-            </div>
+            </Inline>
         </div>
     )
 }
