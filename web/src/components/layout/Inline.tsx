@@ -3,7 +3,7 @@ import clsx from "clsx";
 interface InlineProps {
     children: React.ReactNode;
     justify?: "start" | "center" | "end" | "between" | "around" | "evenly";
-    align?: "start" | "center" | "end";
+    align?: "start" | "center" | "end" | "none";
     wrap?: boolean;
     gap?: "none" | "sm" | "md" | "lg";
     className?: string;
@@ -12,7 +12,7 @@ interface InlineProps {
 export default function Inline({
     children,
     justify = "center",
-    align = "center",
+    align = "none",
     wrap = false,
     gap = "sm",
     className,
@@ -30,6 +30,7 @@ export default function Inline({
         start: "items-start",
         center: "items-center",
         end: "items-end",
+        none: "",
     };
 
     const gapClasses = {
