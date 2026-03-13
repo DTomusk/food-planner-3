@@ -29,12 +29,10 @@ export default function RecipePage() {
         <Page toolbarLeft={<BackLink />}>
             <Container size="xl">
                 <Stack space="xl">
-                    <Container size="sm">
-                        {!id && <Alert message="No recipe ID provided." />}
-                        {isLoading && <Spinner />}
-                        {error && <Alert message={extractErrorMessage(error)} closable />}
-                        {successMessage && <Alert message={successMessage} type="success" closable duration={3000} onClose={() => setSuccessMessage(undefined)} />}
-                    </Container>
+                    {!id && <Alert message="No recipe ID provided." />}
+                    {isLoading && <Spinner />}
+                    {error && <Alert message={extractErrorMessage(error)} closable />}
+                    {successMessage && <Alert message={successMessage} type="success" closable duration={3000} onClose={() => setSuccessMessage(undefined)} />}
                     {recipe ? (
                     <>
                     <PageTitle text={recipe ? recipe.name : "Recipe Page"} />

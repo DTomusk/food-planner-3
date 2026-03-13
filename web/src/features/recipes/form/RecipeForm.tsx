@@ -1,6 +1,6 @@
 import { FormProvider, useForm } from "react-hook-form";
 import type { RecipeFormValues } from "../types";
-import { Form, Button } from "@/components/";
+import { Form, Button, Inline } from "@/components/";
 import { commonStrings } from "@/lib/strings";
 import IngredientSection from "./IngredientSection";
 import Stack from "@/components/layout/Stack";
@@ -44,9 +44,11 @@ export default function RecipeForm({
             <RecipeDetailSection />
             <IngredientSection ingredients={ingredients} />
             <RecipeSourceSection />
+            <Inline justify="start">
             <Button disabled={isSubmitting || (isSubmitted && !isValid)} type="submit" loading={isSubmitting}>
               {commonStrings.forms.create}
             </Button>
+            </Inline>
           </Stack>
         </Form>
       </FormProvider>
