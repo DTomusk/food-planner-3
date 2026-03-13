@@ -20,7 +20,7 @@ export default function NavBar() {
             <div className="container mx-auto flex justify-between items-center">
                 <h1 className="text-xl font-bold cursor-pointer" onClick={() => navigate("/")}>FoodSmash</h1>
                 <div className="space-x-4">
-                    <Link onClick={() => navigate("/recipes")} text="Recipes" />
+                    <Link onClick={() => navigate("/me/recipes")} text="My recipes" />
                     {!isAuthenticated && <Link onClick={handleSignInClick} text={commonStrings.auth.signIn} />}
                     {isAuthenticated && <Link onClick={() => signOut()} text={commonStrings.auth.signOut} />}
                 </div>
