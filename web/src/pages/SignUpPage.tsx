@@ -35,7 +35,7 @@ export default function SignUpPage() {
         <Page>
             <PageTitle text={commonStrings.auth.signUp} />
             {error && <Alert message={extractErrorMessage(error)} closable />}
-            <p className="text-center">Already have an account? <Link onClick={() => navigate("/auth/signin", { state: { from: location } })} text={commonStrings.auth.signIn}/></p>
+            <p className="text-center">Already have an account? <Link onClick={() => navigate("/auth/signin", { state: { from: location } })}>{commonStrings.auth.signIn}</Link></p>
             <SignUpForm
                 onSubmit={handleSubmit}
                 isSubmitting={isPending}

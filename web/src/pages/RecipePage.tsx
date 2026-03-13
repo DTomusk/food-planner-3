@@ -26,10 +26,9 @@ export default function RecipePage() {
     }, [successMessage, location.pathname, navigate]);
 
     return (
-        <Page>
+        <Page toolbarLeft={<BackLink />}>
             <Container size="xl">
                 <Stack space="xl">
-                    <BackLink />
                     <Container size="sm">
                         {!id && <Alert message="No recipe ID provided." />}
                         {isLoading && <Spinner />}
