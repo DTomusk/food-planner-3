@@ -16,51 +16,69 @@ import { ClockFading, SquarePen } from "lucide-react";
 import Dropdown from "@/components/ui/Dropdown";
 import { useRecipeVersions } from "@/features/recipes/hooks/useRecipeVersions";
 
+type RecipePageLocationState = {
+    successMessage?: string;
+};
+
 export default function RecipePage() {
     const { id } = useParams<{ id: string }>();
-    const { data: {recipe, user} = {}, isLoading, error } = useRecipe(id!);
+    const recipeId = id ?? "";
     const location = useLocation();
     const navigate = useNavigate();
-    const [successMessage, setSuccessMessage] = useState<string | undefined>(location.state?.successMessage);
-    const { data: versions } = useRecipeVersions(id!);
+    const locationState = location.state as RecipePageLocationState | null;
+    const [successMessage, setSuccessMessage] = useState<string | undefined>(locationState?.successMessage);
+
+    const recipeQuery = useRecipe(recipeId);
+    const recipe = recipeQuery.data?.recipe;
+    const user = recipeQuery.data?.user;
+
+    const versionsQuery = useRecipeVersions(recipeId);
+    const versions = versionsQuery.data;
 
     useEffect(() => {
-        if (successMessage) {
-            navigate(location.pathname, { replace: true, state: {} });
+        if (!successMessage) {
+            return;
         }
+
+        navigate(location.pathname, { replace: true, state: {} });
     }, [successMessage, location.pathname, navigate]);
 
+    const toolbarActions = (
+        <>
+            {versions?.length ? (
+                <Dropdown
+                    button={
+                        <IconButton variant="primary-outline">
+                            <ClockFading size={16} />
+                        </IconButton>
+                    }
+                    sections={[
+                        {
+                            title: "Recipe versions",
+                            items: versions.map((version) => ({
+                                label: `Version ${version.version} - ${new Date(version.createdAt).toLocaleString()}`,
+                            })),
+                        },
+                    ]}
+                />
+            ) : null}
+            <IconButton variant="primary-outline" onClick={() => navigate(`/recipes/${recipeId}/edit`)}>
+                <SquarePen size={16} />
+            </IconButton>
+        </>
+    );
+
     return (
-        <Page toolbarLeft={<BackLink />}
-            toolbarActions={<>
-                {versions &&
-                    <Dropdown 
-                        button={<IconButton variant="primary-outline"><ClockFading size={16} /></IconButton>}
-                        sections={
-                            [{
-                                title: "Recipe versions", 
-                                items: versions.map((version, index) => (
-                                    {
-                                        label: "Version " + version.version + " - " + new Date(version.createdAt).toLocaleString(),
-                                    }
-                            ))
-                            }]
-                        }
-                    />
-                }
-                <IconButton variant="primary-outline" onClick={() => navigate(`/recipes/${id}/edit`)}>
-                    <SquarePen size={16} />
-                </IconButton>
-            </>}>
+        <Page toolbarLeft={<BackLink />} toolbarActions={toolbarActions}>
             <Container size="xl">
                 <Stack space="xl">
-                    {!id && <Alert message="No recipe ID provided." />}
-                    {isLoading && <Spinner />}
-                    {error && <Alert message={extractErrorMessage(error)} closable />}
+                    {!recipeId && <Alert message="No recipe ID provided." />}
+                    {recipeQuery.isLoading && <Spinner />}
+                    {recipeQuery.error && <Alert message={extractErrorMessage(recipeQuery.error)} closable />}
                     {successMessage && <Alert message={successMessage} type="success" closable duration={3000} onClose={() => setSuccessMessage(undefined)} />}
                     {recipe ? (
                     <>
-                    <PageTitle text={recipe ? recipe.name : "Recipe Page"} />
+                    <PageTitle text={recipe.name} />
                     { user && <SharedBy user={user} /> }
                     <Stack space="sm">
                         <div className="text-center">Prep time: {recipe.prepMins} mins</div>
@@ -90,10 +108,10 @@ export default function RecipePage() {
                     </Container>
                     </>
                 ) : (
-                    !isLoading && id && !error && <Alert message="Recipe not found." />
+                    !recipeQuery.isLoading && recipeId && !recipeQuery.error && <Alert message="Recipe not found." />
                 )}
                 </Stack>
             </Container>
         </Page>
-    )
+    );
 }
