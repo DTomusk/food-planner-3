@@ -11,6 +11,10 @@ import { useEffect, useState } from "react";
 import { extractErrorMessage } from "@/lib/errors";
 import MarkdownRenderer from "@/components/ui/MarkdownRenderer";
 import { RecipeSourceType } from "@/features/recipes/types";
+import IconButton from "@/components/ui/IconButton";
+import { ClockFading, SquarePen } from "lucide-react";
+import Dropdown from "@/components/ui/Dropdown";
+import { useRecipeVersions } from "@/features/recipes/hooks/useRecipeVersions";
 
 export default function RecipePage() {
     const { id } = useParams<{ id: string }>();
@@ -18,6 +22,7 @@ export default function RecipePage() {
     const location = useLocation();
     const navigate = useNavigate();
     const [successMessage, setSuccessMessage] = useState<string | undefined>(location.state?.successMessage);
+    const { data: versions } = useRecipeVersions(id!);
 
     useEffect(() => {
         if (successMessage) {
@@ -26,7 +31,27 @@ export default function RecipePage() {
     }, [successMessage, location.pathname, navigate]);
 
     return (
-        <Page toolbarLeft={<BackLink />}>
+        <Page toolbarLeft={<BackLink />}
+            toolbarActions={<>
+                {versions &&
+                    <Dropdown 
+                        button={<IconButton variant="primary-outline"><ClockFading size={16} /></IconButton>}
+                        sections={
+                            [{
+                                title: "Recipe versions", 
+                                items: versions.map((version, index) => (
+                                    {
+                                        label: "Version " + version.version + " - " + new Date(version.createdAt).toLocaleString(),
+                                    }
+                            ))
+                            }]
+                        }
+                    />
+                }
+                <IconButton variant="primary-outline" onClick={() => navigate(`/recipes/${id}/edit`)}>
+                    <SquarePen size={16} />
+                </IconButton>
+            </>}>
             <Container size="xl">
                 <Stack space="xl">
                     {!id && <Alert message="No recipe ID provided." />}

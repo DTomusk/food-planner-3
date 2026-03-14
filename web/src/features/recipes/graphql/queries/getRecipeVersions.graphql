@@ -1,0 +1,8 @@
+query GetRecipeVersions($id: ID!) {
+    recipe(id: $id) {
+        versions {
+            version
+            createdAt
+        }
+    }
+}
