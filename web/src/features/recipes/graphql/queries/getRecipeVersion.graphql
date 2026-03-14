@@ -1,11 +1,11 @@
-query GetRecipe($id: ID!) {
+query GetRecipeVersion($id: ID!, $version: Int!) {
     recipe(id: $id) {
         id
         author {
             id
             username
         }
-        currentVersion {
+        version(version: $version) {
             name
             ingredientUsages {
                 quantity

@@ -9,6 +9,7 @@ export type Recipe = {
     cookMins: number;
     portions: number;
     source: RecipeSource;
+    version: number;
 };
 
 // TODO: move to user feature

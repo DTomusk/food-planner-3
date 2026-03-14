@@ -4,7 +4,7 @@ import { Page } from "@/layout";
 export default function HomePage() {
   return (
     <Page>
-    <PageTitle text="Home Page" />   
+      <PageTitle text="Welcome to FoodSmash" />   
     </Page>
   )
 }

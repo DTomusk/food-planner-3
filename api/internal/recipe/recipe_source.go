@@ -17,6 +17,33 @@ const (
 	Original
 )
 
+func newSource(sourceRequest *CreateRecipeSourceRequest) (*RecipeSource, error) {
+	if sourceRequest == nil {
+		return nil, ErrNoSource
+	}
+	switch sourceRequest.Type {
+	case 0:
+		return nil, nil
+	case 1:
+		if sourceRequest.URL == nil {
+			return nil, ErrMissingURL
+		}
+		return NewURLSource(*sourceRequest.URL)
+	case 2:
+		if sourceRequest.BookTitle == nil || sourceRequest.BookPage == nil {
+			return nil, ErrMissingBookReference
+		}
+		return NewBookReferenceSource(*sourceRequest.BookTitle, *sourceRequest.BookPage)
+	case 3:
+		if sourceRequest.Instructions == nil {
+			return nil, ErrMissingInstructions
+		}
+		return NewOriginalSource(*sourceRequest.Instructions)
+	default:
+		return nil, ErrInvalidSourceType
+	}
+}
+
 // TODO: add stricter validity for URLs
 func NewURLSource(url string) (*RecipeSource, error) {
 	if url == "" {

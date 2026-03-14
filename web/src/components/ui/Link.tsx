@@ -1,17 +1,21 @@
 interface LinkProps {
-    onClick: () => void;
-    text: string;
-    color?: "black" | "primary";
+  onClick?: (e: React.MouseEvent<HTMLAnchorElement>) => void;
+  color?: "black" | "primary";
+  children: React.ReactNode;
 }
 
-export default function Link({ onClick, text, color = "black" }: LinkProps) {
-    const colorClasses = {
-        black: "text-black",
-        primary: "text-blue-600",
-    };
+export default function Link({ onClick, children, color = "black" }: LinkProps) {
+  const colorClasses = {
+    black: "text-black",
+    primary: "text-blue-600",
+  };
 
-    return <a 
-    onClick={onClick}
-    className={`hover:underline cursor-pointer ${colorClasses[color]}`}
-    >{text}</a>;
+  return (
+    <a
+      onClick={onClick}
+      className={`hover:underline cursor-pointer ${colorClasses[color]}`}
+    >
+      {children}
+    </a>
+  );
 }

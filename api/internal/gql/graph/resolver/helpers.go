@@ -1,6 +1,7 @@
 package resolver
 
 import (
+	"fmt"
 	"foodplanner/internal/gql/graph/model"
 	"foodplanner/internal/recipe"
 	"foodplanner/internal/user"
@@ -62,4 +63,42 @@ func mapRecipeVersion(recipeVersion *recipe.RecipeVersion) *model.RecipeVersion 
 		CreatedAt: recipeVersion.CreatedAt,
 		Version:   int32(recipeVersion.Version),
 	}
+}
+
+func toCreateRecipeRequest(input *model.CreateRecipeInput, userID string) (recipe.CreateRecipeRequest, error) {
+	if input == nil {
+		return recipe.CreateRecipeRequest{}, fmt.Errorf("recipe details are required")
+	}
+	if input.RecipeSource == nil {
+		return recipe.CreateRecipeRequest{}, fmt.Errorf("recipe source is required")
+	}
+
+	recipeSourceRequest := recipe.CreateRecipeSourceRequest{
+		Type:         int(input.RecipeSource.Type),
+		URL:          input.RecipeSource.URL,
+		BookTitle:    input.RecipeSource.BookTitle,
+		BookPage:     input.RecipeSource.BookPage,
+		Instructions: input.RecipeSource.Instructions,
+	}
+
+	return recipe.CreateRecipeRequest{
+		Name:        input.Name,
+		Ingredients: toIngredientUsageRequests(input.IngredientUsages),
+		UserID:      userID,
+		PrepMins:    int(input.PrepMins),
+		CookMins:    int(input.CookMins),
+		Portions:    int(input.Portions),
+		Source:      recipeSourceRequest,
+	}, nil
+}
+func toIngredientUsageRequests(usages []*model.CreateIngredientUsageInput) []recipe.CreateIngredientUsageRequest {
+	ingredientUsageRequests := make([]recipe.CreateIngredientUsageRequest, len(usages))
+	for i, usage := range usages {
+		ingredientUsageRequests[i] = recipe.CreateIngredientUsageRequest{
+			IngredientID: usage.IngredientID,
+			Quantity:     usage.Quantity,
+			Unit:         int(usage.Unit),
+		}
+	}
+	return ingredientUsageRequests
 }

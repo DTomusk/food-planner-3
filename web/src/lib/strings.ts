@@ -9,6 +9,7 @@ export const commonStrings = {
     },
     recipe: {
         create: "Create recipe",
+        update: "Update recipe",
         add: "Add recipe"
     }
 }

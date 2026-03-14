@@ -1,0 +1,5 @@
+mutation UpdateRecipe($input: UpdateRecipeInput!) {
+    updateRecipe(input: $input) {
+        id
+    }
+}

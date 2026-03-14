@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"foodplanner/internal/db"
+
+	"github.com/google/uuid"
 )
 
 type recipeRepo struct{}
@@ -24,9 +26,7 @@ func NewRecipeRepo() *recipeRepo {
 	return &recipeRepo{}
 }
 
-// Creates a new recipe including ingredient usages
-// Returns recipe fields, ingredient usages can be loaded lazily
-func (r *recipeRepo) createRecipe(ctx context.Context, tx *sql.Tx, recipeContainer *RecipeContainer) (*RecipeContainer, error) {
+func (r *recipeRepo) createRecipeContainer(ctx context.Context, tx *sql.Tx, recipeContainer *RecipeContainer) (*RecipeContainer, error) {
 	var dbRecipeContainer RecipeContainer
 	containerQuery := `INSERT INTO recipe_containers 
 	(id, user_id) 
@@ -45,56 +45,16 @@ func (r *recipeRepo) createRecipe(ctx context.Context, tx *sql.Tx, recipeContain
 	if err != nil {
 		return nil, err
 	}
-
-	var dbRecipeVersion RecipeVersion
-	versionQuery := `INSERT INTO recipe_versions 
-	(id, recipe_id, name, prep_mins, cook_mins, portions, version) 
-	VALUES ($1, $2, $3, $4, $5, $6, 1) 
-	RETURNING id, recipe_id, name, prep_mins, cook_mins, portions, created_at`
-	recipeVersion := recipeContainer.CurrentVersion
-	err = tx.QueryRowContext(
-		ctx,
-		versionQuery,
-		recipeVersion.ID,
-		recipeContainer.ID,
-		recipeVersion.Name,
-		recipeVersion.PrepMins,
-		recipeVersion.CookMins,
-		recipeVersion.Portions,
-	).Scan(
-		&dbRecipeVersion.ID,
-		&dbRecipeVersion.RecipeID,
-		&dbRecipeVersion.Name,
-		&dbRecipeVersion.PrepMins,
-		&dbRecipeVersion.CookMins,
-		&dbRecipeVersion.Portions,
-		&dbRecipeVersion.CreatedAt,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	setCurrentVersionQuery := `UPDATE recipe_containers SET current_version_id = $1 WHERE id = $2`
-	_, err = tx.ExecContext(ctx, setCurrentVersionQuery, dbRecipeVersion.ID, dbRecipeContainer.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	dbRecipeContainer.CurrentVersionID = dbRecipeVersion.ID
-	dbRecipeContainer.CurrentVersion = &dbRecipeVersion
-
-	// TODO: recipe sources should have its own repo
-	if recipeVersion.Source != nil {
-		sourceQuery := `INSERT INTO recipe_sources (recipe_version_id, type, url, book_title, book_page, instructions) VALUES ($1, $2, $3, $4, $5, $6)`
-		_, err = tx.ExecContext(ctx, sourceQuery, dbRecipeVersion.ID, int(recipeVersion.Source.Type), recipeVersion.Source.URL, recipeVersion.Source.BookTitle, recipeVersion.Source.BookPage, recipeVersion.Source.Instructions)
-		if err != nil {
-			return nil, err
-		}
-	}
 	return &dbRecipeContainer, nil
 }
 
-func (r *recipeRepo) getRecipeByID(ctx context.Context, db db.DBTX, id string) (*RecipeContainer, error) {
+func (r *recipeRepo) updateRecipeCurrentVersion(ctx context.Context, tx *sql.Tx, recipeID, versionID uuid.UUID) error {
+	updateQuery := `UPDATE recipe_containers SET current_version_id = $1 WHERE id = $2`
+	_, err := tx.ExecContext(ctx, updateQuery, versionID, recipeID)
+	return err
+}
+
+func (r *recipeRepo) getRecipeByID(ctx context.Context, db db.DBTX, id uuid.UUID) (*RecipeContainer, error) {
 	row := db.QueryRowContext(ctx,
 		selectRecipeContainerWithVersionByIDQuery,
 		id,
@@ -132,7 +92,7 @@ func (r *recipeRepo) getAllRecipes(ctx context.Context, db db.DBTX) ([]*RecipeCo
 	return recipes, nil
 }
 
-func (r *recipeRepo) getRecipesByUserID(ctx context.Context, db db.DBTX, userID string) ([]*RecipeContainer, error) {
+func (r *recipeRepo) getRecipesByUserID(ctx context.Context, db db.DBTX, userID uuid.UUID) ([]*RecipeContainer, error) {
 	rows, err := db.QueryContext(ctx,
 		selectRecipeContainerWithVersionByUserIDQuery,
 		userID,

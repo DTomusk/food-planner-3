@@ -1,47 +1,33 @@
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Alert, BackLink, PageTitle, Spinner } from "@/components";
-import { useRecipe } from "@/features/recipes";
 import { Page } from "@/layout";
 import SharedBy from "@/components/SharedBy";
 import IngredientList from "@/features/recipes/components/IngredientList";
 import SectionTitle from "@/components/ui/SectionTitle";
 import Container from "@/components/layout/Container";
 import Stack from "@/components/layout/Stack";
-import { useEffect, useState } from "react";
 import { extractErrorMessage } from "@/lib/errors";
 import MarkdownRenderer from "@/components/ui/MarkdownRenderer";
 import { RecipeSourceType } from "@/features/recipes/types";
 import IconButton from "@/components/ui/IconButton";
-import { ClockFading, SquarePen } from "lucide-react";
+import { ClockFading } from "lucide-react";
 import Dropdown from "@/components/ui/Dropdown";
 import { useRecipeVersions } from "@/features/recipes/hooks/useRecipeVersions";
+import { useRecipeVersion } from "@/features/recipes/hooks/useRecipeVersion";
 
-type RecipePageLocationState = {
-    successMessage?: string;
-};
-
-export default function RecipePage() {
+export default function RecipeVersionPage() {
     const { id } = useParams<{ id: string }>();
+    const { version } = useParams<{ version: string }>();
     const recipeId = id ?? "";
-    const location = useLocation();
+    const versionNumber = version ? parseInt(version, 10) : 0;
     const navigate = useNavigate();
-    const locationState = location.state as RecipePageLocationState | null;
-    const [successMessage, setSuccessMessage] = useState<string | undefined>(locationState?.successMessage);
 
-    const recipeQuery = useRecipe(recipeId);
+    const recipeQuery = useRecipeVersion(recipeId, versionNumber);
     const recipe = recipeQuery.data?.recipe;
     const user = recipeQuery.data?.user;
 
     const versionsQuery = useRecipeVersions(recipeId);
     const versions = versionsQuery.data;
-
-    useEffect(() => {
-        if (!successMessage) {
-            return;
-        }
-
-        navigate(location.pathname, { replace: true, state: {} });
-    }, [successMessage, location.pathname, navigate]);
 
     const toolbarActions = (
         <>
@@ -58,14 +44,12 @@ export default function RecipePage() {
                             items: versions.map((version) => ({
                                 label: `Version ${version.version} - ${new Date(version.createdAt).toLocaleString()}`,
                                 onClick: () => navigate(`/recipes/${recipeId}/versions/${version.version}`),
+                                disabled: version.version === versionNumber,
                             })),
                         },
                     ]}
                 />
             ) : null}
-            <IconButton variant="primary-outline" onClick={() => navigate(`/recipes/${recipeId}/edit`)}>
-                <SquarePen size={16} />
-            </IconButton>
         </>
     );
 
@@ -76,10 +60,9 @@ export default function RecipePage() {
                     {!recipeId && <Alert message="No recipe ID provided." />}
                     {recipeQuery.isLoading && <Spinner />}
                     {recipeQuery.error && <Alert message={extractErrorMessage(recipeQuery.error)} closable />}
-                    {successMessage && <Alert message={successMessage} type="success" closable duration={3000} onClose={() => setSuccessMessage(undefined)} />}
                     {recipe ? (
                     <>
-                    <PageTitle text={recipe.name} />
+                    <PageTitle text={recipe.name + ` (version ${versionNumber})`} />
                     { user && <SharedBy user={user} /> }
                     <Stack space="sm">
                         <div className="text-center">Prep time: {recipe.prepMins} mins</div>

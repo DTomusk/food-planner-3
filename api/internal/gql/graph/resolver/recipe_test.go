@@ -12,6 +12,7 @@ import (
 	"foodplanner/internal/user"
 	"testing"
 
+	"github.com/google/uuid"
 	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/require"
 )
@@ -66,7 +67,7 @@ func TestRecipeResolver_CreateAndGetRecipe(t *testing.T) {
 		require.NoError(t, err, "CreateRecipe failed")
 		require.Equal(t, "Chocolate Cake", recipeModel.CurrentVersion.Name)
 
-		dbRecipe, err := service.GetRecipeByID(ctx, recipeModel.ID)
+		dbRecipe, err := service.GetRecipeByID(ctx, uuid.MustParse(recipeModel.ID))
 
 		require.NoError(t, err)
 		require.NotNil(t, dbRecipe, "Expected to find recipe in DB, got nil")

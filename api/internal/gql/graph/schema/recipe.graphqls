@@ -5,6 +5,8 @@ type Recipe {
 
   currentVersion: RecipeVersion! @goField(forceResolver: true)
   versions: [RecipeVersion!]! @goField(forceResolver: true)
+
+  version(version: Int!): RecipeVersion
 }
 
 type RecipeVersion {
@@ -71,7 +73,13 @@ input CreateRecipeSourceInput {
   instructions: String
 }
 
+input UpdateRecipeInput {
+  id: ID!
+  details: CreateRecipeInput!
+}
+
 extend type Mutation {
   createRecipe(input: CreateRecipeInput!): Recipe! @auth
+  updateRecipe(input: UpdateRecipeInput!): Recipe! @auth
 }
 

@@ -1,4 +1,14 @@
 import { z } from "zod";
+import { RecipeSourceType } from "../types";
+
+const sourceTypeOptions = [
+    RecipeSourceType.None,
+    RecipeSourceType.Website,
+    RecipeSourceType.Cookbook,
+    RecipeSourceType.Original,
+] as const;
+
+const urlSchema = z.string().url("Enter a valid URL");
 
 export const recipeFormSchema = z.object({
     name: z.string().min(1, "Recipe name is required"),
@@ -10,11 +20,57 @@ export const recipeFormSchema = z.object({
         quantity: z.number().min(0.0001, "Quantity must be greater than 0"),
         unit: z.number()
     })).min(1, "At least one ingredient is required"),
-    sourceType: z.string(),
-    url: z.string().optional(),
-    bookTitle: z.string().optional(),
-    bookPage: z.number().optional(),
-    instructions: z.string().optional()
+    sourceType: z.enum(sourceTypeOptions),
+    url: z.string().trim().optional(),
+    bookTitle: z.string().trim().optional(),
+    bookPage: z.number().int("Page number must be a whole number").min(1, "Page number must be at least 1").optional(),
+    instructions: z.string().trim().optional(),
+}).superRefine((values, ctx) => {
+    switch (values.sourceType) {
+        case RecipeSourceType.Website:
+            if (!values.url) {
+                ctx.addIssue({
+                    code: "custom",
+                    message: "URL is required",
+                    path: ["url"],
+                });
+            } else if (!urlSchema.safeParse(values.url).success) {
+                ctx.addIssue({
+                    code: "custom",
+                    message: "Enter a valid URL",
+                    path: ["url"],
+                });
+            }
+            break;
+        case RecipeSourceType.Cookbook:
+            if (!values.bookTitle) {
+                ctx.addIssue({
+                    code: "custom",
+                    message: "Cookbook title is required",
+                    path: ["bookTitle"],
+                });
+            }
+
+            if (values.bookPage === undefined) {
+                ctx.addIssue({
+                    code: "custom",
+                    message: "Page number is required",
+                    path: ["bookPage"],
+                });
+            }
+            break;
+        case RecipeSourceType.Original:
+            if (!values.instructions) {
+                ctx.addIssue({
+                    code: "custom",
+                    message: "Instructions are required",
+                    path: ["instructions"],
+                });
+            }
+            break;
+        default:
+            break;
+    }
 });
 
 

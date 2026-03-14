@@ -41,7 +41,7 @@ func (r *ingredientUsageRepo) insertIngredientUsages(ctx context.Context, tx *sq
 	return nil
 }
 
-func (r *ingredientUsageRepo) getIngredientUsagesForRecipeVersion(ctx context.Context, db db.DBTX, recipeVersionID string) ([]*IngredientUsage, error) {
+func (r *ingredientUsageRepo) getIngredientUsagesForRecipeVersion(ctx context.Context, db db.DBTX, recipeVersionID uuid.UUID) ([]*IngredientUsage, error) {
 	rows, err := db.QueryContext(ctx, "SELECT id, ingredient_id, quantity, unit FROM ingredient_usages WHERE recipe_version_id = $1", recipeVersionID)
 	if err != nil {
 		return nil, err

@@ -12,7 +12,9 @@ export default function SharedBy({ user }: SharedByProps) {
     const navigate = useNavigate();
     return (
         <Inline align="center">
-            <Link onClick={() => navigate(`/users/${user.id}`)} text={`Shared by ${user.username}`} />
+            <Link onClick={() => navigate(`/users/${user.id}`)}>
+                Shared by {user.username}
+            </Link>
         </Inline>
     );
 }
