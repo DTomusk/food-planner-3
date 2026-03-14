@@ -95,6 +95,7 @@ type ComplexityRoot struct {
 		CreatedAt      func(childComplexity int) int
 		CurrentVersion func(childComplexity int) int
 		ID             func(childComplexity int) int
+		Version        func(childComplexity int, version int32) int
 		Versions       func(childComplexity int) int
 	}
 
@@ -153,6 +154,7 @@ type RecipeResolver interface {
 
 	CurrentVersion(ctx context.Context, obj *model.Recipe) (*model.RecipeVersion, error)
 	Versions(ctx context.Context, obj *model.Recipe) ([]*model.RecipeVersion, error)
+	Version(ctx context.Context, obj *model.Recipe, version int32) (*model.RecipeVersion, error)
 }
 type RecipeVersionResolver interface {
 	Recipe(ctx context.Context, obj *model.RecipeVersion) (*model.Recipe, error)
@@ -381,6 +383,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Recipe.ID(childComplexity), true
+	case "Recipe.version":
+		if e.complexity.Recipe.Version == nil {
+			break
+		}
+
+		args, err := ec.field_Recipe_version_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Recipe.Version(childComplexity, args["version"].(int32)), true
 	case "Recipe.versions":
 		if e.complexity.Recipe.Versions == nil {
 			break
@@ -732,6 +745,17 @@ func (ec *executionContext) field_Query_user_args(ctx context.Context, rawArgs m
 		return nil, err
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Recipe_version_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "version", ec.unmarshalNInt2int32)
+	if err != nil {
+		return nil, err
+	}
+	args["version"] = arg0
 	return args, nil
 }
 
@@ -1346,6 +1370,8 @@ func (ec *executionContext) fieldContext_Mutation_createRecipe(ctx context.Conte
 				return ec.fieldContext_Recipe_currentVersion(ctx, field)
 			case "versions":
 				return ec.fieldContext_Recipe_versions(ctx, field)
+			case "version":
+				return ec.fieldContext_Recipe_version(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Recipe", field.Name)
 		},
@@ -1412,6 +1438,8 @@ func (ec *executionContext) fieldContext_Mutation_updateRecipe(ctx context.Conte
 				return ec.fieldContext_Recipe_currentVersion(ctx, field)
 			case "versions":
 				return ec.fieldContext_Recipe_versions(ctx, field)
+			case "version":
+				return ec.fieldContext_Recipe_version(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Recipe", field.Name)
 		},
@@ -1536,6 +1564,8 @@ func (ec *executionContext) fieldContext_Query_recipes(_ context.Context, field 
 				return ec.fieldContext_Recipe_currentVersion(ctx, field)
 			case "versions":
 				return ec.fieldContext_Recipe_versions(ctx, field)
+			case "version":
+				return ec.fieldContext_Recipe_version(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Recipe", field.Name)
 		},
@@ -1578,6 +1608,8 @@ func (ec *executionContext) fieldContext_Query_recipe(ctx context.Context, field
 				return ec.fieldContext_Recipe_currentVersion(ctx, field)
 			case "versions":
 				return ec.fieldContext_Recipe_versions(ctx, field)
+			case "version":
+				return ec.fieldContext_Recipe_version(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Recipe", field.Name)
 		},
@@ -2006,6 +2038,69 @@ func (ec *executionContext) fieldContext_Recipe_versions(_ context.Context, fiel
 	return fc, nil
 }
 
+func (ec *executionContext) _Recipe_version(ctx context.Context, field graphql.CollectedField, obj *model.Recipe) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Recipe_version,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Recipe().Version(ctx, obj, fc.Args["version"].(int32))
+		},
+		nil,
+		ec.marshalORecipeVersion2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipeVersion,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Recipe_version(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Recipe",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_RecipeVersion_id(ctx, field)
+			case "recipe":
+				return ec.fieldContext_RecipeVersion_recipe(ctx, field)
+			case "version":
+				return ec.fieldContext_RecipeVersion_version(ctx, field)
+			case "name":
+				return ec.fieldContext_RecipeVersion_name(ctx, field)
+			case "ingredientUsages":
+				return ec.fieldContext_RecipeVersion_ingredientUsages(ctx, field)
+			case "prepMins":
+				return ec.fieldContext_RecipeVersion_prepMins(ctx, field)
+			case "cookMins":
+				return ec.fieldContext_RecipeVersion_cookMins(ctx, field)
+			case "portions":
+				return ec.fieldContext_RecipeVersion_portions(ctx, field)
+			case "source":
+				return ec.fieldContext_RecipeVersion_source(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_RecipeVersion_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RecipeVersion", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Recipe_version_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _RecipeSource_type(ctx context.Context, field graphql.CollectedField, obj *model.RecipeSource) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2214,6 +2309,8 @@ func (ec *executionContext) fieldContext_RecipeVersion_recipe(_ context.Context,
 				return ec.fieldContext_Recipe_currentVersion(ctx, field)
 			case "versions":
 				return ec.fieldContext_Recipe_versions(ctx, field)
+			case "version":
+				return ec.fieldContext_Recipe_version(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Recipe", field.Name)
 		},
@@ -2683,6 +2780,8 @@ func (ec *executionContext) fieldContext_User_recipes(_ context.Context, field g
 				return ec.fieldContext_Recipe_currentVersion(ctx, field)
 			case "versions":
 				return ec.fieldContext_Recipe_versions(ctx, field)
+			case "version":
+				return ec.fieldContext_Recipe_version(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Recipe", field.Name)
 		},
@@ -4937,6 +5036,39 @@ func (ec *executionContext) _Recipe(ctx context.Context, sel ast.SelectionSet, o
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "version":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Recipe_version(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -6381,6 +6513,13 @@ func (ec *executionContext) marshalORecipe2ᚖfoodplannerᚋinternalᚋgqlᚋgra
 		return graphql.Null
 	}
 	return ec._Recipe(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalORecipeVersion2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipeVersion(ctx context.Context, sel ast.SelectionSet, v *model.RecipeVersion) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._RecipeVersion(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v any) (*string, error) {

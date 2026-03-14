@@ -5,6 +5,8 @@ type Recipe {
 
   currentVersion: RecipeVersion! @goField(forceResolver: true)
   versions: [RecipeVersion!]! @goField(forceResolver: true)
+
+  version(version: Int!): RecipeVersion
 }
 
 type RecipeVersion {

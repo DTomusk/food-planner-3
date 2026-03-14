@@ -64,45 +64,6 @@ func (r *mutationResolver) UpdateRecipe(ctx context.Context, input model.UpdateR
 	return mapRecipe(recipeContainer), nil
 }
 
-func toCreateRecipeRequest(input *model.CreateRecipeInput, userID string) (recipe.CreateRecipeRequest, error) {
-	if input == nil {
-		return recipe.CreateRecipeRequest{}, fmt.Errorf("recipe details are required")
-	}
-	if input.RecipeSource == nil {
-		return recipe.CreateRecipeRequest{}, fmt.Errorf("recipe source is required")
-	}
-
-	recipeSourceRequest := recipe.CreateRecipeSourceRequest{
-		Type:         int(input.RecipeSource.Type),
-		URL:          input.RecipeSource.URL,
-		BookTitle:    input.RecipeSource.BookTitle,
-		BookPage:     input.RecipeSource.BookPage,
-		Instructions: input.RecipeSource.Instructions,
-	}
-
-	return recipe.CreateRecipeRequest{
-		Name:        input.Name,
-		Ingredients: toIngredientUsageRequests(input.IngredientUsages),
-		UserID:      userID,
-		PrepMins:    int(input.PrepMins),
-		CookMins:    int(input.CookMins),
-		Portions:    int(input.Portions),
-		Source:      recipeSourceRequest,
-	}, nil
-}
-
-func toIngredientUsageRequests(usages []*model.CreateIngredientUsageInput) []recipe.CreateIngredientUsageRequest {
-	ingredientUsageRequests := make([]recipe.CreateIngredientUsageRequest, len(usages))
-	for i, usage := range usages {
-		ingredientUsageRequests[i] = recipe.CreateIngredientUsageRequest{
-			IngredientID: usage.IngredientID,
-			Quantity:     usage.Quantity,
-			Unit:         int(usage.Unit),
-		}
-	}
-	return ingredientUsageRequests
-}
-
 // Recipes is the resolver for the recipes field.
 func (r *queryResolver) Recipes(ctx context.Context) ([]*model.Recipe, error) {
 	logger := logging.FromContext(ctx)
@@ -166,6 +127,21 @@ func (r *recipeResolver) Versions(ctx context.Context, obj *model.Recipe) ([]*mo
 		result = append(result, mapRecipeVersion(version))
 	}
 	return result, nil
+}
+
+// Version is the resolver for the version field.
+func (r *recipeResolver) Version(ctx context.Context, obj *model.Recipe, version int32) (*model.RecipeVersion, error) {
+	logger := logging.FromContext(ctx).With("recipe_id", obj.ID, "version", version)
+	recipeVersion, err := r.RecipeService.GetRecipeVersionByRecipeIDAndVersion(ctx, uuid.MustParse(obj.ID), int(version))
+	if err != nil {
+		logger.Error("Failed to get recipe by ID and version", "error", err)
+		return nil, err
+	}
+	if recipeVersion == nil {
+		return nil, nil
+	}
+	recipeVersionModel := mapRecipeVersion(recipeVersion)
+	return recipeVersionModel, nil
 }
 
 // Recipe is the resolver for the recipe field.
@@ -265,3 +241,25 @@ func (r *Resolver) RecipeVersion() graph.RecipeVersionResolver { return &recipeV
 
 type recipeResolver struct{ *Resolver }
 type recipeVersionResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *queryResolver) RecipeVersion(ctx context.Context, id string, version int32) (*model.Recipe, error) {
+	logger := logging.FromContext(ctx).With("recipe_id", id, "version", version)
+	recipe, err := r.RecipeService.GetRecipeByIDAndVersion(ctx, uuid.MustParse(id), int(version))
+	if err != nil {
+		logger.Error("Failed to get recipe by ID and version", "error", err)
+		return nil, err
+	}
+	if recipe == nil {
+		return nil, nil
+	}
+	recipeModel := mapRecipe(recipe)
+	return recipeModel, nil
+}
+*/

@@ -1,0 +1,36 @@
+query GetRecipeVersion($id: ID!, $version: Int!) {
+    recipeVersion(id: $id) {
+        id
+        author {
+            id
+            username
+        }
+        version(version: $version) {
+            name
+            ingredientUsages {
+                quantity
+                unit {
+                    val
+                    symbol
+                }
+                ingredient {
+                    id
+                    name
+                    counter
+                    plural
+                    counterPlural
+                }
+            }
+            prepMins
+            cookMins
+            portions
+            source {
+                type
+                url
+                bookTitle
+                bookPage
+                instructions
+            }
+        }
+    }
+}

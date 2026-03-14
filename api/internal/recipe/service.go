@@ -211,7 +211,6 @@ func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest)
 	return dbRecipeContainer, nil
 }
 
-// service.go
 func (s *Service) validateAndConvertIngredientUsages(ctx context.Context, logger *slog.Logger, ingredientUsageRequests []CreateIngredientUsageRequest) ([]*IngredientUsage, error) {
 	seen := make(map[string]struct{}, len(ingredientUsageRequests))
 	uniqueIDs := make([]string, 0, len(ingredientUsageRequests))
@@ -249,6 +248,10 @@ func (s *Service) GetRecipeByID(ctx context.Context, id uuid.UUID) (*RecipeConta
 
 func (s *Service) GetRecipeVersionByID(ctx context.Context, id uuid.UUID) (*RecipeVersion, error) {
 	return s.recipeVersionRepo.getRecipeVersionByID(ctx, s.txRunner.DB(), id)
+}
+
+func (s *Service) GetRecipeVersionByRecipeIDAndVersion(ctx context.Context, id uuid.UUID, version int) (*RecipeVersion, error) {
+	return s.recipeVersionRepo.getRecipeVersionByRecipeIDAndVersion(ctx, s.txRunner.DB(), id, version)
 }
 
 func (s *Service) GetRecipesByUserID(ctx context.Context, userID uuid.UUID) ([]*RecipeContainer, error) {
