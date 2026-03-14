@@ -24,6 +24,7 @@ query GetRecipe($id: ID!) {
             prepMins
             cookMins
             portions
+            version
             source {
                 type
                 url

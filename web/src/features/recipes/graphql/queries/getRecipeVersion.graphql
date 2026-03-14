@@ -1,5 +1,5 @@
 query GetRecipeVersion($id: ID!, $version: Int!) {
-    recipeVersion(id: $id) {
+    recipe(id: $id) {
         id
         author {
             id
@@ -24,6 +24,7 @@ query GetRecipeVersion($id: ID!, $version: Int!) {
             prepMins
             cookMins
             portions
+            version
             source {
                 type
                 url

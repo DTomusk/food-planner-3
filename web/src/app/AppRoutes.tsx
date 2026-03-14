@@ -6,6 +6,7 @@ import SignUpPage from "@/pages/SignUpPage";
 import NotFound from "@/pages/NotFound";
 import RecipeListingPage from "@/pages/RecipeListingPage";
 import RecipeCreatePage from "@/pages/RecipeCreatePage";
+import RecipeVersionPage from "@/pages/RecipeVersionPage";
 import ProtectedLayout from "./ProtectedLayout";
 import MyRecipesPage from "@/pages/MyRecipesPage";
 import UserPage from "@/pages/UserPage";
@@ -33,6 +34,7 @@ export function AppRoutes() {
             <Route path="create" element={<RecipeCreatePage />} />
             <Route path=":id/edit" element={<RecipeUpdatePage />} />
           </Route>
+          <Route path=":id/versions/:version" element={<RecipeVersionPage />} />
           <Route path=":id" element={<RecipePage />} />
         </Route>
         <Route path="/auth" element={<AuthLayout />}>
