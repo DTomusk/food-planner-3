@@ -4,16 +4,21 @@ on:
     pull_request:
         paths:
           - 'api/**'
+          - '.github/workflows/test.yml'
     push:
         branches:
           - main
         paths:
           - 'api/**'
+          - '.github/workflows/test.yml'
     workflow_dispatch:
 
 jobs:
     test:
         runs-on: ubuntu-latest
+        permissions:
+          contents: read
+          id-token: write
 
         steps: 
             - name: Checkout code
@@ -50,11 +55,15 @@ jobs:
                 api_test \
                 go test ./... -coverprofile=/coverage.out -covermode=atomic
 
-            - name: Upload coverage report
-              uses: actions/upload-artifact@v4
+            - name: Upload coverage reports to Codecov
+              uses: codecov/codecov-action@v5
               with:
-                name: coverage-report
-                path: coverage.out
+                files: coverage.out
+                flags: backend
+                name: backend-coverage
+                token: ${{ secrets.CODECOV_TOKEN }}
+                fail_ci_if_error: true
+                verbose: true
 
             - name: Tear down Postgres
               run: docker rm -f db_test
