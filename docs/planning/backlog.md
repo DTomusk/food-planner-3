@@ -105,6 +105,13 @@
     - Why: 
     - DoD: 
 
+- [ ] Markdown formatting
+    - Priority: medium
+    - Area: frontend
+    - Type: bug
+    - Why: the input for recipe instructions is a markdown editor, but markdown is not rendered correctly. Titles aren't differentiated and bullet points don't appear. 
+    - DoD: 
+
 ## Item template 
 
 - [ ] Item name
