@@ -42,12 +42,13 @@ jobs:
             
             - name: Run tests
               run: |
+                touch coverage.out
                 docker build --target test -t api_test -f api/cmd/server/Dockerfile ./api
                 docker run --rm --network host \
                 -e TEST_DB_URL=postgres://user:password@localhost:5432/food_planner_test?sslmode=disable \
                 -v ${{ github.workspace }}/coverage.out:/coverage.out \
                 api_test \
-                 go test ./... -coverprofile=/coverage.out -covermode=atomic
+                go test ./... -coverprofile=/coverage.out -covermode=atomic
 
             - name: Upload coverage report
               uses: actions/upload-artifact@v4
