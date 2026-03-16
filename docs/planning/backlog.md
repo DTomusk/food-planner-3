@@ -12,8 +12,6 @@
         - Tool found for showing code coverage status (or determined to be too difficult/expensive to do now)
         - AI focused test generation docs created
 
-## Planning
-
 - [ ] Introduce storybook
     - Priority: medium
     - Area: frontend
@@ -22,6 +20,8 @@
     - DoD: 
         - Storybook installed 
         - Stories created for components 
+
+## Planning
 
 - [ ] Set up configurable theming
     - Priority: high
