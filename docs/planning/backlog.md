@@ -2,15 +2,15 @@
 
 ## Ready
 
-- [ ] Build out docs area
-    - Priority: High
-    - Area: ./docs
-    - Type: Tech debt
-    - Why: Decisions aren't being documented yet, someone checking out the repo won't know what's going on and neither will I a couple months down the line. AI agents now have to read through the repo every time there's a prompt, which slows things down a great deal and increases the chance that they generate code inconsistent with the style and architecture of the repo 
+- [ ] Investigate test coverage tools
+    - Priority: high
+    - Area: frontend and backend
+    - Type: tech debt
+    - Why: there is currently no visibility on how much of the code is covered by the current suite of tests, meaning it's much easier to not implement tests and especially test cases 
     - DoD: 
-        - docs folder created 
-        - current scope of repro documented, including architecture and features 
-        - AI-optimised area created
+        - Test strategy documented for frontend and backend 
+        - Tool found for showing code coverage status (or determined to be too difficult/expensive to do now)
+        - AI focused test generation docs created
 
 ## Planning
 
@@ -22,16 +22,6 @@
     - DoD: 
         - Storybook installed 
         - Stories created for components 
-
-- [ ] Investigate test coverage tools
-    - Priority: high
-    - Area: frontend and backend
-    - Type: tech debt
-    - Why: there is currently no visibility on how much of the code is covered by the current suite of tests, meaning it's much easier to not implement tests and especially test cases 
-    - DoD: 
-        - Test strategy documented for frontend and backend 
-        - Tool found for showing code coverage status (or determined to be too difficult/expensive to do now)
-        - AI focused test generation docs created
 
 - [ ] Set up configurable theming
     - Priority: high
@@ -125,3 +115,13 @@
     - DoD: 
 
 ## Done 
+
+- [x] Build out docs area
+    - Priority: High
+    - Area: ./docs
+    - Type: Tech debt
+    - Why: Decisions aren't being documented yet, someone checking out the repo won't know what's going on and neither will I a couple months down the line. AI agents now have to read through the repo every time there's a prompt, which slows things down a great deal and increases the chance that they generate code inconsistent with the style and architecture of the repo 
+    - DoD: 
+        - docs folder created 
+        - current scope of repro documented, including architecture and features 
+        - AI-optimised area created
