@@ -11,6 +11,7 @@ const meta = {
     parameters: { layout: "centered" },
     args: {
         onSubmit: fn(),
+        children: null,
     },
     argTypes: {
         onSubmit: { control: false },

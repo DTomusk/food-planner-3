@@ -12,6 +12,7 @@ const meta = {
         defaultCollapsed: false,
         showStatus: false,
         status: { status: "pending" },
+        children: null,
     },
     argTypes: {
         title: { control: "text" },

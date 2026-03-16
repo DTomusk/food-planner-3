@@ -11,6 +11,7 @@ const meta = {
         label: "Recipe Name",
         htmlFor: "recipe-name",
         error: undefined,
+        children: null,
     },
     argTypes: {
         label: { control: "text" },
