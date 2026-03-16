@@ -9,6 +9,7 @@ on:
           - main
         paths:
           - 'api/**'
+    workflow_dispatch:
 
 jobs:
     test:
@@ -42,7 +43,17 @@ jobs:
             - name: Run tests
               run: |
                 docker build --target test -t api_test -f api/cmd/server/Dockerfile ./api
-                docker run --rm --network host -e TEST_DB_URL=postgres://user:password@localhost:5432/food_planner_test?sslmode=disable api_test go test ./... -v
+                docker run --rm --network host \ 
+                -e TEST_DB_URL=postgres://user:password@localhost:5432/food_planner_test?sslmode=disable \
+                -v ${{ github.workspace }}/coverage.out:/coverage.out \
+                api_test \
+                 go test ./... -coverprofile=/coverage.out -covermode=atomic
+
+            - name: Upload coverage report
+              uses: actions/upload-artifact@v4
+              with:
+                name: coverage-report
+                path: coverage.out
 
             - name: Tear down Postgres
               run: docker rm -f db_test
