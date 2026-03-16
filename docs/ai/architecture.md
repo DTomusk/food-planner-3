@@ -2,10 +2,19 @@
 
 This file is optimized for AI/code agents. It favors exact ownership, invariants, and change guidance over narrative explanation.
 
+## AI Doc Map
+
+- `docs/ai/architecture.md`: cross-system boundaries, backend-centric invariants, and full-stack runtime flow.
+- `docs/ai/frontend_architecture.md`: frontend runtime, ownership boundaries, and data flow.
+- `docs/ai/frontend_conventions.md`: frontend folder organization, naming, import boundaries, and placement rules.
+- `docs/ai/storybook.md`: Storybook setup, decorators, and story authoring conventions.
+- `docs/ai/database_schema.md`: migration-derived PostgreSQL schema reference.
+
 ## System Summary
 
 - FoodSmash is a recipe planning application.
 - The frontend lives in `web/` and is built with React, TypeScript, Vite, Tailwind, React Router, React Query, and `graphql-request`.
+- Storybook is used for frontend component development, documentation, and interactive UI verification.
 - The backend lives in `api/` and is a Go GraphQL API built with `gqlgen`.
 - Persistent storage is PostgreSQL, with schema changes managed by SQL migrations in `api/migrations/`.
 - The browser talks to the API over GraphQL. The API talks to PostgreSQL directly through repository packages.
@@ -13,6 +22,7 @@ This file is optimized for AI/code agents. It favors exact ownership, invariants
 ## Repository Boundaries
 
 - `web/`: frontend app, routes, feature hooks, GraphQL operations, generated frontend GraphQL types.
+- `web/.storybook/`: Storybook runtime configuration and global preview parameters.
 - `api/cmd/server/`: backend bootstrap and dependency wiring.
 - `api/internal/gql/`: GraphQL schema, generated server types, resolvers, and directives.
 - `api/internal/recipe/`: recipe domain models, validation, repositories, and orchestration logic.
@@ -115,6 +125,12 @@ This file is optimized for AI/code agents. It favors exact ownership, invariants
 - Use repositories for persistence and prefer `DBTX`-compatible signatures.
 - Expose the domain through GraphQL schema and thin resolvers.
 
+### Frontend UI Or Data Changes
+
+- Start with `docs/ai/frontend_architecture.md` for flow and ownership.
+- Apply placement/import rules from `docs/ai/frontend_conventions.md`.
+- For story work, follow `docs/ai/storybook.md`.
+
 ## AI Working Notes
 
 - Start by reading the domain package and its service before changing GraphQL resolvers.
@@ -123,6 +139,9 @@ This file is optimized for AI/code agents. It favors exact ownership, invariants
 - Treat recipe versions as append-only history.
 - Keep container-scoped and version-scoped data separate.
 - Be careful with React Query cache keys and invalidation when adding new recipe queries.
+- Frontend architecture decisions belong in `docs/ai/frontend_architecture.md`.
+- Frontend placement/import conventions belong in `docs/ai/frontend_conventions.md`.
+- Storybook decisions belong in `docs/ai/storybook.md`.
 - There is configuration for recipe retention, but the current server bootstrap passes `nil` for retention into `recipe.NewService`; verify retention wiring before relying on it.
 - Auth middleware is permissive by design: invalid tokens do not fail the HTTP request early, they simply do not populate auth context.
 
@@ -138,3 +157,6 @@ This file is optimized for AI/code agents. It favors exact ownership, invariants
 - `web/src/main.tsx`: frontend bootstrap.
 - `web/src/lib/graphqlClient.ts`: frontend GraphQL transport.
 - `web/codegen.yml`: frontend GraphQL code generation.
+- `docs/ai/frontend_architecture.md`: frontend runtime flow and boundaries.
+- `docs/ai/frontend_conventions.md`: frontend placement and import rules.
+- `docs/ai/storybook.md`: AI-focused Storybook workflow and conventions.
