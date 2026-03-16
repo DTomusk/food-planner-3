@@ -14,6 +14,9 @@ on:
 jobs:
     test:
         runs-on: ubuntu-latest
+        permissions:
+          contents: write
+          pull-requests: write
 
         steps: 
             - name: Checkout code
@@ -51,10 +54,10 @@ jobs:
                 go test ./... -coverprofile=/coverage.out -covermode=atomic
 
             - name: Upload coverage report
-              uses: actions/upload-artifact@v4
+              uses: ncruces/go-coverage-report@v0
               with:
-                name: coverage-report
-                path: coverage.out
+                coverage-file: coverage.out
+              continue-on-error: true
 
             - name: Tear down Postgres
               run: docker rm -f db_test
