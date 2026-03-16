@@ -4,11 +4,13 @@ on:
     pull_request:
         paths:
           - 'api/**'
+          - '.github/workflows/test.yml'
     push:
         branches:
           - main
         paths:
           - 'api/**'
+          - '.github/workflows/test.yml'
     workflow_dispatch:
 
 jobs:
