@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import { forwardRef, type SelectHTMLAttributes } from "react";
+import Text from "./Text";
 
 export type SelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
     error?: string;
@@ -24,7 +25,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
                 >
                     {children}
                 </select>
-                {error && <span className="text-sm text-red-500">{error}</span>}
+                {error && <Text variant="error">{error}</Text>}
             </div>
         );
     }
