@@ -1,53 +1,49 @@
 package recipe
 
-// func TestGetRecipeSourceByRecipeVersionID(t *testing.T) {
-// 	testutil.WithTx(t, func(tx *sql.Tx) {
-// 		// Arrange
-// 		r := NewRecipeVersionRepo()
-// 		recipeRepo := NewRecipeRepo()
-// 		ingredientID := uuid.New()
-// 		testIngredient := ingredient.Ingredient{
-// 			ID:            ingredientID,
-// 			FileKey:       "test_ingredient",
-// 			Name:          "Test Ingredient",
-// 			PreferredUnit: 1,
-// 		}
-// 		err := seeds.InsertIngredient(context.Background(), tx, &testIngredient)
-// 		require.NoError(t, err)
+import (
+	"context"
+	"database/sql"
+	"testing"
 
-// 		testUser, err := seeds.SeedTestUser(context.Background(), tx)
-// 		require.NoError(t, err)
+	"foodplanner/internal/testutil"
+	"foodplanner/internal/testutil/seeds"
 
-// 		ingredientUsage, err := NewIngredientUsage(CreateIngredientUsageRequest{
-// 			IngredientID: ingredientID.String(),
-// 			Quantity:     200,
-// 			Unit:         1,
-// 		})
-// 		require.NoError(t, err)
+	"github.com/google/uuid"
+	_ "github.com/lib/pq"
+	"github.com/stretchr/testify/require"
+)
 
-// 		source, err := NewURLSource("https://example.com/recipe")
-// 		require.NoError(t, err)
+func TestGetRecipeSourceByRecipeVersionID(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		// Arrange
+		ctx := context.Background()
+		r := NewRecipeVersionRepo()
 
-// 		recipeContainer, err := NewRecipe(
-// 			"Recipe With Source",
-// 			testUser.ID,
-// 			[]*IngredientUsage{ingredientUsage},
-// 			30,
-// 			60,
-// 			8,
-// 			source,
-// 		)
-// 		require.NoError(t, err)
-// 		created, err := recipeRepo.createRecipe(context.Background(), tx, recipeContainer)
-// 		require.NoError(t, err)
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
 
-// 		// Act
-// 		retrievedSource, err := r.getRecipeSourceByRecipeVersionID(context.Background(), tx, created.CurrentVersion.ID)
+		recipeID := uuid.New()
+		versionID := uuid.New()
 
-// 		// Assert
-// 		require.NoError(t, err)
-// 		require.NotNil(t, retrievedSource, "Expected to find recipe source")
-// 		require.Equal(t, URL, retrievedSource.Type)
-// 		require.Equal(t, "https://example.com/recipe", *retrievedSource.URL)
-// 	})
-// }
+		err = seeds.InsertRecipeContainer(ctx, tx, recipeID, testUser.ID)
+		require.NoError(t, err)
+		err = seeds.InsertRecipeVersion(ctx, tx, versionID, recipeID, "Recipe With Source", 30, 60, 8, 1)
+		require.NoError(t, err)
+		err = seeds.SetRecipeContainerCurrentVersion(ctx, tx, recipeID, versionID)
+		require.NoError(t, err)
+
+		url := "https://example.com/recipe"
+		err = seeds.InsertRecipeSource(ctx, tx, versionID, int(URL), &url, nil, nil, nil)
+		require.NoError(t, err)
+
+		// Act
+		retrievedSource, err := r.getRecipeSourceByRecipeVersionID(ctx, tx, versionID)
+
+		// Assert
+		require.NoError(t, err)
+		require.NotNil(t, retrievedSource, "Expected to find recipe source")
+		require.Equal(t, URL, retrievedSource.Type)
+		require.NotNil(t, retrievedSource.URL)
+		require.Equal(t, url, *retrievedSource.URL)
+	})
+}
