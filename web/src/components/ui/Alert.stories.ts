@@ -27,3 +27,39 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Error: Story = {};
+
+export const Success: Story = {
+    args: {
+        type: "success",
+        message: "Operation completed successfully!",
+    },
+};
+
+export const Warning: Story = {
+    args: {
+        type: "warning",
+        message: "This is a warning. Please be cautious.",
+    },
+};
+
+export const Info: Story = {
+    args: {
+        type: "info",
+        message: "This is some informational message.",
+    },
+};
+
+export const AutoClose: Story = {
+    args: {
+        message: "This alert will auto-close after 3 seconds.",
+        duration: 3000,
+    },
+};
+
+export const NonClosable: Story = {
+    args: {
+        message: "This alert cannot be closed manually.",
+        closable: false,
+        type: "warning",
+    },
+};

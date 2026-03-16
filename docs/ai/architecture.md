@@ -2,6 +2,14 @@
 
 This file is optimized for AI/code agents. It favors exact ownership, invariants, and change guidance over narrative explanation.
 
+## AI Doc Map
+
+- `docs/ai/architecture.md`: cross-system boundaries, backend-centric invariants, and full-stack runtime flow.
+- `docs/ai/frontend_architecture.md`: frontend runtime, ownership boundaries, and data flow.
+- `docs/ai/frontend_conventions.md`: frontend folder organization, naming, import boundaries, and placement rules.
+- `docs/ai/storybook.md`: Storybook setup, decorators, and story authoring conventions.
+- `docs/ai/database_schema.md`: migration-derived PostgreSQL schema reference.
+
 ## System Summary
 
 - FoodSmash is a recipe planning application.
@@ -57,8 +65,6 @@ This file is optimized for AI/code agents. It favors exact ownership, invariants
 - A recipe update must create a new version and then move the container's `current_version_id` to that new version.
 - Source rows in `recipe_sources` are keyed by `recipe_version_id`; each new version needs its own source row when a source is present.
 - Frontend React Query keys must be unique per data shape. Recipe detail and recipe version history should not share the same key.
-- Story files should use public Storybook types from `@storybook/react-vite`; avoid imports from `storybook/internal/*`.
-- Story args and controls should match the component's real prop union/options to prevent invalid story states.
 - Generated code should not be hand-edited when a source file exists and a generator is available.
 
 ## Generated Code And Sources Of Truth
@@ -119,13 +125,11 @@ This file is optimized for AI/code agents. It favors exact ownership, invariants
 - Use repositories for persistence and prefer `DBTX`-compatible signatures.
 - Expose the domain through GraphQL schema and thin resolvers.
 
-### Add Or Update A Component Story
+### Frontend UI Or Data Changes
 
-- Prefer colocating stories with the component (`Component.stories.ts[x]` next to `Component.tsx`) for maintainability.
-- Keep Storybook global styling aligned with app styling through `web/.storybook/preview.ts` and `web/src/index.css`.
-- For components that depend on app context (router/query/auth), use decorators that provide equivalent context to `web/src/main.tsx`.
-- Include primary, variant, and edge-state stories (for example: default, disabled, loading, error/empty).
-- Keep story titles stable to avoid unnecessary churn in docs/visual review tooling.
+- Start with `docs/ai/frontend_architecture.md` for flow and ownership.
+- Apply placement/import rules from `docs/ai/frontend_conventions.md`.
+- For story work, follow `docs/ai/storybook.md`.
 
 ## AI Working Notes
 
@@ -135,7 +139,9 @@ This file is optimized for AI/code agents. It favors exact ownership, invariants
 - Treat recipe versions as append-only history.
 - Keep container-scoped and version-scoped data separate.
 - Be careful with React Query cache keys and invalidation when adding new recipe queries.
-- For Storybook work, follow `docs/ai/storybook.md` for conventions, decorators, and commands.
+- Frontend architecture decisions belong in `docs/ai/frontend_architecture.md`.
+- Frontend placement/import conventions belong in `docs/ai/frontend_conventions.md`.
+- Storybook decisions belong in `docs/ai/storybook.md`.
 - There is configuration for recipe retention, but the current server bootstrap passes `nil` for retention into `recipe.NewService`; verify retention wiring before relying on it.
 - Auth middleware is permissive by design: invalid tokens do not fail the HTTP request early, they simply do not populate auth context.
 
@@ -151,6 +157,6 @@ This file is optimized for AI/code agents. It favors exact ownership, invariants
 - `web/src/main.tsx`: frontend bootstrap.
 - `web/src/lib/graphqlClient.ts`: frontend GraphQL transport.
 - `web/codegen.yml`: frontend GraphQL code generation.
-- `web/.storybook/main.ts`: Storybook story discovery and addon configuration.
-- `web/.storybook/preview.ts`: Storybook global styles and preview-level parameters/decorators.
+- `docs/ai/frontend_architecture.md`: frontend runtime flow and boundaries.
+- `docs/ai/frontend_conventions.md`: frontend placement and import rules.
 - `docs/ai/storybook.md`: AI-focused Storybook workflow and conventions.

@@ -5,6 +5,8 @@
 Before making changes, read the relevant docs in `docs/ai/`:
 - `docs/ai/architecture.md` — system boundaries, domain model, runtime flow, change playbooks, and architectural invariants.
 - `docs/ai/database_schema.md` — current PostgreSQL schema derived from migrations. Use this to understand table structure without reading all migration files.
+- `docs/ai/frontend_architecture.md` — frontend runtime, boundaries, and data flow across app/pages/features/lib.
+- `docs/ai/frontend_conventions.md` — frontend folder organization, naming, import boundaries, and placement rules.
 - `docs/ai/storybook.md` — Storybook structure, story authoring conventions, decorators, and Tailwind/app-context parity guidance.
 
 ## Constraints
