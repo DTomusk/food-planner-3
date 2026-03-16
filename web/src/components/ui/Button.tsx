@@ -10,10 +10,10 @@ interface ButtonProps {
 }
 
 const variants = {
-    primary: "bg-blue-500 text-white rounded hover:bg-blue-600",
+    primary: "bg-primary-500 text-white rounded hover:bg-primary-600",
     secondary: "bg-gray-500 text-white rounded hover:bg-gray-600",
     danger: "bg-red-500 text-white rounded hover:bg-red-600",
-    primaryOutline: "border border-blue-500 text-blue-500 rounded hover:bg-blue-50",
+    primaryOutline: "border border-primary-500 text-primary-500 rounded hover:bg-primary-100 hover:text-primary-700",
     secondaryOutline: "border border-gray-500 text-gray-500 rounded hover:bg-gray-50",
     dangerOutline: "border border-red-500 text-red-500 rounded hover:bg-red-50",
 }

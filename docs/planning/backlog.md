@@ -2,6 +2,14 @@
 
 ## Ready
 
+- [ ] Set up configurable theming
+    - Priority: high
+    - Area: frontend
+    - Type: tech debt/feature
+    - Why: the site currently uses hardcoded colours for what should be themed components. We should be able to change the primary colour and have it propagate throughout the site, rather than editing magic strings everywhere. We can't have an established design language if we're hardcoding utility classes everywhere without any view of consistency
+    - DoD: 
+        - Dev can update primary and secondary colour in one place (SSoT)
+
 - [ ] Investigate test coverage tools
     - Priority: high
     - Area: frontend and backend
@@ -12,24 +20,7 @@
         - Tool found for showing code coverage status (or determined to be too difficult/expensive to do now)
         - AI focused test generation docs created
 
-- [ ] Introduce storybook
-    - Priority: medium
-    - Area: frontend
-    - Type: tech debt
-    - Why: we now have a lot of components that are frustrating to design and test on the site because you have to find the right pages and have enough data to test them
-    - DoD: 
-        - Storybook installed 
-        - Stories created for components 
-
 ## Planning
-
-- [ ] Set up configurable theming
-    - Priority: high
-    - Area: frontend
-    - Type: tech debt/feature
-    - Why: the site currently uses hardcoded colours for what should be themed components. We should be able to change the primary colour and have it propagate throughout the site, rather than editing magic strings everywhere. We can't have an established design language if we're hardcoding utility classes everywhere without any view of consistency
-    - DoD: 
-        - Dev can update primary and secondary colour in one place (SSoT)
 
 - [ ] Ingredient search 
     - Priority: high 
@@ -122,6 +113,15 @@
     - DoD: 
 
 ## Done 
+
+- [x] Introduce storybook
+    - Priority: medium
+    - Area: frontend
+    - Type: tech debt
+    - Why: we now have a lot of components that are frustrating to design and test on the site because you have to find the right pages and have enough data to test them
+    - DoD: 
+        - Storybook installed 
+        - Stories created for components 
 
 - [x] Build out docs area
     - Priority: High
