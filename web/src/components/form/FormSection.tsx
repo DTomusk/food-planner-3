@@ -27,6 +27,12 @@ export default function FormSection({
 
     return (
         <section className="space-y-4 bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+            <div
+                className={`
+                ${collapsible ? "cursor-pointer select-none" : ""}
+                `}
+                onClick={() => collapsible && setCollapsed((prev) => !prev)}
+            >
             <Inline justify="between" align="center">
                 <FormSectionTitle title={title} />
                 <Inline>
@@ -38,12 +44,12 @@ export default function FormSection({
                         aria-label="Expand section" 
                         shape="circle" 
                         variant="primary-outline"
-                        onClick={() => setCollapsed((prev) => !prev)}
                         aria-expanded={!collapsed}>
                             {collapsed ? <ChevronDownIcon size={20} /> : <ChevronUpIcon size={20} />}
                     </IconButton>)}
                 </Inline>
             </Inline>
+        </div>
             {!collapsed && children}
         </section>
     );
