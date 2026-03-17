@@ -27,8 +27,7 @@ export default function RecipeCreatePage() {
     };
 
     return (
-        <Page>
-            <BackLink />
+        <Page toolbarLeft={<BackLink />} >
             <PageTitle text={commonStrings.recipe.create} />
             {error && <Container><Alert message={extractErrorMessage(error)} closable /></Container>}
             <RecipeForm onSubmit={handleSubmit} isSubmitting={isPending} ingredients={ingredientsData || []} />

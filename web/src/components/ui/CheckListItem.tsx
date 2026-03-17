@@ -17,7 +17,7 @@ export default function CheckListItem({
             type="checkbox"
             checked={checked}
             onChange={(e) => onChange(e.target.checked)}
-            className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            className="h-5 w-5 rounded border-gray-300 text-primary-600 focus:ring-primary-600"
             />
 
             <span

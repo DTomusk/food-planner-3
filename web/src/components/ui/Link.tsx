@@ -7,7 +7,7 @@ interface LinkProps {
 export default function Link({ onClick, children, color = "black" }: LinkProps) {
   const colorClasses = {
     black: "text-black",
-    primary: "text-blue-600",
+    primary: "text-primary-700",
   };
 
   return (
