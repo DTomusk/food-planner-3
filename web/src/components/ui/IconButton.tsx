@@ -14,11 +14,11 @@ const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
                 type={type}
                 className={clsx(
                     "inline-flex items-center justify-center p-2 cursor-pointer",
-                    variant === "primary" && "bg-primary-500 text-white hover:bg-primary-600",
-                    variant === "secondary" && "bg-gray-500 text-white hover:bg-gray-600",
+                    variant === "primary" && "bg-primary-600 text-white hover:bg-primary-700",
+                    variant === "secondary" && "bg-secondary-500 text-white hover:bg-secondary-600",
                     variant === "danger" && "bg-red-500 text-white hover:bg-red-600",
-                    variant === "primary-outline" && "border border-primary-500 text-primary-500 hover:bg-primary-100 hover:text-primary-700",
-                    variant === "secondary-outline" && "border border-gray-500 text-gray-500 hover:bg-gray-50",
+                    variant === "primary-outline" && "border border-primary-600 text-primary-600 hover:bg-primary-100 hover:text-primary-700",
+                    variant === "secondary-outline" && "border border-secondary-500 text-secondary-500 hover:bg-secondary-100 hover:text-secondary-700",
                     shape === "circle" && "rounded-full",
                     shape === "square" && "rounded-md",
                     className

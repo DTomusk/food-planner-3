@@ -11,7 +11,7 @@ const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
             ref={ref}
             className={clsx(
                 "w-full rounded-md border px-3 py-2 text-sm",
-                "focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500",
+                "focus:outline-none focus:ring-2 focus:ring-primary-600 focus:border-primary-600",
                 "border-gray-300",
                 className
             )}
