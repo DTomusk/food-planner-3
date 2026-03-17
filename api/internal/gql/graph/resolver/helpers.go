@@ -129,3 +129,8 @@ func GetResponseWriter(ctx context.Context) http.ResponseWriter {
 	w, _ := ctx.Value(middleware.ResponseWriterKey).(http.ResponseWriter)
 	return w
 }
+
+func GetRequest(ctx context.Context) *http.Request {
+	req, _ := ctx.Value(middleware.RequestKey).(*http.Request)
+	return req
+}

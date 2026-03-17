@@ -1,6 +1,7 @@
 extend type Mutation {
     signup(input: SignUpInput!): AuthPayload!
     signin(input: SignInInput!): AuthPayload!
+    refresh: AuthPayload!
 }
 
 input SignUpInput {

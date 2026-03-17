@@ -80,3 +80,7 @@ func (s *AuthService) SignIn(email, password, ipAddress string, ctx context.Cont
 	}
 	return user, token, refresh_token, nil
 }
+
+func (s *AuthService) Refresh(ctx context.Context, refreshToken, ipAddress string) (*user.User, string, *refreshtokens.RefreshToken, error) {
+	return nil, "", nil, nil
+}

@@ -93,9 +93,10 @@ func main() {
 
 	authMiddleware := auth.Middleware(jwtService)
 	ipMiddleware := middleware.IPMiddleware
-	responseWriterMiddleware := middleware.Middleware
+	responseWriterMiddleware := middleware.ResponseWriterMiddleware
+	requestMiddleware := middleware.RequestMiddleware
 
-	http.Handle("/query", ipMiddleware(authMiddleware(responseWriterMiddleware(srv))))
+	http.Handle("/query", ipMiddleware(authMiddleware(responseWriterMiddleware(requestMiddleware(srv)))))
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{

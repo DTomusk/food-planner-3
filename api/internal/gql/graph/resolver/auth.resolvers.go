@@ -7,6 +7,8 @@ package resolver
 
 import (
 	"context"
+	"fmt"
+	"foodplanner/internal/gql/graph/errors"
 	"foodplanner/internal/gql/graph/model"
 	"net/http"
 	"time"
@@ -69,5 +71,53 @@ func (r *mutationResolver) Signin(ctx context.Context, input model.SignInInput) 
 	return &model.AuthPayload{
 		User: mapUser(user),
 		Jwt:  token,
+	}, nil
+}
+
+// Refresh is the resolver for the refresh field.
+func (r *mutationResolver) Refresh(ctx context.Context) (*model.AuthPayload, error) {
+	req := GetRequest(ctx)
+	if req == nil {
+		return nil, fmt.Errorf("no request in context")
+	}
+
+	cookie, err := req.Cookie("refreshToken")
+	if err != nil {
+		if err == http.ErrNoCookie {
+			return nil, errors.NewUnauthenticatedError("No auth cookie found")
+		}
+		return nil, fmt.Errorf("refresh token cookie not found: %w", err)
+	}
+
+	if cookie.Value == "" {
+		return nil, errors.NewUnauthenticatedError("Empty refresh token")
+	}
+
+	ip, err := GetIPAddress(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	user, jwt, refresh_token, err := r.AuthService.Refresh(ctx, cookie.Value, ip)
+	if err != nil {
+		return nil, err
+	}
+
+	w := GetResponseWriter(ctx)
+	if w != nil {
+		http.SetCookie(w, &http.Cookie{
+			Name:     "refreshToken",
+			Value:    refresh_token.Token,
+			MaxAge:   int(refresh_token.ExpiresAt - time.Now().Unix()),
+			Path:     "/",
+			HttpOnly: true,
+			Secure:   false, // make sure to set this to true in production
+			SameSite: http.SameSiteLaxMode,
+		})
+	}
+
+	return &model.AuthPayload{
+		User: mapUser(user),
+		Jwt:  jwt,
 	}, nil
 }
