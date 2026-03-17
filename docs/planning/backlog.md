@@ -103,6 +103,20 @@
     - Why: the input for recipe instructions is a markdown editor, but markdown is not rendered correctly. Titles aren't differentiated and bullet points don't appear. 
     - DoD: 
 
+- [ ] Add description to recipes
+    - Priority: 
+    - Area: 
+    - Type: (bug, tech debt, feature)
+    - Why: 
+    - DoD: 
+
+- [ ] Add images to recipes
+    - Priority: 
+    - Area: 
+    - Type: (bug, tech debt, feature)
+    - Why: 
+    - DoD: 
+
 ## Item template 
 
 - [ ] Item name

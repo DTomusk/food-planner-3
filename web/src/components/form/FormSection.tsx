@@ -26,7 +26,7 @@ export default function FormSection({
     const [collapsed, setCollapsed] = useState(defaultCollapsed);
 
     return (
-        <section className="space-y-4 bg-gray-50 border border-gray-200 rounded-lg p-6">
+        <section className="space-y-4 bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
             <Inline justify="between">
                 <FormSectionTitle title={title} />
                 <Inline>

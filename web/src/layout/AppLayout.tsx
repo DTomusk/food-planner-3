@@ -3,7 +3,7 @@ import NavBar from "./NavBar";
 
 export default function AppLayout({children}: {children: React.ReactNode}) {
     return (
-        <div className="min-h-screen w-full bg-background">
+        <div className="min-h-screen w-full bg-linear-to-br from-background to-white">
             <Inline wrap justify="start" align="none" gap="none" className="min-h-screen w-full">
                 <NavBar />
                 <main className="min-h-screen flex-1 min-w-0 overflow-x-hidden">
