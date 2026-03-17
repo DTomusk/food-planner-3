@@ -3,9 +3,9 @@ package directive
 import (
 	"context"
 	"foodplanner/internal/auth"
+	"foodplanner/internal/gql/graph/errors"
 
 	"github.com/99designs/gqlgen/graphql"
-	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
 func AuthDirective(
@@ -15,7 +15,7 @@ func AuthDirective(
 ) (interface{}, error) {
 	_, ok := auth.ClaimsFromContext(ctx)
 	if !ok {
-		return nil, gqlerror.Errorf("unauthorized")
+		return nil, errors.NewUnauthenticatedError("user is not authenticated")
 	}
 	return next(ctx)
 }

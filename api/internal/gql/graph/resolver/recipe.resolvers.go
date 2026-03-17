@@ -8,7 +8,6 @@ package resolver
 import (
 	"context"
 	"fmt"
-	"foodplanner/internal/auth"
 	"foodplanner/internal/gql/graph"
 	"foodplanner/internal/gql/graph/model"
 	"foodplanner/internal/logging"
@@ -20,9 +19,10 @@ import (
 // CreateRecipe is the resolver for the createRecipe field.
 func (r *mutationResolver) CreateRecipe(ctx context.Context, input model.CreateRecipeInput) (*model.Recipe, error) {
 	logger := logging.FromContext(ctx)
-	claims, ok := auth.ClaimsFromContext(ctx)
-	if !ok {
-		return nil, fmt.Errorf("unauthenticated")
+	claims, err := RequireAuth(ctx)
+	if err != nil {
+		logger.Error("Unauthenticated access to CreateRecipe mutation", "error", err)
+		return nil, err
 	}
 
 	request, err := toCreateRecipeRequest(&input, claims.UserID)
@@ -41,9 +41,10 @@ func (r *mutationResolver) CreateRecipe(ctx context.Context, input model.CreateR
 // UpdateRecipe is the resolver for the updateRecipe field.
 func (r *mutationResolver) UpdateRecipe(ctx context.Context, input model.UpdateRecipeInput) (*model.Recipe, error) {
 	logger := logging.FromContext(ctx)
-	claims, ok := auth.ClaimsFromContext(ctx)
-	if !ok {
-		return nil, fmt.Errorf("unauthenticated")
+	claims, err := RequireAuth(ctx)
+	if err != nil {
+		logger.Error("Unauthenticated access to UpdateRecipe mutation", "error", err)
+		return nil, err
 	}
 
 	createRequest, err := toCreateRecipeRequest(input.Details, claims.UserID)
@@ -241,25 +242,3 @@ func (r *Resolver) RecipeVersion() graph.RecipeVersionResolver { return &recipeV
 
 type recipeResolver struct{ *Resolver }
 type recipeVersionResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-/*
-	func (r *queryResolver) RecipeVersion(ctx context.Context, id string, version int32) (*model.Recipe, error) {
-	logger := logging.FromContext(ctx).With("recipe_id", id, "version", version)
-	recipe, err := r.RecipeService.GetRecipeByIDAndVersion(ctx, uuid.MustParse(id), int(version))
-	if err != nil {
-		logger.Error("Failed to get recipe by ID and version", "error", err)
-		return nil, err
-	}
-	if recipe == nil {
-		return nil, nil
-	}
-	recipeModel := mapRecipe(recipe)
-	return recipeModel, nil
-}
-*/

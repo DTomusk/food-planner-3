@@ -7,8 +7,6 @@ package resolver
 
 import (
 	"context"
-	"fmt"
-	"foodplanner/internal/auth"
 	"foodplanner/internal/gql/graph"
 	"foodplanner/internal/gql/graph/model"
 	"foodplanner/internal/logging"
@@ -33,9 +31,10 @@ func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error
 // Me is the resolver for the me field.
 func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 	logger := logging.FromContext(ctx)
-	claims, ok := auth.ClaimsFromContext(ctx)
-	if !ok {
-		return nil, fmt.Errorf("unauthenticated")
+	claims, err := RequireAuth(ctx)
+	if err != nil {
+		logger.Error("Unauthenticated access to Me query", "error", err)
+		return nil, err
 	}
 
 	user, err := r.UserService.GetUserByID(ctx, claims.UserID)
