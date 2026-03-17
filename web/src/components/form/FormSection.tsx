@@ -27,7 +27,7 @@ export default function FormSection({
 
     return (
         <section className="space-y-4 bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-            <Inline justify="between">
+            <Inline justify="between" align="center">
                 <FormSectionTitle title={title} />
                 <Inline>
                     {showStatus && status && (

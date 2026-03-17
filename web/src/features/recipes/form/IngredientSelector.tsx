@@ -34,7 +34,7 @@ export default function IngredientSelector({ index, control, register, ingredien
   });  
   
     return (
-    <Inline>
+    <Inline align="center">
       <div className="flex-1">
         <FormField htmlFor={`ingredientUsages.${index}.ingredientId`} label="Ingredient" error={errors.ingredientUsages?.[index]?.ingredientId?.message}>
           <Select defaultValue="" disabled={ingredients.length === 0} {...register(`ingredientUsages.${index}.ingredientId`)}>
