@@ -36,6 +36,7 @@ export default function RecipeSourceTypeSelector({ name, value, onChange }: Reci
                 <label key={option.value} className="flex items-center gap-2">
                     <input
                         type="radio"
+                        className="accent-primary-700"
                         name={name}
                         value={option.value}
                         checked={value === option.value}
