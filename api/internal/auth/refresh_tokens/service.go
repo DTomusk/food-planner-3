@@ -16,8 +16,9 @@ type RefreshTokenService struct {
 	expiresInDays int
 }
 
-func NewRefreshTokenService(repo *refreshTokenRepo, secret string, expiresInDays int) *RefreshTokenService {
+func NewRefreshTokenService(db db.DBTX, repo *refreshTokenRepo, secret string, expiresInDays int) *RefreshTokenService {
 	return &RefreshTokenService{
+		db:            db,
 		repo:          repo,
 		hasher:        NewHasher(secret),
 		expiresInDays: expiresInDays,
@@ -33,7 +34,7 @@ func (s *RefreshTokenService) NewSession(ctx context.Context, userID uuid.UUID, 
 	}
 
 	// Persist
-	err = s.repo.SaveNewToken(ctx, nil, refreshToken)
+	err = s.repo.saveNewToken(ctx, s.db, refreshToken)
 	if err != nil {
 		logger.Error("Failed to persist refresh token", "error", err)
 		return nil, err

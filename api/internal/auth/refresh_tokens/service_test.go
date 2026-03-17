@@ -17,7 +17,7 @@ func TestCreateRefreshToken(t *testing.T) {
 	userID := uuid.New()
 	ipAddress := "127.0.0.1"
 	secret := "my-secret-key"
-	service := NewRefreshTokenService(nil, secret, 7)
+	service := NewRefreshTokenService(nil, nil, secret, 7)
 
 	// Act
 	refreshToken, err := service.createRefreshToken(userID, ipAddress)
@@ -37,7 +37,7 @@ func TestNewSession(t *testing.T) {
 		ctx := context.Background()
 		ipAddress := "127.0.0.1"
 		secret := "my-secret-key"
-		service := NewRefreshTokenService(NewRefreshTokenRepo(), secret, 7)
+		service := NewRefreshTokenService(tx, NewRefreshTokenRepo(), secret, 7)
 
 		testuser, err := seeds.SeedTestUser(ctx, tx)
 		require.NoError(t, err, "Failed to seed test user")
