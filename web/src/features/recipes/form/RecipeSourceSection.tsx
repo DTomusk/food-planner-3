@@ -71,6 +71,7 @@ export default function RecipeSourceSection() {
                 <FormField htmlFor="instructions" label="Instructions" error={errors.instructions?.message}>
                 <TextArea
                 placeholder="Add the instructions for the recipe"
+                rows={10}
                 {...register("instructions")}
                 />
                 </FormField>
