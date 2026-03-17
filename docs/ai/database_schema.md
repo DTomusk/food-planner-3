@@ -1,6 +1,6 @@
 # Database Schema
 
-This file documents the current state of the PostgreSQL schema as of migration `0016`. It is derived from all up-migrations in `api/migrations/` and is intended as a quick reference for AI agents. Do not hand-edit column definitions here — regenerate from migrations when the schema changes.
+This file documents the current state of the PostgreSQL schema as of migration `0017`. It is derived from all up-migrations in `api/migrations/` and is intended as a quick reference for AI agents. Do not hand-edit column definitions here — regenerate from migrations when the schema changes.
 
 ## Schemas
 
@@ -19,6 +19,30 @@ Registered user accounts.
 | `email`         | TEXT           | NOT NULL, UNIQUE             |
 | `password_hash` | TEXT           | NOT NULL                     |
 | `username`      | VARCHAR(255)   | NOT NULL, UNIQUE             |
+
+---
+
+## public.refresh_tokens
+
+Issued refresh tokens used for session continuation and token rotation.
+
+| Column                | Type        | Constraints                                                    |
+|-----------------------|-------------|----------------------------------------------------------------|
+| `id`                  | UUID        | PRIMARY KEY, DEFAULT gen_random_uuid()                         |
+| `user_id`             | UUID        | NOT NULL, FK → `users(id)` ON DELETE CASCADE                  |
+| `ip_address`          | TEXT        | NOT NULL                                                       |
+| `token_hash`          | TEXT        | NOT NULL                                                       |
+| `expires_at`          | TIMESTAMPTZ | NOT NULL                                                       |
+| `issued_at`           | TIMESTAMPTZ | NOT NULL, DEFAULT now()                                        |
+| `revoked_at`          | TIMESTAMPTZ | NULLABLE                                                       |
+| `family_id`           | UUID        | NOT NULL                                                       |
+| `replaced_by_token_id`| UUID        | NULLABLE, FK → `refresh_tokens(id)` ON DELETE SET NULL        |
+
+Notes:
+- Constraint `refresh_token_not_expired` enforces `expires_at > now()`.
+- `family_id` groups rotated tokens in the same refresh-token lineage.
+- Partial index `idx_refresh_tokens_valid` covers active rows (`revoked_at IS NULL`) by `token_hash`.
+- Additional indexes exist on `user_id` and `family_id`.
 
 ---
 
@@ -127,10 +151,12 @@ Notes:
 
 ```
 users
+  ├── refresh_tokens (user_id)
+  │     └── refresh_tokens (replaced_by_token_id)
   └── recipe_containers (user_id)
-        └── recipe_versions (recipe_id)
-              ├── recipe_sources (recipe_version_id)   [0..1 per version]
-              └── ingredient_usages (recipe_version_id) [0..N per version]
+    └── recipe_versions (recipe_id)
+      ├── recipe_sources (recipe_version_id)    [0..1 per version]
+      └── ingredient_usages (recipe_version_id) [0..N per version]
 
 reference.ingredients
   └── ingredient_usages (ingredient_id)
@@ -156,3 +182,4 @@ reference.ingredients
 | 0014      | Create `recipe_containers`; add `recipe_id` to versions        |
 | 0015      | Add `created_at` to `recipe_versions`                          |
 | 0016      | Add `version` integer to `recipe_versions`                     |
+| 0017      | Create `refresh_tokens`                                        |
