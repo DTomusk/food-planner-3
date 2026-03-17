@@ -146,13 +146,18 @@ func TestSignIn_Success(t *testing.T) {
 		require.NoError(t, err)
 
 		// Act
-		user, token, err := authService.SignIn(email, password, context.Background())
+		user, token, refreshToken, err := authService.SignIn(email, password, ipAddress, context.Background())
 
 		// Assert
 		require.NoError(t, err)
 		require.Equal(t, createdUser.ID, user.ID)
 		require.Equal(t, createdUser.Email, user.Email)
 		require.NotEmpty(t, token)
+		require.NotNil(t, refreshToken)
+		require.Equal(t, user.ID, refreshToken.UserID)
+		require.Equal(t, ipAddress, refreshToken.IPAddress)
+		require.False(t, refreshToken.IsRevoked)
+		require.Greater(t, refreshToken.ExpiresAt, time.Now().Unix())
 	})
 }
 
@@ -166,9 +171,10 @@ func TestSignIn_NoUser(t *testing.T) {
 
 		email := "test@example.com"
 		password := "wrongpassword"
+		ipAddress := "127.0.0.1"
 
 		// Act
-		_, _, err := authService.SignIn(email, password, context.Background())
+		_, _, _, err := authService.SignIn(email, password, ipAddress, context.Background())
 
 		// Assert
 		require.Error(t, err)
@@ -193,7 +199,7 @@ func TestSignIn_WrongPassword(t *testing.T) {
 
 		// Act
 		wrongPassword := "wrongpassword"
-		_, _, err = authService.SignIn(email, wrongPassword, context.Background())
+		_, _, _, err = authService.SignIn(email, wrongPassword, ipAddress, context.Background())
 
 		// Assert
 		require.Error(t, err)

@@ -28,13 +28,30 @@ func setupAuthMutationResolver(tx *sql.Tx) (*mutationResolver, *auth.AuthService
 	return &mutationResolver{resolver}, authService
 }
 
-func signupContext(w http.ResponseWriter) context.Context {
+func authContext(w http.ResponseWriter) context.Context {
 	ctx := context.WithValue(context.Background(), middleware.IPKey, "127.0.0.1")
 	if w != nil {
 		ctx = context.WithValue(ctx, middleware.ResponseWriterKey, w)
 	}
 
 	return ctx
+}
+
+func assertRefreshTokenCookie(t *testing.T, recorder *httptest.ResponseRecorder) {
+	t.Helper()
+
+	response := recorder.Result()
+	cookies := response.Cookies()
+	require.Len(t, cookies, 1)
+
+	cookie := cookies[0]
+	require.Equal(t, "refreshToken", cookie.Name)
+	require.NotEmpty(t, cookie.Value)
+	require.Equal(t, "/", cookie.Path)
+	require.True(t, cookie.HttpOnly)
+	require.False(t, cookie.Secure)
+	require.Equal(t, http.SameSiteLaxMode, cookie.SameSite)
+	require.Greater(t, cookie.MaxAge, 0)
 }
 
 func TestAuthResolver_SignUp(t *testing.T) {
@@ -48,7 +65,7 @@ func TestAuthResolver_SignUp(t *testing.T) {
 		}
 
 		// Act
-		ctx := signupContext(nil)
+		ctx := authContext(nil)
 		authPayload, err := mutationResolver.Signup(ctx, input)
 
 		// Assert
@@ -72,24 +89,12 @@ func TestAuthResolver_SignUp_SetsRefreshTokenCookie(t *testing.T) {
 		recorder := httptest.NewRecorder()
 
 		// Act
-		authPayload, err := mutationResolver.Signup(signupContext(recorder), input)
+		authPayload, err := mutationResolver.Signup(authContext(recorder), input)
 
 		// Assert
 		require.NoError(t, err)
 		require.NotNil(t, authPayload)
-
-		response := recorder.Result()
-		cookies := response.Cookies()
-		require.Len(t, cookies, 1)
-
-		cookie := cookies[0]
-		require.Equal(t, "refreshToken", cookie.Name)
-		require.NotEmpty(t, cookie.Value)
-		require.Equal(t, "/", cookie.Path)
-		require.True(t, cookie.HttpOnly)
-		require.False(t, cookie.Secure)
-		require.Equal(t, http.SameSiteLaxMode, cookie.SameSite)
-		require.Greater(t, cookie.MaxAge, 0)
+		assertRefreshTokenCookie(t, recorder)
 	})
 }
 
@@ -110,7 +115,7 @@ func TestAuthResolver_SignIn(t *testing.T) {
 		}
 
 		// Act
-		authPayload, err := mutationResolver.Signin(ctx, input)
+		authPayload, err := mutationResolver.Signin(authContext(nil), input)
 
 		// Assert
 		require.NoError(t, err)
@@ -118,5 +123,30 @@ func TestAuthResolver_SignIn(t *testing.T) {
 		require.Equal(t, createdUser.Username, authPayload.User.Username)
 		require.Equal(t, createdUser.ID.String(), authPayload.User.ID)
 		require.NotEmpty(t, authPayload.Jwt)
+	})
+}
+
+func TestAuthResolver_SignIn_SetsRefreshTokenCookie(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		// Arrange
+		mutationResolver, authService := setupAuthMutationResolver(tx)
+		ctx := context.Background()
+		ipAddress := "127.0.0.1"
+		_, _, _, err := authService.SignUp("signin-cookie@example.com", "securepassword", "signinuser", ipAddress, ctx)
+		require.NoError(t, err)
+
+		input := model.SignInInput{
+			Email:    "signin-cookie@example.com",
+			Password: "securepassword",
+		}
+		recorder := httptest.NewRecorder()
+
+		// Act
+		authPayload, err := mutationResolver.Signin(authContext(recorder), input)
+
+		// Assert
+		require.NoError(t, err)
+		require.NotNil(t, authPayload)
+		assertRefreshTokenCookie(t, recorder)
 	})
 }

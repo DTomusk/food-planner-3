@@ -58,21 +58,25 @@ func (s *AuthService) SignUp(email, password, username, ipAddress string, ctx co
 	return user, token, refresh_token, nil
 }
 
-func (s *AuthService) SignIn(email, password string, ctx context.Context) (*user.User, string, error) {
+func (s *AuthService) SignIn(email, password, ipAddress string, ctx context.Context) (*user.User, string, *refreshtokens.RefreshToken, error) {
 	user, err := s.userService.GetUserByEmail(email, ctx)
 	if err != nil {
-		return nil, "", err
+		return nil, "", nil, err
 	}
 	if user == nil {
-		return nil, "", ErrInvalidCredentials
+		return nil, "", nil, ErrInvalidCredentials
 	}
 	err = comparePasswordHash(password, user.PasswordHash)
 	if err != nil {
-		return nil, "", ErrInvalidCredentials
+		return nil, "", nil, ErrInvalidCredentials
 	}
 	token, err := s.jwtService.GenerateToken(user.ID.String())
 	if err != nil {
-		return nil, "", err
+		return nil, "", nil, err
 	}
-	return user, token, nil
+	refresh_token, err := s.refreshTokenService.NewSession(ctx, user.ID, ipAddress)
+	if err != nil {
+		return nil, "", nil, err
+	}
+	return user, token, refresh_token, nil
 }

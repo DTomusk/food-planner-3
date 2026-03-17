@@ -44,10 +44,28 @@ func (r *mutationResolver) Signup(ctx context.Context, input model.SignUpInput) 
 
 // Signin is the resolver for the signin field.
 func (r *mutationResolver) Signin(ctx context.Context, input model.SignInInput) (*model.AuthPayload, error) {
-	user, token, err := r.AuthService.SignIn(input.Email, input.Password, ctx)
+	ip, err := GetIPAddress(ctx)
 	if err != nil {
 		return nil, err
 	}
+	user, token, refreshToken, err := r.AuthService.SignIn(input.Email, input.Password, ip, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	w := GetResponseWriter(ctx)
+	if w != nil {
+		http.SetCookie(w, &http.Cookie{
+			Name:     "refreshToken",
+			Value:    refreshToken.Token,
+			MaxAge:   int(refreshToken.ExpiresAt - time.Now().Unix()),
+			Path:     "/",
+			HttpOnly: true,
+			Secure:   false, // make sure to set this to true in production
+			SameSite: http.SameSiteLaxMode,
+		})
+	}
+
 	return &model.AuthPayload{
 		User: mapUser(user),
 		Jwt:  token,
