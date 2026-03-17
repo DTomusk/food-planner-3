@@ -7,13 +7,15 @@ package resolver
 
 import (
 	"context"
-	"foodplanner/internal/gql/graph/middleware"
 	"foodplanner/internal/gql/graph/model"
 )
 
 // Signup is the resolver for the signup field.
 func (r *mutationResolver) Signup(ctx context.Context, input model.SignUpInput) (*model.AuthPayload, error) {
-	ip := ctx.Value(middleware.IPKey).(string)
+	ip, err := GetIPAddress(ctx)
+	if err != nil {
+		return nil, err
+	}
 	user, token, _, err := r.AuthService.SignUp(input.Email, input.Password, input.Username, ip, ctx)
 	if err != nil {
 		return nil, err

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"foodplanner/internal/auth"
 	"foodplanner/internal/gql/graph/errors"
+	"foodplanner/internal/gql/graph/middleware"
 	"foodplanner/internal/gql/graph/model"
 	"foodplanner/internal/recipe"
 	"foodplanner/internal/user"
@@ -113,4 +114,12 @@ func RequireAuth(ctx context.Context) (*auth.Claims, error) {
 		return nil, errors.NewUnauthenticatedError("user is not authenticated")
 	}
 	return claims, nil
+}
+
+func GetIPAddress(ctx context.Context) (string, error) {
+	ip, ok := ctx.Value(middleware.IPKey).(string)
+	if !ok {
+		return "", errors.NewInternalError("failed to retrieve IP address from context")
+	}
+	return ip, nil
 }
