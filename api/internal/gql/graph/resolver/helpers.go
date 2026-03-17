@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"foodplanner/internal/auth"
 	"foodplanner/internal/gql/graph/errors"
-	"foodplanner/internal/gql/graph/middleware"
 	"foodplanner/internal/gql/graph/model"
+	"foodplanner/internal/middleware"
 	"foodplanner/internal/recipe"
 	"foodplanner/internal/user"
+	"net/http"
 )
 
 func mapUsers(users []*user.User) []*model.User {
@@ -122,4 +123,9 @@ func GetIPAddress(ctx context.Context) (string, error) {
 		return "", errors.NewInternalError("failed to retrieve IP address from context")
 	}
 	return ip, nil
+}
+
+func GetResponseWriter(ctx context.Context) http.ResponseWriter {
+	w, _ := ctx.Value(middleware.ResponseWriterKey).(http.ResponseWriter)
+	return w
 }

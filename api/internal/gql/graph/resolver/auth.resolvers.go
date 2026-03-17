@@ -8,6 +8,8 @@ package resolver
 import (
 	"context"
 	"foodplanner/internal/gql/graph/model"
+	"net/http"
+	"time"
 )
 
 // Signup is the resolver for the signup field.
@@ -16,10 +18,24 @@ func (r *mutationResolver) Signup(ctx context.Context, input model.SignUpInput) 
 	if err != nil {
 		return nil, err
 	}
-	user, token, _, err := r.AuthService.SignUp(input.Email, input.Password, input.Username, ip, ctx)
+	user, token, refreshToken, err := r.AuthService.SignUp(input.Email, input.Password, input.Username, ip, ctx)
 	if err != nil {
 		return nil, err
 	}
+
+	w := GetResponseWriter(ctx)
+	if w != nil {
+		http.SetCookie(w, &http.Cookie{
+			Name:     "refreshToken",
+			Value:    refreshToken.Token,
+			MaxAge:   int(refreshToken.ExpiresAt - time.Now().Unix()),
+			Path:     "/",
+			HttpOnly: true,
+			Secure:   false, // make sure to set this to true in production
+			SameSite: http.SameSiteLaxMode,
+		})
+	}
+
 	return &model.AuthPayload{
 		User: mapUser(user),
 		Jwt:  token,
