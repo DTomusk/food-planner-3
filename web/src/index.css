@@ -29,3 +29,16 @@
     /* Layout colours */
     --color-background: #f3e7c7;
 }
+
+@layer utilities {
+  .focus-ring {
+    @apply outline-none transition;
+  }
+  .focus-ring:focus-visible {
+    @apply outline-none ring-3 ring-primary-600/30 transition;
+  }
+
+  .focus-ring-error:focus-visible {
+    @apply ring-red-500/30;
+  }
+}
