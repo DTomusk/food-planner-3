@@ -14,31 +14,69 @@
     --color-primary-900: #254720;
     --color-primary-950: #10260d;
 
-    --color-secondary-50: #fdf9ed;
-    --color-secondary-100: #f8edcd;
-    --color-secondary-200: #f0db97;
-    --color-secondary-300: #e8c361;
-    --color-secondary-400: #e2ae3d;
-    --color-secondary-500: #da9126;
-    --color-secondary-600: #c5721f;
-    --color-secondary-700: #a0511d;
-    --color-secondary-800: #83401d;
-    --color-secondary-900: #6c351b;
-    --color-secondary-950: #3d1a0b;
+    --color-secondary-50: #fff8eb;
+    --color-secondary-100: #fdeac8;
+    --color-secondary-200: #fcd28b;
+    --color-secondary-300: #fab145;
+    --color-secondary-400: #f99a26;
+    --color-secondary-500: #f3760d;
+    --color-secondary-600: #d75408;
+    --color-secondary-700: #b2370b;
+    --color-secondary-800: #912a0f;
+    --color-secondary-900: #772410;
+    --color-secondary-950: #440f04;
 
     /* Layout colours */
     --color-background: #f3e7c7;
 }
 
 @layer utilities {
-  .focus-ring {
-    @apply outline-none transition;
-  }
-  .focus-ring:focus-visible {
-    @apply outline-none ring-3 ring-primary-600/30 transition;
-  }
+    /* Focus ring utilities */
+    .focus-ring {
+        @apply outline-none transition;
+    }
+    .focus-ring:focus-visible {
+        @apply outline-none ring-3 ring-primary-600/30 transition;
+    }
 
-  .focus-ring-error:focus-visible {
-    @apply ring-red-500/30;
-  }
+    .focus-ring-error:focus-visible {
+        @apply ring-red-500/30;
+    }
+
+    /* Button variants */
+    .btn {
+        @apply px-4 py-2 text-sm font-medium cursor-pointer rounded transition;
+    }
+
+    .btn-icon {
+        @apply p-2 text-sm font-medium cursor-pointer rounded transition;
+    }
+
+    .btn-primary {
+        @apply bg-primary-600 text-white hover:bg-primary-700;
+    }
+
+    .btn-secondary {
+        @apply bg-secondary-600 text-white hover:bg-secondary-700;
+    }
+
+    .btn-danger {
+        @apply bg-red-500 text-white hover:bg-red-600;
+    }
+
+    .btn-primary-outline {
+        @apply border border-primary-600 text-primary-600 hover:bg-primary-100 hover:text-primary-700;
+    }
+
+    .btn-secondary-outline {
+        @apply border border-secondary-500 text-secondary-500 hover:bg-secondary-100 hover:text-secondary-700;
+    }
+
+    .btn-danger-outline {
+        @apply border border-red-500 text-red-500 hover:bg-red-100 hover:text-red-700;
+    }
+
+    .btn-disabled {
+        @apply opacity-50 cursor-not-allowed;
+    }
 }

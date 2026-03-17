@@ -10,7 +10,7 @@ export default function Page({children, toolbarLeft, toolbarActions}: PageProps)
     return (
         <>
             {(toolbarLeft || toolbarActions) && (
-                <div className="sticky top-0 z-10 border-b border-black bg-white/90 backdrop-blur px-6 py-3">
+                <div className="sticky top-0 z-10 border-b border-black bg-white/80 backdrop-blur px-6 py-3">
                     <Inline justify="between" className="w-full">
                         <div>{toolbarLeft}</div>
                     <Inline justify="end" align="center">{toolbarActions}</Inline>
