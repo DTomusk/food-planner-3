@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"foodplanner/internal/auth"
+	refreshtokens "foodplanner/internal/auth/refresh_tokens"
 	"foodplanner/internal/gql/graph/model"
 	"foodplanner/internal/testutil"
 	"foodplanner/internal/user"
@@ -17,7 +18,8 @@ func TestAuthResolver_SignUp(t *testing.T) {
 		// Arrange
 		userService := user.NewUserService(tx, user.NewUserRepo())
 		jwtService := auth.NewJWTService("testsecret", 15)
-		authService := auth.NewAuthService(tx, userService, jwtService)
+		refreshTokenService := refreshtokens.NewRefreshTokenService(tx, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
+		authService := auth.NewAuthService(tx, userService, jwtService, refreshTokenService)
 		r := &Resolver{
 			AuthService: authService,
 		}
@@ -46,7 +48,8 @@ func TestAuthResolver_SignIn(t *testing.T) {
 		// Arrange
 		userService := user.NewUserService(tx, user.NewUserRepo())
 		jwtService := auth.NewJWTService("testsecret", 15)
-		authService := auth.NewAuthService(tx, userService, jwtService)
+		refreshTokenService := refreshtokens.NewRefreshTokenService(tx, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
+		authService := auth.NewAuthService(tx, userService, jwtService, refreshTokenService)
 		r := &Resolver{
 			AuthService: authService,
 		}
@@ -54,7 +57,8 @@ func TestAuthResolver_SignIn(t *testing.T) {
 
 		// First, create a user to sign in
 		ctx := context.Background()
-		createdUser, _, err := authService.SignUp("test@example.com", "securepassword", "testuser", ctx)
+		ipAddress := "127.0.0.1"
+		createdUser, _, _, err := authService.SignUp("test@example.com", "securepassword", "testuser", ipAddress, ctx)
 		require.NoError(t, err)
 
 		input := model.SignInInput{

@@ -9,14 +9,16 @@ import (
 )
 
 type Config struct {
-	DatabaseURL               string
-	ServerPort                string
-	CorsAllowedOrigin         string
-	JWTSecret                 string
-	JWTExpirationMinutes      int
-	IngredientDataFilePath    string
-	IngredientUpsertBatchSize int
-	RecipeRetentionDays       int
+	DatabaseURL                string
+	ServerPort                 string
+	CorsAllowedOrigin          string
+	JWTSecret                  string
+	JWTExpirationMinutes       int
+	IngredientDataFilePath     string
+	IngredientUpsertBatchSize  int
+	RecipeRetentionDays        int
+	RefreshTokenSecret         string
+	RefreshTokenExpirationDays int
 }
 
 func Load() (*Config, error) {
@@ -79,14 +81,30 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("invalid RECIPE_RETENTION_DAYS: %v", err)
 	}
 
+	refreshTokenSecret := os.Getenv("REFRESH_TOKEN_SECRET")
+	if refreshTokenSecret == "" {
+		return nil, fmt.Errorf("REFRESH_TOKEN_SECRET not set in environment")
+	}
+
+	refreshTokenExpirationDaysStr := os.Getenv("REFRESH_TOKEN_EXPIRATION_DAYS")
+	if refreshTokenExpirationDaysStr == "" {
+		return nil, fmt.Errorf("REFRESH_TOKEN_EXPIRATION_DAYS not set in environment")
+	}
+	refreshTokenExpirationDays, err := strconv.Atoi(refreshTokenExpirationDaysStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid REFRESH_TOKEN_EXPIRATION_DAYS: %v", err)
+	}
+
 	return &Config{
-		DatabaseURL:               db_url,
-		ServerPort:                port,
-		CorsAllowedOrigin:         corsOrigin,
-		JWTSecret:                 jwtSecret,
-		JWTExpirationMinutes:      jwtExpirationMinutes,
-		IngredientDataFilePath:    ingredientDataFilePath,
-		IngredientUpsertBatchSize: ingredientUpsertBatchSize,
-		RecipeRetentionDays:       recipeRetentionDays,
+		DatabaseURL:                db_url,
+		ServerPort:                 port,
+		CorsAllowedOrigin:          corsOrigin,
+		JWTSecret:                  jwtSecret,
+		JWTExpirationMinutes:       jwtExpirationMinutes,
+		IngredientDataFilePath:     ingredientDataFilePath,
+		IngredientUpsertBatchSize:  ingredientUpsertBatchSize,
+		RecipeRetentionDays:        recipeRetentionDays,
+		RefreshTokenSecret:         refreshTokenSecret,
+		RefreshTokenExpirationDays: refreshTokenExpirationDays,
 	}, nil
 }

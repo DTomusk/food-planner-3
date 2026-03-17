@@ -3,9 +3,11 @@ package auth
 import (
 	"context"
 	"database/sql"
+	refreshtokens "foodplanner/internal/auth/refresh_tokens"
 	"foodplanner/internal/testutil"
 	"foodplanner/internal/user"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -15,14 +17,16 @@ func TestSignUp_Success(t *testing.T) {
 		// Arrange
 		userService := user.NewUserService(tx, user.NewUserRepo())
 		jwtService := NewJWTService("testsecret", 15)
-		authService := NewAuthService(tx, userService, jwtService)
+		refreshTokenService := refreshtokens.NewRefreshTokenService(tx, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
+		authService := NewAuthService(tx, userService, jwtService, refreshTokenService)
 
 		email := "blah@test.com"
 		password := "securepassword"
 		username := "testuser"
+		ipAddress := "127.0.0.1"
 
 		// Act
-		user, token, err := authService.SignUp(email, password, username, context.Background())
+		user, token, refreshToken, err := authService.SignUp(email, password, username, ipAddress, context.Background())
 
 		// Assert
 		require.NoError(t, err)
@@ -31,6 +35,11 @@ func TestSignUp_Success(t *testing.T) {
 		require.NotEqual(t, "securepassword", user.PasswordHash)
 		require.Equal(t, username, user.Username)
 		require.NotEmpty(t, token)
+		require.NotNil(t, refreshToken)
+		require.Equal(t, user.ID, refreshToken.UserID)
+		require.Equal(t, ipAddress, refreshToken.IPAddress)
+		require.False(t, refreshToken.IsRevoked)
+		require.Greater(t, refreshToken.ExpiresAt, time.Now().Unix())
 	})
 }
 
@@ -39,13 +48,15 @@ func TestSignup_InvalidEmail(t *testing.T) {
 		// Arrange
 		userService := user.NewUserService(tx, user.NewUserRepo())
 		jwtService := NewJWTService("testsecret", 15)
-		authService := NewAuthService(tx, userService, jwtService)
+		refreshTokenService := refreshtokens.NewRefreshTokenService(tx, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
+		authService := NewAuthService(tx, userService, jwtService, refreshTokenService)
 		invalidEmail := "invalid-email"
 		password := "securepassword"
 		username := "testuser"
+		ipAddress := "127.0.0.1"
 
 		// Act
-		_, _, err := authService.SignUp(invalidEmail, password, username, context.Background())
+		_, _, _, err := authService.SignUp(invalidEmail, password, username, ipAddress, context.Background())
 
 		// Assert
 		require.Error(t, err)
@@ -58,12 +69,14 @@ func TestSignup_ShortPassword(t *testing.T) {
 		// Arrange
 		userService := user.NewUserService(tx, user.NewUserRepo())
 		jwtService := NewJWTService("testsecret", 15)
-		authService := NewAuthService(tx, userService, jwtService)
+		refreshTokenService := refreshtokens.NewRefreshTokenService(tx, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
+		authService := NewAuthService(tx, userService, jwtService, refreshTokenService)
 		email := "test@fun.com"
 		invalidPassword := "123"
+		ipAddress := "127.0.0.1"
 
 		// Act
-		_, _, err := authService.SignUp(email, invalidPassword, "testuser", context.Background())
+		_, _, _, err := authService.SignUp(email, invalidPassword, "testuser", ipAddress, context.Background())
 
 		// Assert
 		require.Error(t, err)
@@ -76,13 +89,15 @@ func TestSignup_LongPassword(t *testing.T) {
 		// Arrange
 		userService := user.NewUserService(tx, user.NewUserRepo())
 		jwtService := NewJWTService("testsecret", 15)
-		authService := NewAuthService(tx, userService, jwtService)
+		refreshTokenService := refreshtokens.NewRefreshTokenService(tx, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
+		authService := NewAuthService(tx, userService, jwtService, refreshTokenService)
 		email := "blah@baz.com"
 		// Note: password length limit is hardcoded 64 characters
 		invalidPassword := "12345678901234567890123456789012345678901234567890123456789012345"
+		ipAddress := "127.0.0.1"
 
 		// Act
-		_, _, err := authService.SignUp(email, invalidPassword, "testuser", context.Background())
+		_, _, _, err := authService.SignUp(email, invalidPassword, "testuser", ipAddress, context.Background())
 
 		// Assert
 		require.Error(t, err)
@@ -95,17 +110,19 @@ func TestSignUp_DuplicateEmail(t *testing.T) {
 		// Arrange
 		userService := user.NewUserService(tx, user.NewUserRepo())
 		jwtService := NewJWTService("testsecret", 15)
-		authService := NewAuthService(tx, userService, jwtService)
+		refreshTokenService := refreshtokens.NewRefreshTokenService(tx, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
+		authService := NewAuthService(tx, userService, jwtService, refreshTokenService)
 
 		email := "blah@test.com"
 		password := "securepassword"
 		username := "testuser"
+		ipAddress := "127.0.0.1"
 
-		_, _, err := authService.SignUp(email, password, username, context.Background())
+		_, _, _, err := authService.SignUp(email, password, username, ipAddress, context.Background())
 		require.NoError(t, err)
 
 		// Act
-		_, _, err = authService.SignUp(email, password, username, context.Background())
+		_, _, _, err = authService.SignUp(email, password, username, ipAddress, context.Background())
 		// Assert
 		require.Error(t, err)
 		require.Equal(t, ErrEmailAlreadyInUse, err)
@@ -117,13 +134,15 @@ func TestSignIn_Success(t *testing.T) {
 		// Arrange
 		userService := user.NewUserService(tx, user.NewUserRepo())
 		jwtService := NewJWTService("testsecret", 15)
-		authService := NewAuthService(tx, userService, jwtService)
+		refreshTokenService := refreshtokens.NewRefreshTokenService(tx, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
+		authService := NewAuthService(tx, userService, jwtService, refreshTokenService)
+		ipAddress := "127.0.0.1"
 
 		email := "test@example.com"
 		password := "securepassword"
 		username := "testuser"
 
-		createdUser, _, err := authService.SignUp(email, password, username, context.Background())
+		createdUser, _, _, err := authService.SignUp(email, password, username, ipAddress, context.Background())
 		require.NoError(t, err)
 
 		// Act
@@ -142,7 +161,8 @@ func TestSignIn_NoUser(t *testing.T) {
 		// Arrange
 		userService := user.NewUserService(tx, user.NewUserRepo())
 		jwtService := NewJWTService("testsecret", 15)
-		authService := NewAuthService(tx, userService, jwtService)
+		refreshTokenService := refreshtokens.NewRefreshTokenService(tx, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
+		authService := NewAuthService(tx, userService, jwtService, refreshTokenService)
 
 		email := "test@example.com"
 		password := "wrongpassword"
@@ -161,12 +181,14 @@ func TestSignIn_WrongPassword(t *testing.T) {
 		// Arrange
 		userService := user.NewUserService(tx, user.NewUserRepo())
 		jwtService := NewJWTService("testsecret", 15)
-		authService := NewAuthService(tx, userService, jwtService)
+		refreshTokenService := refreshtokens.NewRefreshTokenService(tx, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
+		authService := NewAuthService(tx, userService, jwtService, refreshTokenService)
 		email := "example@test.com"
 		correctPassword := "correctpassword"
 		username := "testuser"
+		ipAddress := "127.0.0.1"
 
-		_, _, err := authService.SignUp(email, correctPassword, username, context.Background())
+		_, _, _, err := authService.SignUp(email, correctPassword, username, ipAddress, context.Background())
 		require.NoError(t, err)
 
 		// Act

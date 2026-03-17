@@ -3,10 +3,12 @@ package main
 import (
 	"database/sql"
 	"foodplanner/internal/auth"
+	refreshtokens "foodplanner/internal/auth/refresh_tokens"
 	"foodplanner/internal/config"
 	"foodplanner/internal/db"
 	"foodplanner/internal/gql/graph"
 	"foodplanner/internal/gql/graph/directive"
+	"foodplanner/internal/gql/graph/middleware"
 	"foodplanner/internal/gql/graph/resolver"
 	"foodplanner/internal/ingredient"
 	"foodplanner/internal/recipe"
@@ -57,7 +59,8 @@ func main() {
 
 	userService := user.NewUserService(txRunner.DB(), user.NewUserRepo())
 	jwtService := auth.NewJWTService(cfg.JWTSecret, cfg.JWTExpirationMinutes)
-	authService := auth.NewAuthService(txRunner.DB(), userService, jwtService)
+	refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner.DB(), refreshtokens.NewRefreshTokenRepo(), cfg.RefreshTokenSecret, cfg.RefreshTokenExpirationDays)
+	authService := auth.NewAuthService(txRunner.DB(), userService, jwtService, refreshTokenService)
 
 	srv := handler.New(
 		graph.NewExecutableSchema(
@@ -89,7 +92,8 @@ func main() {
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
 
 	authMiddleware := auth.Middleware(jwtService)
-	http.Handle("/query", authMiddleware(srv))
+	ipMiddleware := middleware.IPMiddleware
+	http.Handle("/query", ipMiddleware(authMiddleware(srv)))
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{
