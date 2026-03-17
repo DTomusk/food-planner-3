@@ -1,7 +1,10 @@
 package resolver
 
 import (
+	"context"
 	"fmt"
+	"foodplanner/internal/auth"
+	"foodplanner/internal/gql/graph/errors"
 	"foodplanner/internal/gql/graph/model"
 	"foodplanner/internal/recipe"
 	"foodplanner/internal/user"
@@ -91,6 +94,7 @@ func toCreateRecipeRequest(input *model.CreateRecipeInput, userID string) (recip
 		Source:      recipeSourceRequest,
 	}, nil
 }
+
 func toIngredientUsageRequests(usages []*model.CreateIngredientUsageInput) []recipe.CreateIngredientUsageRequest {
 	ingredientUsageRequests := make([]recipe.CreateIngredientUsageRequest, len(usages))
 	for i, usage := range usages {
@@ -101,4 +105,12 @@ func toIngredientUsageRequests(usages []*model.CreateIngredientUsageInput) []rec
 		}
 	}
 	return ingredientUsageRequests
+}
+
+func RequireAuth(ctx context.Context) (*auth.Claims, error) {
+	claims, ok := auth.ClaimsFromContext(ctx)
+	if !ok {
+		return nil, errors.NewUnauthenticatedError("user is not authenticated")
+	}
+	return claims, nil
 }
