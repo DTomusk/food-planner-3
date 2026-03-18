@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"foodplanner/internal/db"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -19,8 +20,8 @@ type refreshTokenRecord struct {
 	UserID    uuid.UUID
 	IPAddress string
 	TokenHash string
-	ExpiresAt int64
-	RevokedAt sql.NullInt64
+	ExpiresAt time.Time
+	RevokedAt sql.NullTime
 	FamilyID  uuid.UUID
 }
 
@@ -69,7 +70,7 @@ func (r *refreshTokenRepo) getByHashedToken(ctx context.Context, db db.DBTX, has
 		UserID:    tokenRecord.UserID,
 		IPAddress: tokenRecord.IPAddress,
 		TokenHash: tokenRecord.TokenHash,
-		ExpiresAt: tokenRecord.ExpiresAt,
+		ExpiresAt: tokenRecord.ExpiresAt.Unix(),
 		IsRevoked: tokenRecord.RevokedAt.Valid,
 		FamilyID:  tokenRecord.FamilyID,
 	}
