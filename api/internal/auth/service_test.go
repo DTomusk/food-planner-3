@@ -214,3 +214,91 @@ func TestSignIn_WrongPassword(t *testing.T) {
 		require.Equal(t, ErrInvalidCredentials, err)
 	})
 }
+
+func TestRefresh_Success(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		// Arrange
+		txRunner := testutil.NewTestTxRunner(tx)
+		userService := user.NewUserService(tx, user.NewUserRepo())
+		jwtService := NewJWTService("testsecret", 15)
+		refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
+		authService := NewAuthService(tx, userService, jwtService, refreshTokenService)
+
+		email := "refresh-success@example.com"
+		password := "securepassword"
+		username := "testuser"
+		signInIPAddress := "127.0.0.1"
+		refreshIPAddress := "10.0.0.1"
+
+		createdUser, _, initialRefreshToken, err := authService.SignUp(email, password, username, signInIPAddress, context.Background())
+		require.NoError(t, err)
+
+		// Act
+		user, jwt, refreshedToken, err := authService.Refresh(context.Background(), initialRefreshToken.Token, refreshIPAddress)
+
+		// Assert
+		require.NoError(t, err)
+		require.NotNil(t, user)
+		require.Equal(t, createdUser.ID, user.ID)
+		require.Equal(t, createdUser.Email, user.Email)
+		require.NotEmpty(t, jwt)
+		require.NotNil(t, refreshedToken)
+		require.Equal(t, user.ID, refreshedToken.UserID)
+		require.Equal(t, refreshIPAddress, refreshedToken.IPAddress)
+		require.Equal(t, initialRefreshToken.FamilyID, refreshedToken.FamilyID)
+		require.NotEqual(t, initialRefreshToken.ID, refreshedToken.ID)
+		require.False(t, refreshedToken.IsRevoked)
+		require.Greater(t, refreshedToken.ExpiresAt, time.Now().Unix())
+	})
+}
+
+func TestRefresh_InvalidToken(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		// Arrange
+		txRunner := testutil.NewTestTxRunner(tx)
+		userService := user.NewUserService(tx, user.NewUserRepo())
+		jwtService := NewJWTService("testsecret", 15)
+		refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
+		authService := NewAuthService(tx, userService, jwtService, refreshTokenService)
+
+		// Act
+		user, jwt, refreshedToken, err := authService.Refresh(context.Background(), "missing-refresh-token", "127.0.0.1")
+
+		// Assert
+		require.ErrorIs(t, err, refreshtokens.ErrInvalidRefreshToken)
+		require.Nil(t, user)
+		require.Empty(t, jwt)
+		require.Nil(t, refreshedToken)
+	})
+}
+
+func TestRefresh_ReusedTokenFails(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		// Arrange
+		txRunner := testutil.NewTestTxRunner(tx)
+		userService := user.NewUserService(tx, user.NewUserRepo())
+		jwtService := NewJWTService("testsecret", 15)
+		refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
+		authService := NewAuthService(tx, userService, jwtService, refreshTokenService)
+
+		email := "refresh-reuse@example.com"
+		password := "securepassword"
+		username := "testuser"
+		ipAddress := "127.0.0.1"
+
+		_, _, initialRefreshToken, err := authService.SignUp(email, password, username, ipAddress, context.Background())
+		require.NoError(t, err)
+
+		_, _, _, err = authService.Refresh(context.Background(), initialRefreshToken.Token, "10.0.0.1")
+		require.NoError(t, err)
+
+		// Act
+		user, jwt, refreshedToken, err := authService.Refresh(context.Background(), initialRefreshToken.Token, "10.0.0.2")
+
+		// Assert
+		require.ErrorIs(t, err, refreshtokens.ErrInvalidRefreshToken)
+		require.Nil(t, user)
+		require.Empty(t, jwt)
+		require.Nil(t, refreshedToken)
+	})
+}
