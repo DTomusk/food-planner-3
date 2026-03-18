@@ -137,6 +137,110 @@ func TestGetByHashedToken_ReturnsRevokedTokenAsRevoked(t *testing.T) {
 	})
 }
 
+func TestRevokeFamily_RevokesOnlyActiveTokensInFamily(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		// Arrange
+		ctx := context.Background()
+		repo := NewRefreshTokenRepo()
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		familyID := uuid.New()
+		otherFamilyID := uuid.New()
+
+		activeInFamily := newTestRefreshToken(testUser.ID, "active-in-family-hash")
+		activeInFamily.FamilyID = familyID
+		err = repo.saveNewToken(ctx, tx, activeInFamily)
+		require.NoError(t, err)
+
+		alreadyRevokedInFamily := newTestRefreshToken(testUser.ID, "revoked-in-family-hash")
+		alreadyRevokedInFamily.FamilyID = familyID
+		err = insertRevokedRefreshToken(ctx, tx, alreadyRevokedInFamily)
+		require.NoError(t, err)
+
+		activeOutsideFamily := newTestRefreshToken(testUser.ID, "active-outside-family-hash")
+		activeOutsideFamily.FamilyID = otherFamilyID
+		err = repo.saveNewToken(ctx, tx, activeOutsideFamily)
+		require.NoError(t, err)
+
+		revokedBefore, err := getRevokedAtByTokenID(ctx, tx, alreadyRevokedInFamily.ID)
+		require.NoError(t, err)
+		require.True(t, revokedBefore.Valid)
+
+		// Act
+		err = repo.revokeFamily(ctx, tx, familyID, "127.0.0.1")
+
+		// Assert
+		require.NoError(t, err)
+
+		activeInFamilyRevokedAt, err := getRevokedAtByTokenID(ctx, tx, activeInFamily.ID)
+		require.NoError(t, err)
+		require.True(t, activeInFamilyRevokedAt.Valid)
+
+		alreadyRevokedAfter, err := getRevokedAtByTokenID(ctx, tx, alreadyRevokedInFamily.ID)
+		require.NoError(t, err)
+		require.True(t, alreadyRevokedAfter.Valid)
+		require.Equal(t, revokedBefore.Time.Unix(), alreadyRevokedAfter.Time.Unix())
+
+		outsideFamilyRevokedAt, err := getRevokedAtByTokenID(ctx, tx, activeOutsideFamily.ID)
+		require.NoError(t, err)
+		require.False(t, outsideFamilyRevokedAt.Valid)
+	})
+}
+
+func TestSetReplacedBy_SetsReplacedByTokenID(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		// Arrange
+		ctx := context.Background()
+		repo := NewRefreshTokenRepo()
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		oldToken := newTestRefreshToken(testUser.ID, "old-token-hash")
+		replacementToken := newTestRefreshToken(testUser.ID, "replacement-token-hash")
+		replacementToken.FamilyID = oldToken.FamilyID
+
+		err = repo.saveNewToken(ctx, tx, oldToken)
+		require.NoError(t, err)
+
+		err = repo.saveNewToken(ctx, tx, replacementToken)
+		require.NoError(t, err)
+
+		// Act
+		err = repo.setReplacedBy(ctx, tx, oldToken.ID, replacementToken.ID)
+
+		// Assert
+		require.NoError(t, err)
+
+		replacedByTokenID, err := getReplacedByTokenID(ctx, tx, oldToken.ID)
+		require.NoError(t, err)
+		require.True(t, replacedByTokenID.Valid)
+		require.Equal(t, replacementToken.ID.String(), replacedByTokenID.String)
+	})
+}
+
+func getRevokedAtByTokenID(ctx context.Context, tx *sql.Tx, tokenID uuid.UUID) (sql.NullTime, error) {
+	var revokedAt sql.NullTime
+	err := tx.QueryRowContext(ctx, `
+		SELECT revoked_at
+		FROM refresh_tokens
+		WHERE id = $1
+	`, tokenID).Scan(&revokedAt)
+	return revokedAt, err
+}
+
+func getReplacedByTokenID(ctx context.Context, tx *sql.Tx, tokenID uuid.UUID) (sql.NullString, error) {
+	var replacedByTokenID sql.NullString
+	err := tx.QueryRowContext(ctx, `
+		SELECT replaced_by_token_id::text
+		FROM refresh_tokens
+		WHERE id = $1
+	`, tokenID).Scan(&replacedByTokenID)
+	return replacedByTokenID, err
+}
+
 func newTestRefreshToken(userID uuid.UUID, tokenHash string) *RefreshToken {
 	return &RefreshToken{
 		ID:           uuid.New(),

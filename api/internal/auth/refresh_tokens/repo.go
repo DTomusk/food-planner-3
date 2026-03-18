@@ -90,7 +90,7 @@ func (r *refreshTokenRepo) revokeFamily(ctx context.Context, db db.DBTX, familyI
 func (r *refreshTokenRepo) setReplacedBy(ctx context.Context, db db.DBTX, tokenID, replacedByID uuid.UUID) error {
 	query := `
 	UPDATE refresh_tokens
-	SET replaced_by_id = $1
+	SET replaced_by_token_id = $1
 	WHERE id = $2
 	`
 	_, err := db.ExecContext(ctx, query, replacedByID, tokenID)
