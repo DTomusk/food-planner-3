@@ -28,7 +28,7 @@ func (r *mutationResolver) Signup(ctx context.Context, input model.SignUpInput) 
 	w := GetResponseWriter(ctx)
 	if w != nil {
 		http.SetCookie(w, &http.Cookie{
-			Name:     "refreshToken",
+			Name:     refreshTokenCookieName,
 			Value:    refreshToken.Token,
 			MaxAge:   int(refreshToken.ExpiresAt - time.Now().Unix()),
 			Path:     "/",
@@ -58,7 +58,7 @@ func (r *mutationResolver) Signin(ctx context.Context, input model.SignInInput) 
 	w := GetResponseWriter(ctx)
 	if w != nil {
 		http.SetCookie(w, &http.Cookie{
-			Name:     "refreshToken",
+			Name:     refreshTokenCookieName,
 			Value:    refreshToken.Token,
 			MaxAge:   int(refreshToken.ExpiresAt - time.Now().Unix()),
 			Path:     "/",
@@ -81,7 +81,7 @@ func (r *mutationResolver) Refresh(ctx context.Context) (*model.AuthPayload, err
 		return nil, fmt.Errorf("no request in context")
 	}
 
-	cookie, err := req.Cookie("refreshToken")
+	cookie, err := req.Cookie(refreshTokenCookieName)
 	if err != nil {
 		if err == http.ErrNoCookie {
 			return nil, errors.NewUnauthenticatedError("No auth cookie found")
@@ -106,7 +106,7 @@ func (r *mutationResolver) Refresh(ctx context.Context) (*model.AuthPayload, err
 	w := GetResponseWriter(ctx)
 	if w != nil {
 		http.SetCookie(w, &http.Cookie{
-			Name:     "refreshToken",
+			Name:     refreshTokenCookieName,
 			Value:    refresh_token.Token,
 			MaxAge:   int(refresh_token.ExpiresAt - time.Now().Unix()),
 			Path:     "/",
