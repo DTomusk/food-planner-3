@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"foodplanner/internal/db"
 	"foodplanner/internal/logging"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -41,6 +42,21 @@ func (s *RefreshTokenService) NewSession(ctx context.Context, userID uuid.UUID, 
 	}
 
 	return refreshToken, nil
+}
+
+func (s *RefreshTokenService) RefreshSession(ctx context.Context, tokenString, ipAddress string) (*RefreshToken, error) {
+	logger := logging.FromContext(ctx)
+	hashedToken := s.hasher.hash(tokenString)
+	existingToken, err := s.repo.getByHashedToken(ctx, s.db, hashedToken)
+	if err != nil {
+		logger.Error("Failed to fetch refresh token", "error", err)
+		return nil, err
+	}
+	if existingToken == nil || existingToken.IsRevoked || existingToken.ExpiresAt < time.Now().Unix() {
+		return nil, ErrInvalidRefreshToken
+	}
+
+	return nil, nil
 }
 
 func (s *RefreshTokenService) createRefreshToken(userID uuid.UUID, ipAddress string) (*RefreshToken, error) {

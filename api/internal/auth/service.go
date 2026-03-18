@@ -82,5 +82,29 @@ func (s *AuthService) SignIn(email, password, ipAddress string, ctx context.Cont
 }
 
 func (s *AuthService) Refresh(ctx context.Context, refreshToken, ipAddress string) (*user.User, string, *refreshtokens.RefreshToken, error) {
-	return nil, "", nil, nil
+	// Hash refresh token
+	// Generate new refresh token that's a child of the previous token, and revoke old one in DB (rotate)
+	// Fetch refresh token from DB with hash
+	// If not found, revoked or expired, return error
+	newToken, err := s.refreshTokenService.RefreshSession(ctx, refreshToken, ipAddress)
+	if err != nil {
+		return nil, "", nil, err
+	}
+
+	user, err := s.userService.GetUserByID(ctx, newToken.UserID)
+	if err != nil {
+		return nil, "", nil, err
+	}
+	if user == nil {
+		return nil, "", nil, ErrInvalidCredentials
+	}
+
+	// Fetch user from DB
+	// If user not found, return error
+	// Generate new JWT token
+	jwt, err := s.jwtService.GenerateToken(user.ID.String())
+	if err != nil {
+		return nil, "", nil, err
+	}
+	return user, jwt, newToken, nil
 }

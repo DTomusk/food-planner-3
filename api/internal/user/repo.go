@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"foodplanner/internal/db"
+
+	"github.com/google/uuid"
 )
 
 type userRepo struct{}
@@ -18,7 +20,7 @@ func NewUserRepo() *userRepo {
 	return &userRepo{}
 }
 
-func (r *userRepo) CreateUser(user *User, ctx context.Context, db db.DBTX) (*User, error) {
+func (r *userRepo) createUser(user *User, ctx context.Context, db db.DBTX) (*User, error) {
 	var newUser User
 	query := `INSERT INTO users (id, email, password_hash, username) VALUES ($1, $2, $3, $4) RETURNING id, email, password_hash, username`
 	err := db.QueryRowContext(ctx, query, user.ID, user.Email, user.PasswordHash, user.Username).Scan(&newUser.ID, &newUser.Email, &newUser.PasswordHash, &newUser.Username)
@@ -29,7 +31,7 @@ func (r *userRepo) CreateUser(user *User, ctx context.Context, db db.DBTX) (*Use
 }
 
 // Do not return error if no rows
-func (r *userRepo) GetUserByEmail(email string, ctx context.Context, db db.DBTX) (*User, error) {
+func (r *userRepo) getUserByEmail(email string, ctx context.Context, db db.DBTX) (*User, error) {
 	var user User
 	err := db.QueryRowContext(ctx, selectUserByEmailQuery, email).Scan(&user.ID, &user.Email, &user.PasswordHash, &user.Username)
 	if err != nil {
@@ -42,7 +44,7 @@ func (r *userRepo) GetUserByEmail(email string, ctx context.Context, db db.DBTX)
 }
 
 // Return error if no rows
-func (r *userRepo) GetUserByID(id string, ctx context.Context, db db.DBTX) (*User, error) {
+func (r *userRepo) getUserByID(ctx context.Context, db db.DBTX, id uuid.UUID) (*User, error) {
 	var user User
 	err := db.QueryRowContext(ctx, selectUserByIDQuery, id).Scan(&user.ID, &user.Email, &user.PasswordHash, &user.Username)
 	if err != nil {

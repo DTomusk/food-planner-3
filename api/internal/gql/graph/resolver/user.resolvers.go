@@ -17,7 +17,7 @@ import (
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error) {
 	logger := logging.FromContext(ctx)
-	user, err := r.UserService.GetUserByID(ctx, id)
+	user, err := r.UserService.GetUserByID(ctx, uuid.MustParse(id))
 	if err != nil {
 		logger.Error("Failed to get user by ID", "error", err, "userID", id)
 		return nil, err
@@ -37,7 +37,7 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 		return nil, err
 	}
 
-	user, err := r.UserService.GetUserByID(ctx, claims.UserID)
+	user, err := r.UserService.GetUserByID(ctx, uuid.MustParse(claims.UserID))
 	if err != nil {
 		logger.Error("Failed to get user by ID", "error", err, "userID", claims.UserID)
 		return nil, err
