@@ -34,10 +34,11 @@ func TestCreateRefreshToken(t *testing.T) {
 func TestNewSession(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
+		txRunner := testutil.NewTestTxRunner(tx)
 		ctx := context.Background()
 		ipAddress := "127.0.0.1"
 		secret := "my-secret-key"
-		service := NewRefreshTokenService(tx, NewRefreshTokenRepo(), secret, 7)
+		service := NewRefreshTokenService(txRunner, NewRefreshTokenRepo(), secret, 7)
 
 		testuser, err := seeds.SeedTestUser(ctx, tx)
 		require.NoError(t, err, "Failed to seed test user")

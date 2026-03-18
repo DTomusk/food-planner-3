@@ -37,3 +37,20 @@ func newRefreshToken(token, tokenHash string, userID uuid.UUID, ipAddress string
 		IsRevoked:    false,
 	}
 }
+
+func newChildRefreshToken(parentToken *RefreshToken, token, tokenHash string, ipAddress string, expiresInDays int) *RefreshToken {
+	expiresAt := time.Now().Add(time.Duration(expiresInDays) * 24 * time.Hour).Unix()
+	tokenID := uuid.New()
+
+	return &RefreshToken{
+		ID:           tokenID,
+		Token:        token,
+		TokenHash:    tokenHash,
+		UserID:       parentToken.UserID,
+		IPAddress:    ipAddress,
+		ExpiresAt:    expiresAt,
+		FamilyID:     parentToken.FamilyID,
+		ReplacedByID: nil,
+		IsRevoked:    false,
+	}
+}

@@ -15,9 +15,10 @@ import (
 func TestSignUp_Success(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
+		txRunner := testutil.NewTestTxRunner(tx)
 		userService := user.NewUserService(tx, user.NewUserRepo())
 		jwtService := NewJWTService("testsecret", 15)
-		refreshTokenService := refreshtokens.NewRefreshTokenService(tx, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
+		refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
 		authService := NewAuthService(tx, userService, jwtService, refreshTokenService)
 
 		email := "blah@test.com"
@@ -46,9 +47,10 @@ func TestSignUp_Success(t *testing.T) {
 func TestSignup_InvalidEmail(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
+		txRunner := testutil.NewTestTxRunner(tx)
 		userService := user.NewUserService(tx, user.NewUserRepo())
 		jwtService := NewJWTService("testsecret", 15)
-		refreshTokenService := refreshtokens.NewRefreshTokenService(tx, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
+		refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
 		authService := NewAuthService(tx, userService, jwtService, refreshTokenService)
 		invalidEmail := "invalid-email"
 		password := "securepassword"
@@ -67,9 +69,10 @@ func TestSignup_InvalidEmail(t *testing.T) {
 func TestSignup_ShortPassword(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
+		txRunner := testutil.NewTestTxRunner(tx)
 		userService := user.NewUserService(tx, user.NewUserRepo())
 		jwtService := NewJWTService("testsecret", 15)
-		refreshTokenService := refreshtokens.NewRefreshTokenService(tx, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
+		refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
 		authService := NewAuthService(tx, userService, jwtService, refreshTokenService)
 		email := "test@fun.com"
 		invalidPassword := "123"
@@ -87,9 +90,10 @@ func TestSignup_ShortPassword(t *testing.T) {
 func TestSignup_LongPassword(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
+		txRunner := testutil.NewTestTxRunner(tx)
 		userService := user.NewUserService(tx, user.NewUserRepo())
 		jwtService := NewJWTService("testsecret", 15)
-		refreshTokenService := refreshtokens.NewRefreshTokenService(tx, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
+		refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
 		authService := NewAuthService(tx, userService, jwtService, refreshTokenService)
 		email := "blah@baz.com"
 		// Note: password length limit is hardcoded 64 characters
@@ -108,9 +112,10 @@ func TestSignup_LongPassword(t *testing.T) {
 func TestSignUp_DuplicateEmail(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
+		txRunner := testutil.NewTestTxRunner(tx)
 		userService := user.NewUserService(tx, user.NewUserRepo())
 		jwtService := NewJWTService("testsecret", 15)
-		refreshTokenService := refreshtokens.NewRefreshTokenService(tx, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
+		refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
 		authService := NewAuthService(tx, userService, jwtService, refreshTokenService)
 
 		email := "blah@test.com"
@@ -132,9 +137,10 @@ func TestSignUp_DuplicateEmail(t *testing.T) {
 func TestSignIn_Success(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
+		txRunner := testutil.NewTestTxRunner(tx)
 		userService := user.NewUserService(tx, user.NewUserRepo())
 		jwtService := NewJWTService("testsecret", 15)
-		refreshTokenService := refreshtokens.NewRefreshTokenService(tx, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
+		refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
 		authService := NewAuthService(tx, userService, jwtService, refreshTokenService)
 		ipAddress := "127.0.0.1"
 
@@ -164,9 +170,10 @@ func TestSignIn_Success(t *testing.T) {
 func TestSignIn_NoUser(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
+		txRunner := testutil.NewTestTxRunner(tx)
 		userService := user.NewUserService(tx, user.NewUserRepo())
 		jwtService := NewJWTService("testsecret", 15)
-		refreshTokenService := refreshtokens.NewRefreshTokenService(tx, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
+		refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
 		authService := NewAuthService(tx, userService, jwtService, refreshTokenService)
 
 		email := "test@example.com"
@@ -185,9 +192,10 @@ func TestSignIn_NoUser(t *testing.T) {
 func TestSignIn_WrongPassword(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
+		txRunner := testutil.NewTestTxRunner(tx)
 		userService := user.NewUserService(tx, user.NewUserRepo())
 		jwtService := NewJWTService("testsecret", 15)
-		refreshTokenService := refreshtokens.NewRefreshTokenService(tx, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
+		refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
 		authService := NewAuthService(tx, userService, jwtService, refreshTokenService)
 		email := "example@test.com"
 		correctPassword := "correctpassword"

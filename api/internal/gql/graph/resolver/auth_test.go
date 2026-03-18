@@ -19,7 +19,8 @@ import (
 func setupAuthMutationResolver(tx *sql.Tx) (*mutationResolver, *auth.AuthService) {
 	userService := user.NewUserService(tx, user.NewUserRepo())
 	jwtService := auth.NewJWTService("testsecret", 15)
-	refreshTokenService := refreshtokens.NewRefreshTokenService(tx, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
+	txRunner := testutil.NewTestTxRunner(tx)
+	refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
 	authService := auth.NewAuthService(tx, userService, jwtService, refreshTokenService)
 	resolver := &Resolver{
 		AuthService: authService,

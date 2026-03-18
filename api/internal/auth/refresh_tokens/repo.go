@@ -76,3 +76,23 @@ func (r *refreshTokenRepo) getByHashedToken(ctx context.Context, db db.DBTX, has
 	}
 	return &token, nil
 }
+
+func (r *refreshTokenRepo) revokeFamily(ctx context.Context, db db.DBTX, familyID uuid.UUID, ipAddress string) error {
+	query := `
+	UPDATE refresh_tokens
+	SET revoked_at = NOW()
+	WHERE family_id = $1 AND revoked_at IS NULL
+	`
+	_, err := db.ExecContext(ctx, query, familyID)
+	return err
+}
+
+func (r *refreshTokenRepo) setReplacedBy(ctx context.Context, db db.DBTX, tokenID, replacedByID uuid.UUID) error {
+	query := `
+	UPDATE refresh_tokens
+	SET replaced_by_id = $1
+	WHERE id = $2
+	`
+	_, err := db.ExecContext(ctx, query, replacedByID, tokenID)
+	return err
+}
