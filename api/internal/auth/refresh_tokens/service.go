@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"database/sql"
+	"encoding/base64"
 	"foodplanner/internal/db"
 	"foodplanner/internal/logging"
 	"time"
@@ -112,7 +113,8 @@ func (s *RefreshTokenService) createRefreshToken(userID uuid.UUID, ipAddress str
 	if err != nil {
 		return nil, err
 	}
-	token := string(b)
+
+	token := base64.RawURLEncoding.EncodeToString(b)
 	hashedToken := s.hasher.hash(token)
 	return newRefreshToken(token, hashedToken, userID, ipAddress, s.expiresInDays), nil
 }
