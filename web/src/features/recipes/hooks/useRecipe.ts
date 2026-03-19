@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { GetRecipeDocument, type GetRecipeQuery } from "../../../lib/graphql.generated";
 import type { ClientError } from "graphql-request";
-import { graphqlClient } from "@/lib/graphqlClient";
+import { graphqlRequest } from "@/lib";
 import { mapRecipeDetail } from "../mappers/recipeMapper";
 import { mapRecipeToFormValues } from "../mappers/recipeFormMapper";
 import type { Recipe, User } from "../types";
@@ -16,7 +16,7 @@ type UseRecipeResult = {
 export function useRecipe(id: string) {
     return useQuery<GetRecipeQuery, ClientError, UseRecipeResult>({
         queryKey: ["recipe", id],
-        queryFn: () => graphqlClient.request(GetRecipeDocument, { id }),
+        queryFn: () => graphqlRequest(GetRecipeDocument, { id }),
         enabled: Boolean(id),
         select: (data) => {
             if (!data.recipe) {
