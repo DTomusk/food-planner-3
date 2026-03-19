@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
-	"errors"
 	"foodplanner/internal/auth"
 	refreshtokens "foodplanner/internal/auth/refresh_tokens"
 	"foodplanner/internal/gql/graph/model"
@@ -71,6 +70,24 @@ func assertRefreshTokenCookie(t *testing.T, recorder *httptest.ResponseRecorder)
 	require.False(t, cookie.Secure)
 	require.Equal(t, http.SameSiteLaxMode, cookie.SameSite)
 	require.Greater(t, cookie.MaxAge, 0)
+}
+
+func assertRefreshTokenCookieCleared(t *testing.T, recorder *httptest.ResponseRecorder) {
+	t.Helper()
+
+	response := recorder.Result()
+	cookies := response.Cookies()
+	require.Len(t, cookies, 1)
+
+	cookie := cookies[0]
+	require.Equal(t, refreshTokenCookieName, cookie.Name)
+	require.Empty(t, cookie.Value)
+	require.Equal(t, "/", cookie.Path)
+	require.True(t, cookie.HttpOnly)
+	require.False(t, cookie.Secure)
+	require.Equal(t, http.SameSiteLaxMode, cookie.SameSite)
+	require.Less(t, cookie.MaxAge, 0)
+	require.True(t, cookie.Expires.Before(time.Now()))
 }
 
 func hashRefreshTokenForTest(token string) string {
@@ -218,10 +235,12 @@ func TestAuthResolver_Refresh_NoRefreshCookie(t *testing.T) {
 		mutationResolver, _ := setupAuthMutationResolver(tx)
 
 		req := httptest.NewRequest(http.MethodPost, "/query", nil)
-		authPayload, err := mutationResolver.Refresh(authContextWithRequest(req, nil))
+		recorder := httptest.NewRecorder()
+		authPayload, err := mutationResolver.Refresh(authContextWithRequest(req, recorder))
 
 		require.Nil(t, authPayload)
 		assertUnauthenticatedGraphQLError(t, err, "No auth cookie found")
+		assertRefreshTokenCookieCleared(t, recorder)
 	})
 }
 
@@ -231,11 +250,13 @@ func TestAuthResolver_Refresh_EmptyRefreshCookie(t *testing.T) {
 
 		req := httptest.NewRequest(http.MethodPost, "/query", nil)
 		req.AddCookie(&http.Cookie{Name: refreshTokenCookieName, Value: ""})
+		recorder := httptest.NewRecorder()
 
-		authPayload, err := mutationResolver.Refresh(authContextWithRequest(req, nil))
+		authPayload, err := mutationResolver.Refresh(authContextWithRequest(req, recorder))
 
 		require.Nil(t, authPayload)
 		assertUnauthenticatedGraphQLError(t, err, "Empty refresh token")
+		assertRefreshTokenCookieCleared(t, recorder)
 	})
 }
 
@@ -288,11 +309,12 @@ func TestAuthResolver_Refresh_ReusedRefreshCookieFails(t *testing.T) {
 
 		secondReq := httptest.NewRequest(http.MethodPost, "/query", nil)
 		secondReq.AddCookie(&http.Cookie{Name: refreshTokenCookieName, Value: reusedTokenValue})
+		secondRecorder := httptest.NewRecorder()
 
-		secondPayload, err := mutationResolver.Refresh(authContextWithRequest(secondReq, nil))
+		secondPayload, err := mutationResolver.Refresh(authContextWithRequest(secondReq, secondRecorder))
 
-		require.Error(t, err)
-		require.True(t, errors.Is(err, refreshtokens.ErrInvalidRefreshToken))
 		require.Nil(t, secondPayload)
+		assertUnauthenticatedGraphQLError(t, err, "Invalid refresh token")
+		assertRefreshTokenCookieCleared(t, secondRecorder)
 	})
 }

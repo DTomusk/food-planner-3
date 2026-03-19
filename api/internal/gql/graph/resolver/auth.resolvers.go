@@ -7,8 +7,10 @@ package resolver
 
 import (
 	"context"
+	stderrors "errors"
 	"fmt"
-	"foodplanner/internal/gql/graph/errors"
+	refreshtokens "foodplanner/internal/auth/refresh_tokens"
+	grapherrors "foodplanner/internal/gql/graph/errors"
 	"foodplanner/internal/gql/graph/model"
 	"net/http"
 	"time"
@@ -25,18 +27,7 @@ func (r *mutationResolver) Signup(ctx context.Context, input model.SignUpInput) 
 		return nil, err
 	}
 
-	w := GetResponseWriter(ctx)
-	if w != nil {
-		http.SetCookie(w, &http.Cookie{
-			Name:     refreshTokenCookieName,
-			Value:    refreshToken.Token,
-			MaxAge:   int(refreshToken.ExpiresAt - time.Now().Unix()),
-			Path:     "/",
-			HttpOnly: true,
-			Secure:   false, // make sure to set this to true in production
-			SameSite: http.SameSiteLaxMode,
-		})
-	}
+	setRefreshTokenCookie(GetResponseWriter(ctx), refreshToken.Token, refreshToken.ExpiresAt)
 
 	return &model.AuthPayload{
 		User: mapUser(user),
@@ -55,18 +46,7 @@ func (r *mutationResolver) Signin(ctx context.Context, input model.SignInInput) 
 		return nil, err
 	}
 
-	w := GetResponseWriter(ctx)
-	if w != nil {
-		http.SetCookie(w, &http.Cookie{
-			Name:     refreshTokenCookieName,
-			Value:    refreshToken.Token,
-			MaxAge:   int(refreshToken.ExpiresAt - time.Now().Unix()),
-			Path:     "/",
-			HttpOnly: true,
-			Secure:   false, // make sure to set this to true in production
-			SameSite: http.SameSiteLaxMode,
-		})
-	}
+	setRefreshTokenCookie(GetResponseWriter(ctx), refreshToken.Token, refreshToken.ExpiresAt)
 
 	return &model.AuthPayload{
 		User: mapUser(user),
@@ -80,17 +60,20 @@ func (r *mutationResolver) Refresh(ctx context.Context) (*model.AuthPayload, err
 	if req == nil {
 		return nil, fmt.Errorf("no request in context")
 	}
+	w := GetResponseWriter(ctx)
 
 	cookie, err := req.Cookie(refreshTokenCookieName)
 	if err != nil {
 		if err == http.ErrNoCookie {
-			return nil, errors.NewUnauthenticatedError("No auth cookie found")
+			clearRefreshTokenCookie(w)
+			return nil, grapherrors.NewUnauthenticatedError("No auth cookie found")
 		}
 		return nil, fmt.Errorf("refresh token cookie not found: %w", err)
 	}
 
 	if cookie.Value == "" {
-		return nil, errors.NewUnauthenticatedError("Empty refresh token")
+		clearRefreshTokenCookie(w)
+		return nil, grapherrors.NewUnauthenticatedError("Empty refresh token")
 	}
 
 	ip, err := GetIPAddress(ctx)
@@ -98,26 +81,58 @@ func (r *mutationResolver) Refresh(ctx context.Context) (*model.AuthPayload, err
 		return nil, err
 	}
 
-	user, jwt, refresh_token, err := r.AuthService.Refresh(ctx, cookie.Value, ip)
+	user, jwt, refreshToken, err := r.AuthService.Refresh(ctx, cookie.Value, ip)
 	if err != nil {
+		if stderrors.Is(err, refreshtokens.ErrInvalidRefreshToken) {
+			clearRefreshTokenCookie(w)
+			return nil, grapherrors.NewUnauthenticatedError("Invalid refresh token")
+		}
+
 		return nil, err
 	}
 
-	w := GetResponseWriter(ctx)
-	if w != nil {
-		http.SetCookie(w, &http.Cookie{
-			Name:     refreshTokenCookieName,
-			Value:    refresh_token.Token,
-			MaxAge:   int(refresh_token.ExpiresAt - time.Now().Unix()),
-			Path:     "/",
-			HttpOnly: true,
-			Secure:   false, // make sure to set this to true in production
-			SameSite: http.SameSiteLaxMode,
-		})
-	}
+	setRefreshTokenCookie(w, refreshToken.Token, refreshToken.ExpiresAt)
 
 	return &model.AuthPayload{
 		User: mapUser(user),
 		Jwt:  jwt,
 	}, nil
+}
+
+func setRefreshTokenCookie(w http.ResponseWriter, token string, expiresAt int64) {
+	if w == nil {
+		return
+	}
+
+	maxAge := int(expiresAt - time.Now().Unix())
+	if maxAge < 0 {
+		maxAge = 0
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     refreshTokenCookieName,
+		Value:    token,
+		MaxAge:   maxAge,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false, // make sure to set this to true in production
+		SameSite: http.SameSiteLaxMode,
+	})
+}
+
+func clearRefreshTokenCookie(w http.ResponseWriter) {
+	if w == nil {
+		return
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     refreshTokenCookieName,
+		Value:    "",
+		MaxAge:   -1,
+		Expires:  time.Unix(0, 0),
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false, // make sure to set this to true in production
+		SameSite: http.SameSiteLaxMode,
+	})
 }
