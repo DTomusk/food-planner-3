@@ -78,6 +78,7 @@ type ComplexityRoot struct {
 		Empty        func(childComplexity int) int
 		Refresh      func(childComplexity int) int
 		Signin       func(childComplexity int, input model.SignInInput) int
+		Signout      func(childComplexity int) int
 		Signup       func(childComplexity int, input model.SignUpInput) int
 		UpdateRecipe func(childComplexity int, input model.UpdateRecipeInput) int
 	}
@@ -140,6 +141,7 @@ type MutationResolver interface {
 	Signup(ctx context.Context, input model.SignUpInput) (*model.AuthPayload, error)
 	Signin(ctx context.Context, input model.SignInInput) (*model.AuthPayload, error)
 	Refresh(ctx context.Context) (*model.AuthPayload, error)
+	Signout(ctx context.Context) (bool, error)
 	CreateRecipe(ctx context.Context, input model.CreateRecipeInput) (*model.Recipe, error)
 	UpdateRecipe(ctx context.Context, input model.UpdateRecipeInput) (*model.Recipe, error)
 }
@@ -297,6 +299,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.Signin(childComplexity, args["input"].(model.SignInInput)), true
+	case "Mutation.signout":
+		if e.complexity.Mutation.Signout == nil {
+			break
+		}
+
+		return e.complexity.Mutation.Signout(childComplexity), true
 	case "Mutation.signup":
 		if e.complexity.Mutation.Signup == nil {
 			break
@@ -1360,6 +1368,35 @@ func (ec *executionContext) fieldContext_Mutation_refresh(_ context.Context, fie
 				return ec.fieldContext_AuthPayload_user(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AuthPayload", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_signout(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_signout,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Mutation().Signout(ctx)
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_signout(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -4746,6 +4783,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "refresh":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_refresh(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "signout":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_signout(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
