@@ -1,6 +1,13 @@
 # food-planner-3
 Food planner 3 (codename FoodSmash) is a web app for creating recipes, sharing them, and planning meals and weekly shops. 
 
+## Docs structure
+
+- `docs/architecture/` contains system-level architecture and ownership docs.
+- `docs/features/` contains vertical-slice docs for features that span multiple parts of the system.
+- `docs/ai/` contains AI-facing operational and architecture reference docs.
+- `docs/planning/` contains backlog and idea tracking.
+
 ## Features 
 
 - Create and edit versioned recipes 

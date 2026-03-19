@@ -45,6 +45,42 @@ This file is optimized for AI/code agents. It favors exact ownership, invariants
 7. GraphQL resolvers should stay thin and delegate to domain services.
 8. Domain services orchestrate validation, transactions, and repository calls.
 
+## Authentication Contract
+
+- Access JWTs are short-lived and signed by backend auth services.
+- Frontend stores access JWT in localStorage and sends it in Authorization Bearer headers.
+- Refresh tokens are opaque values stored server-side and sent to browser as HttpOnly cookies.
+- Frontend GraphQL transport must use credentials include so refresh cookie is sent on refresh requests.
+- GraphQL request wrapper performs single-flight refresh and retries original operation once on UNAUTHENTICATED.
+- If refresh fails, original UNAUTHENTICATED error should propagate so global sign-out handling can run.
+- Refresh token families are used for session lineage and replay protection.
+- Each signin/signup creates a new family, enabling multiple concurrent sessions across separate devices.
+- Refresh rotates within the same family and revokes previously active tokens in that family.
+- Signout/revoke invalidates the family tied to the presented refresh token.
+- Signout API behavior is idempotent: success means client ends signed out, even if cookie was already missing/empty/invalid.
+- Auth middleware remains permissive at HTTP layer: invalid/missing bearer token does not hard-fail request before GraphQL auth checks.
+
+### Auth Authoritative Files
+
+- `api/internal/gql/graph/schema/auth.graphqls`
+- `api/internal/gql/graph/resolver/auth.resolvers.go`
+- `api/internal/gql/graph/resolver/auth_helpers.go`
+- `api/internal/auth/service.go`
+- `api/internal/auth/refresh_tokens/service.go`
+- `api/internal/auth/middleware.go`
+- `web/src/lib/auth/token.ts`
+- `web/src/lib/graphqlClient.ts`
+- `web/src/lib/graphqlRequest.ts`
+- `web/src/lib/auth/refresh.ts`
+- `web/src/lib/auth/unauthenticated.ts`
+- `web/src/app/queryClient.ts`
+- `web/src/app/providers/AuthProvider.tsx`
+
+### Auth Doc Maintenance Rule
+
+- When auth behavior changes, update both `docs/features/auth.md` and `docs/ai/architecture.md` in the same PR.
+- Update `docs/architecture/backend.md` too when backend auth ownership, package boundaries, or operational responsibilities change.
+
 ## Core Domain Model
 
 - `RecipeContainer` is the long-lived recipe record. It belongs to a user and points at the current version.

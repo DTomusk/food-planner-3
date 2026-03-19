@@ -93,6 +93,13 @@
     - Why: 
     - DoD: 
 
+- [ ] Dietary tags (gf, vegan etc.)
+    - Priority: 
+    - Area: 
+    - Type: (bug, tech debt, feature)
+    - Why: 
+    - DoD:     
+
 ## Item template 
 
 - [ ] Item name
