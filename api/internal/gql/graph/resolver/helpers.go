@@ -6,8 +6,10 @@ import (
 	"foodplanner/internal/auth"
 	"foodplanner/internal/gql/graph/errors"
 	"foodplanner/internal/gql/graph/model"
+	"foodplanner/internal/middleware"
 	"foodplanner/internal/recipe"
 	"foodplanner/internal/user"
+	"net/http"
 )
 
 func mapUsers(users []*user.User) []*model.User {
@@ -113,4 +115,22 @@ func RequireAuth(ctx context.Context) (*auth.Claims, error) {
 		return nil, errors.NewUnauthenticatedError("user is not authenticated")
 	}
 	return claims, nil
+}
+
+func GetIPAddress(ctx context.Context) (string, error) {
+	ip, ok := ctx.Value(middleware.IPKey).(string)
+	if !ok {
+		return "", errors.NewInternalError("failed to retrieve IP address from context")
+	}
+	return ip, nil
+}
+
+func GetResponseWriter(ctx context.Context) http.ResponseWriter {
+	w, _ := ctx.Value(middleware.ResponseWriterKey).(http.ResponseWriter)
+	return w
+}
+
+func GetRequest(ctx context.Context) *http.Request {
+	req, _ := ctx.Value(middleware.RequestKey).(*http.Request)
+	return req
 }

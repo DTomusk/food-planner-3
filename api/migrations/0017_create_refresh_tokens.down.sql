@@ -1,0 +1,4 @@
+DELETE INDEX idx_refresh_tokens_user_id;
+DELETE INDEX idx_refresh_tokens_family_id;
+DELETE INDEX idx_refresh_tokens_valid;
+DROP TABLE refresh_tokens;

@@ -3,6 +3,8 @@ package user
 import (
 	"context"
 	"foodplanner/internal/db"
+
+	"github.com/google/uuid"
 )
 
 type UserService struct {
@@ -18,7 +20,7 @@ func NewUserService(db db.DBTX, repo *userRepo) *UserService {
 }
 
 func (s *UserService) CreateUser(email, passwordHash, username string, ctx context.Context) (*User, error) {
-	existingUser, err := s.repo.GetUserByEmail(email, ctx, s.db)
+	existingUser, err := s.repo.getUserByEmail(email, ctx, s.db)
 	if err != nil {
 		return nil, err
 	}
@@ -29,7 +31,7 @@ func (s *UserService) CreateUser(email, passwordHash, username string, ctx conte
 	if err != nil {
 		return nil, err
 	}
-	createdUser, err := s.repo.CreateUser(newUser, ctx, s.db)
+	createdUser, err := s.repo.createUser(newUser, ctx, s.db)
 	if err != nil {
 		return nil, err
 	}
@@ -40,9 +42,9 @@ func (s *UserService) CreateUser(email, passwordHash, username string, ctx conte
 }
 
 func (s *UserService) GetUserByEmail(email string, ctx context.Context) (*User, error) {
-	return s.repo.GetUserByEmail(email, ctx, s.db)
+	return s.repo.getUserByEmail(email, ctx, s.db)
 }
 
-func (s *UserService) GetUserByID(ctx context.Context, id string) (*User, error) {
-	return s.repo.GetUserByID(id, ctx, s.db)
+func (s *UserService) GetUserByID(ctx context.Context, id uuid.UUID) (*User, error) {
+	return s.repo.getUserByID(ctx, s.db, id)
 }

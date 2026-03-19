@@ -12,3 +12,12 @@ func NewUnauthenticatedError(message string) *gqlerror.Error {
 		},
 	}
 }
+
+func NewInternalError(message string) *gqlerror.Error {
+	return &gqlerror.Error{
+		Message: message,
+		Extensions: map[string]interface{}{
+			"code": "INTERNAL_ERROR",
+		},
+	}
+}

@@ -7,15 +7,27 @@ package resolver
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	refreshtokens "foodplanner/internal/auth/refresh_tokens"
+	grapherrors "foodplanner/internal/gql/graph/errors"
 	"foodplanner/internal/gql/graph/model"
+	"net/http"
 )
 
 // Signup is the resolver for the signup field.
 func (r *mutationResolver) Signup(ctx context.Context, input model.SignUpInput) (*model.AuthPayload, error) {
-	user, token, err := r.AuthService.SignUp(input.Email, input.Password, input.Username, ctx)
+	ip, err := GetIPAddress(ctx)
 	if err != nil {
 		return nil, err
 	}
+	user, token, refreshToken, err := r.AuthService.SignUp(input.Email, input.Password, input.Username, ip, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	setRefreshTokenCookie(GetResponseWriter(ctx), refreshToken.Token, refreshToken.ExpiresAt)
+
 	return &model.AuthPayload{
 		User: mapUser(user),
 		Jwt:  token,
@@ -24,12 +36,100 @@ func (r *mutationResolver) Signup(ctx context.Context, input model.SignUpInput) 
 
 // Signin is the resolver for the signin field.
 func (r *mutationResolver) Signin(ctx context.Context, input model.SignInInput) (*model.AuthPayload, error) {
-	user, token, err := r.AuthService.SignIn(input.Email, input.Password, ctx)
+	ip, err := GetIPAddress(ctx)
 	if err != nil {
 		return nil, err
 	}
+	user, token, refreshToken, err := r.AuthService.SignIn(input.Email, input.Password, ip, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	setRefreshTokenCookie(GetResponseWriter(ctx), refreshToken.Token, refreshToken.ExpiresAt)
+
 	return &model.AuthPayload{
 		User: mapUser(user),
 		Jwt:  token,
 	}, nil
+}
+
+// Refresh is the resolver for the refresh field.
+func (r *mutationResolver) Refresh(ctx context.Context) (*model.AuthPayload, error) {
+	req := GetRequest(ctx)
+	if req == nil {
+		return nil, fmt.Errorf("no request in context")
+	}
+	w := GetResponseWriter(ctx)
+
+	cookie, err := req.Cookie(refreshTokenCookieName)
+	if err != nil {
+		if err == http.ErrNoCookie {
+			clearRefreshTokenCookie(w)
+			return nil, grapherrors.NewUnauthenticatedError("No auth cookie found")
+		}
+		return nil, fmt.Errorf("refresh token cookie not found: %w", err)
+	}
+
+	if cookie.Value == "" {
+		clearRefreshTokenCookie(w)
+		return nil, grapherrors.NewUnauthenticatedError("Empty refresh token")
+	}
+
+	ip, err := GetIPAddress(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	user, jwt, refreshToken, err := r.AuthService.Refresh(ctx, cookie.Value, ip)
+	if err != nil {
+		if errors.Is(err, refreshtokens.ErrInvalidRefreshToken) {
+			clearRefreshTokenCookie(w)
+			return nil, grapherrors.NewUnauthenticatedError("Invalid refresh token")
+		}
+
+		return nil, err
+	}
+
+	setRefreshTokenCookie(w, refreshToken.Token, refreshToken.ExpiresAt)
+
+	return &model.AuthPayload{
+		User: mapUser(user),
+		Jwt:  jwt,
+	}, nil
+}
+
+// Signout is the resolver for the signout field.
+func (r *mutationResolver) Signout(ctx context.Context) (bool, error) {
+	req := GetRequest(ctx)
+	if req == nil {
+		return false, fmt.Errorf("no request in context")
+	}
+	w := GetResponseWriter(ctx)
+
+	cookie, err := req.Cookie(refreshTokenCookieName)
+	if err != nil {
+		if err == http.ErrNoCookie {
+			clearRefreshTokenCookie(w)
+			return true, nil
+		}
+		return false, fmt.Errorf("refresh token cookie not found: %w", err)
+	}
+
+	if cookie.Value == "" {
+		clearRefreshTokenCookie(w)
+		return true, nil
+	}
+
+	err = r.AuthService.Revoke(ctx, cookie.Value)
+	if err != nil {
+		if errors.Is(err, refreshtokens.ErrInvalidRefreshToken) {
+			clearRefreshTokenCookie(w)
+			return true, nil
+		}
+
+		return false, err
+	}
+
+	clearRefreshTokenCookie(w)
+	return true, nil
 }

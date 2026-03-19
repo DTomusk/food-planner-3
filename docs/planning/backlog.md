@@ -2,13 +2,17 @@
 
 ## Ready
 
-- [ ] Set up configurable theming
+- [ ] Refresh tokens 
     - Priority: high
-    - Area: frontend
-    - Type: tech debt/feature
-    - Why: the site currently uses hardcoded colours for what should be themed components. We should be able to change the primary colour and have it propagate throughout the site, rather than editing magic strings everywhere. We can't have an established design language if we're hardcoding utility classes everywhere without any view of consistency
-    - DoD: 
-        - Dev can update primary and secondary colour in one place (SSoT)
+    - Area: auth backend (some frontend)
+    - Type: feature/tech debt
+    - Why: JWTs are short-lived by design, so users cannot stay logged in persistently with just a JWT. We need to introduce sessions so that users can stay logged in on a device for a configured amount of time before having to reauthenticate. 
+    - DoD:
+        - User can stay logged in longer than their JWT allows 
+        - Refresh token stored in http only cookie (so cannot be accessed by js)
+        - All tokens in a family invalidated when an expired token is used 
+        - Tokens rotated when new ones issued
+        - Token hashes stored in db to prevent problems if db leaks 
 
 - [ ] Investigate test coverage tools
     - Priority: high
@@ -32,27 +36,6 @@
         - Search hook introduced: current ingredients are filtered by the given search characters and top five or so matches returned 
         - More ingredients added (doesn't have to be this ticket, but it makes sense to do it here)
         - Nice to have: cache ingredients on the frontend so they don't have to be fetched every time the edit page is opened (react query might already do this for us? Investigate)
-
-- [ ] Log out on unauthorized response 
-    - Priority: high
-    - Area: auth frontend
-    - Type: bug
-    - Why: right now, the frontend keeps thinking a user is logged in as long as there's a jwt in local storage. This means that users can access restricted pages while not technically logged in, it's just the API will return unauthorised. We need to remove the jwt from local storage when an unauthorised response comes back.
-    - DoD: 
-        - JWT removed from local storage when API returns unauthorised 
-        - User doesn't see logged in options or protected routes after getting an unauthorised response and before logging in again 
-
-- [ ] Refresh tokens 
-    - Priority: high
-    - Area: auth backend (some frontend)
-    - Type: feature/tech debt
-    - Why: JWTs are short-lived by design, so users cannot stay logged in persistently with just a JWT. We need to introduce sessions so that users can stay logged in on a device for a configured amount of time before having to reauthenticate. 
-    - DoD:
-        - User can stay logged in longer than their JWT allows 
-        - Refresh token stored in http only cookie (so cannot be accessed by js)
-        - All tokens in a family invalidated when an expired token is used 
-        - Tokens rotated when new ones issued
-        - Token hashes stored in db to prevent problems if db leaks 
 
 - [ ] Manual content moderation
     - Priority: high
@@ -96,13 +79,6 @@
     - Why: 
     - DoD: 
 
-- [ ] Markdown formatting
-    - Priority: medium
-    - Area: frontend
-    - Type: bug
-    - Why: the input for recipe instructions is a markdown editor, but markdown is not rendered correctly. Titles aren't differentiated and bullet points don't appear. 
-    - DoD: 
-
 - [ ] Add description to recipes
     - Priority: 
     - Area: 
@@ -117,6 +93,13 @@
     - Why: 
     - DoD: 
 
+- [ ] Dietary tags (gf, vegan etc.)
+    - Priority: 
+    - Area: 
+    - Type: (bug, tech debt, feature)
+    - Why: 
+    - DoD:     
+
 ## Item template 
 
 - [ ] Item name
@@ -127,6 +110,30 @@
     - DoD: 
 
 ## Done 
+
+- [x] Log out on unauthorized response 
+    - Priority: high
+    - Area: auth frontend
+    - Type: bug
+    - Why: right now, the frontend keeps thinking a user is logged in as long as there's a jwt in local storage. This means that users can access restricted pages while not technically logged in, it's just the API will return unauthorised. We need to remove the jwt from local storage when an unauthorised response comes back.
+    - DoD: 
+        - JWT removed from local storage when API returns unauthorised 
+        - User doesn't see logged in options or protected routes after getting an unauthorised response and before logging in again 
+
+- [x] Markdown formatting
+    - Priority: medium
+    - Area: frontend
+    - Type: bug
+    - Why: the input for recipe instructions is a markdown editor, but markdown is not rendered correctly. Titles aren't differentiated and bullet points don't appear. 
+    - DoD: 
+
+- [x] Set up configurable theming
+    - Priority: high
+    - Area: frontend
+    - Type: tech debt/feature
+    - Why: the site currently uses hardcoded colours for what should be themed components. We should be able to change the primary colour and have it propagate throughout the site, rather than editing magic strings everywhere. We can't have an established design language if we're hardcoding utility classes everywhere without any view of consistency
+    - DoD: 
+        - Dev can update primary and secondary colour in one place (SSoT)
 
 - [x] Introduce storybook
     - Priority: medium

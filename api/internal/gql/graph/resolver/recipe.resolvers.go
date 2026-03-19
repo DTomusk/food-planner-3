@@ -94,7 +94,7 @@ func (r *queryResolver) Recipe(ctx context.Context, id string) (*model.Recipe, e
 
 // Author is the resolver for the author field.
 func (r *recipeResolver) Author(ctx context.Context, obj *model.Recipe) (*model.User, error) {
-	user, err := r.UserService.GetUserByID(ctx, obj.AuthorID)
+	user, err := r.UserService.GetUserByID(ctx, uuid.MustParse(obj.AuthorID))
 	if err != nil {
 		return nil, err
 	}

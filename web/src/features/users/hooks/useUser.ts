@@ -1,5 +1,5 @@
 import type { User } from "@/features/recipes/types";
-import { GetUserDocument, graphqlClient } from "@/lib";
+import { GetUserDocument, graphqlRequest } from "@/lib";
 import type { GetUserQuery } from "@/lib/graphql.generated";
 import { useQuery } from "@tanstack/react-query";
 import type { ClientError } from "graphql-request";
@@ -9,7 +9,7 @@ export function useUser(id: string) {
     // TODO: define a type here that we don't pull from recipes
     return useQuery<GetUserQuery, ClientError, { user: User, recipes: { id: string, name: string }[] }>({
         queryKey: ["user", id],
-        queryFn: () => graphqlClient.request(GetUserDocument, { id }),
+        queryFn: () => graphqlRequest(GetUserDocument, { id }),
         enabled: Boolean(id),
         select: (data) => {
             if (!data.user) {
