@@ -101,3 +101,7 @@ func (s *AuthService) Refresh(ctx context.Context, refreshToken, ipAddress strin
 	}
 	return user, jwt, newToken, nil
 }
+
+func (s *AuthService) Revoke(ctx context.Context, refreshToken string) error {
+	return s.refreshTokenService.RevokeSession(ctx, refreshToken)
+}

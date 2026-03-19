@@ -107,6 +107,28 @@ func (s *RefreshTokenService) RefreshSession(ctx context.Context, tokenString, i
 	return newRefreshToken, nil
 }
 
+func (s *RefreshTokenService) RevokeSession(ctx context.Context, tokenString string) error {
+	logger := logging.FromContext(ctx)
+	hashedToken := s.hasher.hash(tokenString)
+	existingToken, err := s.repo.getByHashedToken(ctx, s.txRunner.DB(), hashedToken)
+	if err != nil {
+		logger.Error("Failed to fetch refresh token for revocation", "error", err)
+		return err
+	}
+	if existingToken == nil {
+		logger.Warn("No token found for hash during revocation")
+		return nil
+	}
+
+	err = s.repo.revokeFamily(ctx, s.txRunner.DB(), existingToken.FamilyID, existingToken.IPAddress)
+	if err != nil {
+		logger.Error("Failed to revoke token family", "error", err, "familyID", existingToken.FamilyID, "ipAddress", existingToken.IPAddress)
+		return err
+	}
+
+	return nil
+}
+
 func (s *RefreshTokenService) createRefreshToken(userID uuid.UUID, ipAddress string) (*RefreshToken, error) {
 	b := make([]byte, 32)
 	_, err := rand.Read(b)
