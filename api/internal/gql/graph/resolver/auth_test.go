@@ -318,3 +318,91 @@ func TestAuthResolver_Refresh_ReusedRefreshCookieFails(t *testing.T) {
 		assertRefreshTokenCookieCleared(t, secondRecorder)
 	})
 }
+
+func TestAuthResolver_Signout_NoRequestInContext(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		mutationResolver, _ := setupAuthMutationResolver(tx)
+
+		signedOut, err := mutationResolver.Signout(authContext(nil))
+
+		require.Error(t, err)
+		require.False(t, signedOut)
+		require.EqualError(t, err, "no request in context")
+	})
+}
+
+func TestAuthResolver_Signout_NoRefreshCookie(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		mutationResolver, _ := setupAuthMutationResolver(tx)
+
+		req := httptest.NewRequest(http.MethodPost, "/query", nil)
+		recorder := httptest.NewRecorder()
+
+		signedOut, err := mutationResolver.Signout(authContextWithRequest(req, recorder))
+
+		require.NoError(t, err)
+		require.True(t, signedOut)
+		assertRefreshTokenCookieCleared(t, recorder)
+	})
+}
+
+func TestAuthResolver_Signout_EmptyRefreshCookie(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		mutationResolver, _ := setupAuthMutationResolver(tx)
+
+		req := httptest.NewRequest(http.MethodPost, "/query", nil)
+		req.AddCookie(&http.Cookie{Name: refreshTokenCookieName, Value: ""})
+		recorder := httptest.NewRecorder()
+
+		signedOut, err := mutationResolver.Signout(authContextWithRequest(req, recorder))
+
+		require.NoError(t, err)
+		require.True(t, signedOut)
+		assertRefreshTokenCookieCleared(t, recorder)
+	})
+}
+
+func TestAuthResolver_Signout_InvalidRefreshCookie_ReturnsTrueAndClearsCookie(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		mutationResolver, _ := setupAuthMutationResolver(tx)
+
+		req := httptest.NewRequest(http.MethodPost, "/query", nil)
+		req.AddCookie(&http.Cookie{Name: refreshTokenCookieName, Value: "missing-refresh-token"})
+		recorder := httptest.NewRecorder()
+
+		signedOut, err := mutationResolver.Signout(authContextWithRequest(req, recorder))
+
+		require.NoError(t, err)
+		require.True(t, signedOut)
+		assertRefreshTokenCookieCleared(t, recorder)
+	})
+}
+
+func TestAuthResolver_Signout_Success_ClearsCookieAndRevokesToken(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		mutationResolver, authService := setupAuthMutationResolver(tx)
+		ctx := context.Background()
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		tokenValue := "resolver-signout-success-token"
+		seedRefreshTokenForResolverTest(t, ctx, tx, testUser.ID, uuid.New(), tokenValue)
+
+		req := httptest.NewRequest(http.MethodPost, "/query", nil)
+		req.AddCookie(&http.Cookie{Name: refreshTokenCookieName, Value: tokenValue})
+		recorder := httptest.NewRecorder()
+
+		signedOut, err := mutationResolver.Signout(authContextWithRequest(req, recorder))
+
+		require.NoError(t, err)
+		require.True(t, signedOut)
+		assertRefreshTokenCookieCleared(t, recorder)
+
+		user, jwt, refreshedToken, err := authService.Refresh(ctx, tokenValue, "10.0.0.1")
+		require.ErrorIs(t, err, refreshtokens.ErrInvalidRefreshToken)
+		require.Nil(t, user)
+		require.Empty(t, jwt)
+		require.Nil(t, refreshedToken)
+	})
+}

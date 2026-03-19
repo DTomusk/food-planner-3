@@ -302,3 +302,51 @@ func TestRefresh_ReusedTokenFails(t *testing.T) {
 		require.Nil(t, refreshedToken)
 	})
 }
+
+func TestRevoke_Success(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		// Arrange
+		txRunner := testutil.NewTestTxRunner(tx)
+		userService := user.NewUserService(tx, user.NewUserRepo())
+		jwtService := NewJWTService("testsecret", 15)
+		refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
+		authService := NewAuthService(tx, userService, jwtService, refreshTokenService)
+
+		email := "revoke-success@example.com"
+		password := "securepassword"
+		username := "testuser"
+		ipAddress := "127.0.0.1"
+
+		_, _, initialRefreshToken, err := authService.SignUp(email, password, username, ipAddress, context.Background())
+		require.NoError(t, err)
+
+		// Act
+		err = authService.Revoke(context.Background(), initialRefreshToken.Token)
+
+		// Assert
+		require.NoError(t, err)
+
+		user, jwt, refreshedToken, err := authService.Refresh(context.Background(), initialRefreshToken.Token, "10.0.0.1")
+		require.ErrorIs(t, err, refreshtokens.ErrInvalidRefreshToken)
+		require.Nil(t, user)
+		require.Empty(t, jwt)
+		require.Nil(t, refreshedToken)
+	})
+}
+
+func TestRevoke_MissingToken_NoError(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		// Arrange
+		txRunner := testutil.NewTestTxRunner(tx)
+		userService := user.NewUserService(tx, user.NewUserRepo())
+		jwtService := NewJWTService("testsecret", 15)
+		refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
+		authService := NewAuthService(tx, userService, jwtService, refreshTokenService)
+
+		// Act
+		err := authService.Revoke(context.Background(), "missing-refresh-token")
+
+		// Assert
+		require.NoError(t, err)
+	})
+}

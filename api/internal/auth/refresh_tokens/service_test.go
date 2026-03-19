@@ -204,6 +204,59 @@ func TestRefreshSession_ReturnsInvalidRefreshToken_WhenTokenExpired(t *testing.T
 	})
 }
 
+func TestRevokeSession_RevokesRefreshTokenFamily(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		// Arrange
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+		ipAddress := "127.0.0.1"
+		secret := "my-secret-key"
+		repo := NewRefreshTokenRepo()
+		service := NewRefreshTokenService(txRunner, repo, secret, 7)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		existingToken, err := service.NewSession(ctx, testUser.ID, ipAddress)
+		require.NoError(t, err)
+
+		siblingToken := newTestRefreshToken(testUser.ID, "revoke-sibling-token-hash")
+		siblingToken.FamilyID = existingToken.FamilyID
+		err = repo.saveNewToken(ctx, tx, siblingToken)
+		require.NoError(t, err)
+
+		// Act
+		err = service.RevokeSession(ctx, existingToken.Token)
+
+		// Assert
+		require.NoError(t, err)
+
+		existingRevokedAt, err := getRevokedAtByTokenID(ctx, tx, existingToken.ID)
+		require.NoError(t, err)
+		require.True(t, existingRevokedAt.Valid)
+
+		siblingRevokedAt, err := getRevokedAtByTokenID(ctx, tx, siblingToken.ID)
+		require.NoError(t, err)
+		require.True(t, siblingRevokedAt.Valid)
+	})
+}
+
+func TestRevokeSession_ReturnsNil_WhenTokenNotFound(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		// Arrange
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+		secret := "my-secret-key"
+		service := NewRefreshTokenService(txRunner, NewRefreshTokenRepo(), secret, 7)
+
+		// Act
+		err := service.RevokeSession(ctx, "missing-refresh-token")
+
+		// Assert
+		require.NoError(t, err)
+	})
+}
+
 func countTokensByFamilyID(ctx context.Context, tx *sql.Tx, familyID uuid.UUID) (int, error) {
 	var tokenCount int
 	err := tx.QueryRowContext(ctx, `

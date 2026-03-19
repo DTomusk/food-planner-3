@@ -110,21 +110,21 @@ func (r *mutationResolver) Signout(ctx context.Context) (bool, error) {
 	if err != nil {
 		if err == http.ErrNoCookie {
 			clearRefreshTokenCookie(w)
-			return false, grapherrors.NewUnauthenticatedError("No auth cookie found")
+			return true, nil
 		}
 		return false, fmt.Errorf("refresh token cookie not found: %w", err)
 	}
 
 	if cookie.Value == "" {
 		clearRefreshTokenCookie(w)
-		return false, grapherrors.NewUnauthenticatedError("Empty refresh token")
+		return true, nil
 	}
 
 	err = r.AuthService.Revoke(ctx, cookie.Value)
 	if err != nil {
 		if errors.Is(err, refreshtokens.ErrInvalidRefreshToken) {
 			clearRefreshTokenCookie(w)
-			return false, grapherrors.NewUnauthenticatedError("Invalid refresh token")
+			return true, nil
 		}
 
 		return false, err
