@@ -13,15 +13,17 @@ type SearchDropdownProps = {
     items: SearchDropdownItem[];
     onSelect: (item: SearchDropdownItem | null) => void;
     selectedItem?: SearchDropdownItem | null;
+    maxResults?: number;
 }
 
-export default function SearchDropdown({ items, onSelect, selectedItem }: SearchDropdownProps) {
+export default function SearchDropdown({ items, onSelect, selectedItem, maxResults }: SearchDropdownProps) {
     const [query, setQuery] = useState("");
 
     const defaultFilter = (query: string) => 
         items.filter((item) => item.label.toLowerCase().includes(query.toLowerCase()));
 
     const filteredItems = query === "" ? items : defaultFilter(query);
+    const limitedItems = filteredItems.slice(0, maxResults ?? filteredItems.length);
 
     return (
          <div className="mx-auto w-full max-w-xs">
@@ -47,7 +49,7 @@ export default function SearchDropdown({ items, onSelect, selectedItem }: Search
                         'transition duration-100 ease-in data-leave:data-closed:opacity-0'
                     )}    
                 >
-                    {filteredItems.map((item) => (
+                    {limitedItems.map((item) => (
                         <ComboboxOption 
                         key={item.value} 
                         value={item}

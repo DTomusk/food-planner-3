@@ -39,6 +39,7 @@ export default function IngredientSelector({ index, control, register, ingredien
       <div className="flex-1">
         <FormField htmlFor={`ingredientUsages.${index}.ingredientId`} label="Ingredient" error={errors.ingredientUsages?.[index]?.ingredientId?.message}>
           <SearchDropdown
+            maxResults={5}
             items={ingredients.map((ingredient) => ({
               label: formatIngredientOption(ingredient),
               value: ingredient.id,
@@ -51,18 +52,17 @@ export default function IngredientSelector({ index, control, register, ingredien
         </FormField>
       </div>
 
-      {hasSelection && (
-        <FormField htmlFor={`ingredientUsages.${index}.quantity`} label="Quantity" error={errors.ingredientUsages?.[index]?.quantity?.message}>
-          <Input
-            type="number"
-            min={0}
-            step={1}
-            placeholder="Qty"
-            {...register(`ingredientUsages.${index}.quantity`, {
-              valueAsNumber: true})}
-          />
-        </FormField>
-      )}
+      <FormField htmlFor={`ingredientUsages.${index}.quantity`} label="Quantity" error={errors.ingredientUsages?.[index]?.quantity?.message}>
+        <Input
+          type="number"
+          min={0}
+          step={1}
+          placeholder="Qty"
+          {...register(`ingredientUsages.${index}.quantity`, {
+            valueAsNumber: true})}
+          disabled={!hasSelection}
+        />
+      </FormField>
 
       {selectedIngredient && !isQuantumUnit && (
         <FormField htmlFor={`ingredientUsages.${index}.unit`} label="Unit">
