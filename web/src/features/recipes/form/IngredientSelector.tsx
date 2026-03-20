@@ -8,6 +8,7 @@ import { X } from "lucide-react";
 import Inline from "@/components/layout/Inline";
 import { useIngredientSelector } from "../hooks/useIngredientSelector";
 import type { IngredientOptionModel } from "@/features/ingredients/types";
+import SearchDropdown from "@/components/ui/SearchDropdown";
 
 interface IngredientSelectorProps {
   index: number;
@@ -37,16 +38,16 @@ export default function IngredientSelector({ index, control, register, ingredien
     <Inline align="center">
       <div className="flex-1">
         <FormField htmlFor={`ingredientUsages.${index}.ingredientId`} label="Ingredient" error={errors.ingredientUsages?.[index]?.ingredientId?.message}>
-          <Select defaultValue="" disabled={ingredients.length === 0} {...register(`ingredientUsages.${index}.ingredientId`)}>
-            <option value="" disabled={hasSelection}>
-              Select ingredient
-            </option>
-            {ingredients.map((ingredient) => (
-              <option key={ingredient.id} value={ingredient.id}>
-                {formatIngredientOption(ingredient)}
-              </option>
-            ))}
-          </Select>
+          <SearchDropdown
+            items={ingredients.map((ingredient) => ({
+              label: formatIngredientOption(ingredient),
+              value: ingredient.id,
+            }))}
+            onSelect={(item) => {
+              setValue(`ingredientUsages.${index}.ingredientId`, item?.value ?? "", { shouldDirty: true });
+            }}
+            selectedItem={selectedIngredient ? { label: formatIngredientOption(selectedIngredient), value: selectedIngredient.id } : null}
+          />
         </FormField>
       </div>
 

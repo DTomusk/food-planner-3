@@ -1,7 +1,8 @@
 import { Combobox, ComboboxButton, ComboboxInput, ComboboxOption, ComboboxOptions } from "@headlessui/react";
 import clsx from "clsx";
-import { CheckIcon, ChevronDown } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 import { useState } from "react";
+import Text from "./Text";
 
 type SearchDropdownItem = {
     label: string
@@ -23,8 +24,8 @@ export default function SearchDropdown({ items, onSelect, selectedItem }: Search
     const filteredItems = query === "" ? items : defaultFilter(query);
 
     return (
-         <div className="mx-auto h-screen w-52 pt-20">
-            <Combobox value={selectedItem} onChange={onSelect} onClose={() => setQuery("")}>
+         <div className="mx-auto w-full max-w-xs">
+            <Combobox value={selectedItem} onChange={onSelect} onClose={() => setQuery("")} by="value">
                 <div className="relative">
                     <ComboboxInput 
                         displayValue={(item?: SearchDropdownItem) => item?.label ?? ""}
@@ -50,16 +51,15 @@ export default function SearchDropdown({ items, onSelect, selectedItem }: Search
                         <ComboboxOption 
                         key={item.value} 
                         value={item}
-                        className={({ active }) =>
+                        className={
                             clsx(
-                            "flex cursor-pointer items-center gap-2 rounded-sm px-3 py-1.5 select-none",
-                            active ? "bg-primary-200 text-black" : "text-gray-900",
-                            "hover:bg-primary-100"
+                            "group flex cursor-pointer items-center gap-2 rounded-sm px-3 py-1.5 select-none",
+                            "data-focus:bg-primary-100"
                             )
                         }
                         >
-                            <CheckIcon className="invisible size-4 fill-white group-data-selected:visible" />
-                            {item.label}
+                        <Check className="invisible size-4 group-data-[selected]:visible" /> 
+                        <Text variant="body">{item.label}</Text>
                         </ComboboxOption>
                     ))}
                 </ComboboxOptions>

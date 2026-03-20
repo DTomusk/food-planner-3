@@ -41,3 +41,9 @@ export const Default: Story = {
         );
     }
 };
+
+export const EmptyItems: Story = {
+    args: {
+        items: [],
+    },
+};
