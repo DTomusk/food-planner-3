@@ -8,6 +8,8 @@ import { X } from "lucide-react";
 import Inline from "@/components/layout/Inline";
 import { useIngredientSelector } from "../hooks/useIngredientSelector";
 import type { IngredientOptionModel } from "@/features/ingredients/types";
+import SearchDropdown from "@/components/ui/SearchDropdown";
+import { useFuzzyDropdown } from "../hooks/useFuzzyDropdown";
 
 interface IngredientSelectorProps {
   index: number;
@@ -32,36 +34,40 @@ export default function IngredientSelector({ index, control, register, ingredien
     setValue,
     ingredients,
   });  
+
+  const { dropdownItems, filterFunction } = useFuzzyDropdown(
+    ingredients,
+    formatIngredientOption,
+    (ingredient) => ingredient.id
+  );
   
     return (
     <Inline align="center">
       <div className="flex-1">
         <FormField htmlFor={`ingredientUsages.${index}.ingredientId`} label="Ingredient" error={errors.ingredientUsages?.[index]?.ingredientId?.message}>
-          <Select defaultValue="" disabled={ingredients.length === 0} {...register(`ingredientUsages.${index}.ingredientId`)}>
-            <option value="" disabled={hasSelection}>
-              Select ingredient
-            </option>
-            {ingredients.map((ingredient) => (
-              <option key={ingredient.id} value={ingredient.id}>
-                {formatIngredientOption(ingredient)}
-              </option>
-            ))}
-          </Select>
+          <SearchDropdown
+            maxResults={5}
+            items={dropdownItems}
+            onSelect={(item) => {
+              setValue(`ingredientUsages.${index}.ingredientId`, item?.value ?? "", { shouldDirty: true });
+            }}
+            selectedItem={selectedIngredient ? { label: formatIngredientOption(selectedIngredient), value: selectedIngredient.id } : null}
+            filterFunction={filterFunction}
+          />
         </FormField>
       </div>
 
-      {hasSelection && (
-        <FormField htmlFor={`ingredientUsages.${index}.quantity`} label="Quantity" error={errors.ingredientUsages?.[index]?.quantity?.message}>
-          <Input
-            type="number"
-            min={0}
-            step={1}
-            placeholder="Qty"
-            {...register(`ingredientUsages.${index}.quantity`, {
-              valueAsNumber: true})}
-          />
-        </FormField>
-      )}
+      <FormField htmlFor={`ingredientUsages.${index}.quantity`} label="Quantity" error={errors.ingredientUsages?.[index]?.quantity?.message}>
+        <Input
+          type="number"
+          min={0}
+          step={1}
+          placeholder="Qty"
+          {...register(`ingredientUsages.${index}.quantity`, {
+            valueAsNumber: true})}
+          disabled={!hasSelection}
+        />
+      </FormField>
 
       {selectedIngredient && !isQuantumUnit && (
         <FormField htmlFor={`ingredientUsages.${index}.unit`} label="Unit">

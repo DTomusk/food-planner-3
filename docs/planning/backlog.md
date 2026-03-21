@@ -1,30 +1,6 @@
 # Backlog
 
-## Ready
-
-- [ ] Refresh tokens 
-    - Priority: high
-    - Area: auth backend (some frontend)
-    - Type: feature/tech debt
-    - Why: JWTs are short-lived by design, so users cannot stay logged in persistently with just a JWT. We need to introduce sessions so that users can stay logged in on a device for a configured amount of time before having to reauthenticate. 
-    - DoD:
-        - User can stay logged in longer than their JWT allows 
-        - Refresh token stored in http only cookie (so cannot be accessed by js)
-        - All tokens in a family invalidated when an expired token is used 
-        - Tokens rotated when new ones issued
-        - Token hashes stored in db to prevent problems if db leaks 
-
-- [ ] Investigate test coverage tools
-    - Priority: high
-    - Area: frontend and backend
-    - Type: tech debt
-    - Why: there is currently no visibility on how much of the code is covered by the current suite of tests, meaning it's much easier to not implement tests and especially test cases 
-    - DoD: 
-        - Test strategy documented for frontend and backend 
-        - Tool found for showing code coverage status (or determined to be too difficult/expensive to do now)
-        - AI focused test generation docs created
-
-## Planning
+## Ready 
 
 - [ ] Ingredient search 
     - Priority: high 
@@ -36,6 +12,8 @@
         - Search hook introduced: current ingredients are filtered by the given search characters and top five or so matches returned 
         - More ingredients added (doesn't have to be this ticket, but it makes sense to do it here)
         - Nice to have: cache ingredients on the frontend so they don't have to be fetched every time the edit page is opened (react query might already do this for us? Investigate)
+
+## Planning
 
 - [ ] Manual content moderation
     - Priority: high
@@ -109,7 +87,29 @@
     - Why: 
     - DoD: 
 
-## Done 
+## Done
+
+- [x] Investigate test coverage tools
+    - Priority: high
+    - Area: frontend and backend
+    - Type: tech debt
+    - Why: there is currently no visibility on how much of the code is covered by the current suite of tests, meaning it's much easier to not implement tests and especially test cases 
+    - DoD: 
+        - Test strategy documented for frontend and backend 
+        - Tool found for showing code coverage status (or determined to be too difficult/expensive to do now)
+        - AI focused test generation docs created 
+
+- [x] Refresh tokens 
+    - Priority: high
+    - Area: auth backend (some frontend)
+    - Type: feature/tech debt
+    - Why: JWTs are short-lived by design, so users cannot stay logged in persistently with just a JWT. We need to introduce sessions so that users can stay logged in on a device for a configured amount of time before having to reauthenticate. 
+    - DoD:
+        - User can stay logged in longer than their JWT allows 
+        - Refresh token stored in http only cookie (so cannot be accessed by js)
+        - All tokens in a family invalidated when an expired token is used 
+        - Tokens rotated when new ones issued
+        - Token hashes stored in db to prevent problems if db leaks
 
 - [x] Log out on unauthorized response 
     - Priority: high
