@@ -14,15 +14,16 @@ type SearchDropdownProps = {
     onSelect: (item: SearchDropdownItem | null) => void;
     selectedItem?: SearchDropdownItem | null;
     maxResults?: number;
+    filterFunction?: (query: string) => SearchDropdownItem[];
 }
 
-export default function SearchDropdown({ items, onSelect, selectedItem, maxResults }: SearchDropdownProps) {
+export default function SearchDropdown({ items, onSelect, selectedItem, maxResults, filterFunction }: SearchDropdownProps) {
     const [query, setQuery] = useState("");
 
     const defaultFilter = (query: string) => 
         items.filter((item) => item.label.toLowerCase().includes(query.toLowerCase()));
 
-    const filteredItems = query === "" ? items : defaultFilter(query);
+    const filteredItems = query === "" ? items : (filterFunction ? filterFunction(query) : defaultFilter(query));
     const limitedItems = filteredItems.slice(0, maxResults ?? filteredItems.length);
 
     return (

@@ -9,6 +9,8 @@ import Inline from "@/components/layout/Inline";
 import { useIngredientSelector } from "../hooks/useIngredientSelector";
 import type { IngredientOptionModel } from "@/features/ingredients/types";
 import SearchDropdown from "@/components/ui/SearchDropdown";
+import Fuse from "fuse.js";
+import { useMemo } from "react";
 
 interface IngredientSelectorProps {
   index: number;
@@ -33,6 +35,20 @@ export default function IngredientSelector({ index, control, register, ingredien
     setValue,
     ingredients,
   });  
+
+  const dropdownItems = useMemo(() =>
+    ingredients.map((ingredient) => ({
+    label: formatIngredientOption(ingredient),
+    value: ingredient.id,
+  })), [ingredients, formatIngredientOption]);
+
+  const fuse = useMemo(() => new Fuse(
+    dropdownItems,
+    {
+      keys: ["label"],
+      threshold: 0.3,
+    }
+  ), [dropdownItems]);
   
     return (
     <Inline align="center">
@@ -40,14 +56,12 @@ export default function IngredientSelector({ index, control, register, ingredien
         <FormField htmlFor={`ingredientUsages.${index}.ingredientId`} label="Ingredient" error={errors.ingredientUsages?.[index]?.ingredientId?.message}>
           <SearchDropdown
             maxResults={5}
-            items={ingredients.map((ingredient) => ({
-              label: formatIngredientOption(ingredient),
-              value: ingredient.id,
-            }))}
+            items={dropdownItems}
             onSelect={(item) => {
               setValue(`ingredientUsages.${index}.ingredientId`, item?.value ?? "", { shouldDirty: true });
             }}
             selectedItem={selectedIngredient ? { label: formatIngredientOption(selectedIngredient), value: selectedIngredient.id } : null}
+            filterFunction={(query) => query ? fuse.search(query).map(result => result.item) : dropdownItems}
           />
         </FormField>
       </div>
