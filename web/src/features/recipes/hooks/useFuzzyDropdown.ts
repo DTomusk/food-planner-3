@@ -6,6 +6,7 @@ export interface SearchDropdownItem {
   value: string | number;
 }
 
+// Move this hook if it gets used elsewhere
 export function useFuzzyDropdown<T>(
   items: T[],
   labelFn: (item: T) => string,
