@@ -83,12 +83,17 @@ type ComplexityRoot struct {
 		UpdateRecipe func(childComplexity int, input model.UpdateRecipeInput) int
 	}
 
+	PageInfo struct {
+		EndCursor   func(childComplexity int) int
+		HasNextPage func(childComplexity int) int
+	}
+
 	Query struct {
 		Empty       func(childComplexity int) int
 		Ingredients func(childComplexity int) int
 		Me          func(childComplexity int) int
 		Recipe      func(childComplexity int, id string) int
-		Recipes     func(childComplexity int) int
+		Recipes     func(childComplexity int, pagination *model.PaginationInput) int
 		User        func(childComplexity int, id string) int
 	}
 
@@ -99,6 +104,17 @@ type ComplexityRoot struct {
 		ID             func(childComplexity int) int
 		Version        func(childComplexity int, version int32) int
 		Versions       func(childComplexity int) int
+	}
+
+	RecipeConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	RecipeEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
 	}
 
 	RecipeSource struct {
@@ -148,7 +164,7 @@ type MutationResolver interface {
 type QueryResolver interface {
 	Empty(ctx context.Context) (*string, error)
 	Ingredients(ctx context.Context) ([]*model.Ingredient, error)
-	Recipes(ctx context.Context) ([]*model.Recipe, error)
+	Recipes(ctx context.Context, pagination *model.PaginationInput) (*model.RecipeConnection, error)
 	Recipe(ctx context.Context, id string) (*model.Recipe, error)
 	User(ctx context.Context, id string) (*model.User, error)
 	Me(ctx context.Context) (*model.User, error)
@@ -328,6 +344,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.UpdateRecipe(childComplexity, args["input"].(model.UpdateRecipeInput)), true
 
+	case "PageInfo.endCursor":
+		if e.complexity.PageInfo.EndCursor == nil {
+			break
+		}
+
+		return e.complexity.PageInfo.EndCursor(childComplexity), true
+	case "PageInfo.hasNextPage":
+		if e.complexity.PageInfo.HasNextPage == nil {
+			break
+		}
+
+		return e.complexity.PageInfo.HasNextPage(childComplexity), true
+
 	case "Query._empty":
 		if e.complexity.Query.Empty == nil {
 			break
@@ -362,7 +391,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		return e.complexity.Query.Recipes(childComplexity), true
+		args, err := ec.field_Query_recipes_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Recipes(childComplexity, args["pagination"].(*model.PaginationInput)), true
 	case "Query.user":
 		if e.complexity.Query.User == nil {
 			break
@@ -416,6 +450,38 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Recipe.Versions(childComplexity), true
+
+	case "RecipeConnection.edges":
+		if e.complexity.RecipeConnection.Edges == nil {
+			break
+		}
+
+		return e.complexity.RecipeConnection.Edges(childComplexity), true
+	case "RecipeConnection.pageInfo":
+		if e.complexity.RecipeConnection.PageInfo == nil {
+			break
+		}
+
+		return e.complexity.RecipeConnection.PageInfo(childComplexity), true
+	case "RecipeConnection.totalCount":
+		if e.complexity.RecipeConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.RecipeConnection.TotalCount(childComplexity), true
+
+	case "RecipeEdge.cursor":
+		if e.complexity.RecipeEdge.Cursor == nil {
+			break
+		}
+
+		return e.complexity.RecipeEdge.Cursor(childComplexity), true
+	case "RecipeEdge.node":
+		if e.complexity.RecipeEdge.Node == nil {
+			break
+		}
+
+		return e.complexity.RecipeEdge.Node(childComplexity), true
 
 	case "RecipeSource.bookPage":
 		if e.complexity.RecipeSource.BookPage == nil {
@@ -564,6 +630,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateIngredientUsageInput,
 		ec.unmarshalInputCreateRecipeInput,
 		ec.unmarshalInputCreateRecipeSourceInput,
+		ec.unmarshalInputPaginationInput,
 		ec.unmarshalInputSignInInput,
 		ec.unmarshalInputSignUpInput,
 		ec.unmarshalInputUpdateRecipeInput,
@@ -750,6 +817,17 @@ func (ec *executionContext) field_Query_recipe_args(ctx context.Context, rawArgs
 		return nil, err
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_recipes_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "pagination", ec.unmarshalOPaginationInput2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐPaginationInput)
+	if err != nil {
+		return nil, err
+	}
+	args["pagination"] = arg0
 	return args, nil
 }
 
@@ -1538,6 +1616,64 @@ func (ec *executionContext) fieldContext_Mutation_updateRecipe(ctx context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _PageInfo_hasNextPage(ctx context.Context, field graphql.CollectedField, obj *model.PageInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PageInfo_hasNextPage,
+		func(ctx context.Context) (any, error) {
+			return obj.HasNextPage, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PageInfo_hasNextPage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PageInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PageInfo_endCursor(ctx context.Context, field graphql.CollectedField, obj *model.PageInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PageInfo_endCursor,
+		func(ctx context.Context) (any, error) {
+			return obj.EndCursor, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_PageInfo_endCursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PageInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query__empty(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1617,16 +1753,17 @@ func (ec *executionContext) _Query_recipes(ctx context.Context, field graphql.Co
 		field,
 		ec.fieldContext_Query_recipes,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Query().Recipes(ctx)
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().Recipes(ctx, fc.Args["pagination"].(*model.PaginationInput))
 		},
 		nil,
-		ec.marshalNRecipe2ᚕᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipeᚄ,
+		ec.marshalNRecipeConnection2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipeConnection,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_Query_recipes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_recipes(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -1634,21 +1771,26 @@ func (ec *executionContext) fieldContext_Query_recipes(_ context.Context, field 
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_Recipe_id(ctx, field)
-			case "author":
-				return ec.fieldContext_Recipe_author(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_Recipe_createdAt(ctx, field)
-			case "currentVersion":
-				return ec.fieldContext_Recipe_currentVersion(ctx, field)
-			case "versions":
-				return ec.fieldContext_Recipe_versions(ctx, field)
-			case "version":
-				return ec.fieldContext_Recipe_version(ctx, field)
+			case "edges":
+				return ec.fieldContext_RecipeConnection_edges(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_RecipeConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_RecipeConnection_totalCount(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Recipe", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type RecipeConnection", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_recipes_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -2177,6 +2319,177 @@ func (ec *executionContext) fieldContext_Recipe_version(ctx context.Context, fie
 	if fc.Args, err = ec.field_Recipe_version_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RecipeConnection_edges(ctx context.Context, field graphql.CollectedField, obj *model.RecipeConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RecipeConnection_edges,
+		func(ctx context.Context) (any, error) {
+			return obj.Edges, nil
+		},
+		nil,
+		ec.marshalNRecipeEdge2ᚕᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipeEdgeᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RecipeConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RecipeConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "node":
+				return ec.fieldContext_RecipeEdge_node(ctx, field)
+			case "cursor":
+				return ec.fieldContext_RecipeEdge_cursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RecipeEdge", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RecipeConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *model.RecipeConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RecipeConnection_pageInfo,
+		func(ctx context.Context) (any, error) {
+			return obj.PageInfo, nil
+		},
+		nil,
+		ec.marshalNPageInfo2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐPageInfo,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RecipeConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RecipeConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "hasNextPage":
+				return ec.fieldContext_PageInfo_hasNextPage(ctx, field)
+			case "endCursor":
+				return ec.fieldContext_PageInfo_endCursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PageInfo", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RecipeConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *model.RecipeConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RecipeConnection_totalCount,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalCount, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint32,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RecipeConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RecipeConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RecipeEdge_node(ctx context.Context, field graphql.CollectedField, obj *model.RecipeEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RecipeEdge_node,
+		func(ctx context.Context) (any, error) {
+			return obj.Node, nil
+		},
+		nil,
+		ec.marshalNRecipe2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipe,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RecipeEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RecipeEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Recipe_id(ctx, field)
+			case "author":
+				return ec.fieldContext_Recipe_author(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Recipe_createdAt(ctx, field)
+			case "currentVersion":
+				return ec.fieldContext_Recipe_currentVersion(ctx, field)
+			case "versions":
+				return ec.fieldContext_Recipe_versions(ctx, field)
+			case "version":
+				return ec.fieldContext_Recipe_version(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Recipe", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RecipeEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *model.RecipeEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RecipeEdge_cursor,
+		func(ctx context.Context) (any, error) {
+			return obj.Cursor, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RecipeEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RecipeEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
 	}
 	return fc, nil
 }
@@ -4473,6 +4786,40 @@ func (ec *executionContext) unmarshalInputCreateRecipeSourceInput(ctx context.Co
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputPaginationInput(ctx context.Context, obj any) (model.PaginationInput, error) {
+	var it model.PaginationInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"first", "after"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "first":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+			data, err := ec.unmarshalOInt2ᚖint32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.First = data
+		case "after":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.After = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputSignInInput(ctx context.Context, obj any) (model.SignInInput, error) {
 	var it model.SignInInput
 	asMap := map[string]any{}
@@ -4831,6 +5178,47 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 	return out
 }
 
+var pageInfoImplementors = []string{"PageInfo"}
+
+func (ec *executionContext) _PageInfo(ctx context.Context, sel ast.SelectionSet, obj *model.PageInfo) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, pageInfoImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PageInfo")
+		case "hasNextPage":
+			out.Values[i] = ec._PageInfo_hasNextPage(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "endCursor":
+			out.Values[i] = ec._PageInfo_endCursor(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var queryImplementors = []string{"Query"}
 
 func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -5163,6 +5551,96 @@ func (ec *executionContext) _Recipe(ctx context.Context, sel ast.SelectionSet, o
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var recipeConnectionImplementors = []string{"RecipeConnection"}
+
+func (ec *executionContext) _RecipeConnection(ctx context.Context, sel ast.SelectionSet, obj *model.RecipeConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, recipeConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RecipeConnection")
+		case "edges":
+			out.Values[i] = ec._RecipeConnection_edges(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "pageInfo":
+			out.Values[i] = ec._RecipeConnection_pageInfo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalCount":
+			out.Values[i] = ec._RecipeConnection_totalCount(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var recipeEdgeImplementors = []string{"RecipeEdge"}
+
+func (ec *executionContext) _RecipeEdge(ctx context.Context, sel ast.SelectionSet, obj *model.RecipeEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, recipeEdgeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RecipeEdge")
+		case "node":
+			out.Values[i] = ec._RecipeEdge_node(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "cursor":
+			out.Values[i] = ec._RecipeEdge_cursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -6100,6 +6578,16 @@ func (ec *executionContext) marshalNInt2int32(ctx context.Context, sel ast.Selec
 	return res
 }
 
+func (ec *executionContext) marshalNPageInfo2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐPageInfo(ctx context.Context, sel ast.SelectionSet, v *model.PageInfo) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._PageInfo(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNRecipe2foodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipe(ctx context.Context, sel ast.SelectionSet, v model.Recipe) graphql.Marshaler {
 	return ec._Recipe(ctx, sel, &v)
 }
@@ -6156,6 +6644,74 @@ func (ec *executionContext) marshalNRecipe2ᚖfoodplannerᚋinternalᚋgqlᚋgra
 		return graphql.Null
 	}
 	return ec._Recipe(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNRecipeConnection2foodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipeConnection(ctx context.Context, sel ast.SelectionSet, v model.RecipeConnection) graphql.Marshaler {
+	return ec._RecipeConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNRecipeConnection2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipeConnection(ctx context.Context, sel ast.SelectionSet, v *model.RecipeConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RecipeConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNRecipeEdge2ᚕᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipeEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.RecipeEdge) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNRecipeEdge2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipeEdge(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNRecipeEdge2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipeEdge(ctx context.Context, sel ast.SelectionSet, v *model.RecipeEdge) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RecipeEdge(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNRecipeSource2foodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipeSource(ctx context.Context, sel ast.SelectionSet, v model.RecipeSource) graphql.Marshaler {
@@ -6600,6 +7156,14 @@ func (ec *executionContext) marshalOInt2ᚖint32(ctx context.Context, sel ast.Se
 	_ = ctx
 	res := graphql.MarshalInt32(*v)
 	return res
+}
+
+func (ec *executionContext) unmarshalOPaginationInput2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐPaginationInput(ctx context.Context, v any) (*model.PaginationInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputPaginationInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalORecipe2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipe(ctx context.Context, sel ast.SelectionSet, v *model.Recipe) graphql.Marshaler {

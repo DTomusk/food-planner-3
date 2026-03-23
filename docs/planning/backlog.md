@@ -2,16 +2,17 @@
 
 ## Ready 
 
-- [ ] Ingredient search 
-    - Priority: high 
-    - Area: frontend (for now)
-    - Type: feature 
-    - Why: currently, there are very few ingredients to choose from, so it's not a problem that you can't search them. However, this will VERY quickly stop being the case, and the site is essentially useless without it. When picking ingredients, users should only see ones that are relevant to their search
-    - DoD:
-        - Ingredient select is searchable, users can type in characters 
-        - Search hook introduced: current ingredients are filtered by the given search characters and top five or so matches returned 
-        - More ingredients added (doesn't have to be this ticket, but it makes sense to do it here)
-        - Nice to have: cache ingredients on the frontend so they don't have to be fetched every time the edit page is opened (react query might already do this for us? Investigate)
+- [ ] Recipe search  
+    - Priority: medium
+    - Area: recipes fullstack
+    - Type: feature
+    - Why: you can't currently search for recipes, this is atrocious
+    - DoD: 
+        - graphql query for searching recipe 
+        - ranked search results by relevance 
+        - paginated results 
+        - recipes/search page 
+        - search bar component (maybe on home page)
 
 ## Planning
 
@@ -23,13 +24,6 @@
     - DoD: 
 
 - [ ] Private/public recipes 
-    - Priority: 
-    - Area: 
-    - Type: (bug, tech debt, feature)
-    - Why: 
-    - DoD: 
-
-- [ ] Recipe search  
     - Priority: 
     - Area: 
     - Type: (bug, tech debt, feature)
@@ -78,6 +72,13 @@
     - Why: 
     - DoD:     
 
+- [ ] Ingredient registry where users can suggest missing ingredients
+    - Priority: 
+    - Area: 
+    - Type: (bug, tech debt, feature)
+    - Why: 
+    - DoD: 
+
 ## Item template 
 
 - [ ] Item name
@@ -88,6 +89,17 @@
     - DoD: 
 
 ## Done
+
+- [x] Ingredient search 
+    - Priority: high 
+    - Area: frontend (for now)
+    - Type: feature 
+    - Why: currently, there are very few ingredients to choose from, so it's not a problem that you can't search them. However, this will VERY quickly stop being the case, and the site is essentially useless without it. When picking ingredients, users should only see ones that are relevant to their search
+    - DoD:
+        - Ingredient select is searchable, users can type in characters 
+        - Search hook introduced: current ingredients are filtered by the given search characters and top five or so matches returned 
+        - More ingredients added (doesn't have to be this ticket, but it makes sense to do it here)
+        - Nice to have: cache ingredients on the frontend so they don't have to be fetched every time the edit page is opened (react query might already do this for us? Investigate)
 
 - [x] Investigate test coverage tools
     - Priority: high

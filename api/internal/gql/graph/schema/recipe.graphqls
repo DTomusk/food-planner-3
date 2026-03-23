@@ -46,8 +46,21 @@ type RecipeSource {
 }
 
 extend type Query {
-  recipes: [Recipe!]!
+  recipes(
+    pagination: PaginationInput
+  ): RecipeConnection!
   recipe(id: ID!): Recipe
+}
+
+type RecipeConnection {
+  edges: [RecipeEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int
+}
+
+type RecipeEdge {
+  node: Recipe!
+  cursor: String!
 }
 
 input CreateRecipeInput {

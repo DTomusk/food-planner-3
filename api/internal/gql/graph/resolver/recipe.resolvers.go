@@ -66,15 +66,16 @@ func (r *mutationResolver) UpdateRecipe(ctx context.Context, input model.UpdateR
 }
 
 // Recipes is the resolver for the recipes field.
-func (r *queryResolver) Recipes(ctx context.Context) ([]*model.Recipe, error) {
+func (r *queryResolver) Recipes(ctx context.Context, pagination *model.PaginationInput) (*model.RecipeConnection, error) {
 	logger := logging.FromContext(ctx)
-	recipes, err := r.RecipeService.GetAllRecipes(ctx)
+	_, err := r.RecipeService.GetAllRecipes(ctx)
 	if err != nil {
 		logger.Error("Failed to get all recipes", "error", err)
 		return nil, err
 	}
 
-	return mapRecipes(recipes), nil
+	//return mapRecipes(recipes), nil
+	return nil, nil
 }
 
 // Recipe is the resolver for the recipe field.
