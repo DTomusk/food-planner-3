@@ -109,29 +109,6 @@ func (r *recipeRepo) getRecipes(ctx context.Context, db db.DBTX, limit int, curs
 	return recipes, nil
 }
 
-func (r *recipeRepo) getAllRecipes(ctx context.Context, db db.DBTX) ([]*RecipeContainer, error) {
-	rows, err := db.QueryContext(ctx,
-		selectRecipeContainerWithVersionBaseQuery,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var recipes []*RecipeContainer
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	for rows.Next() {
-		rc, err := scanRecipeContainerWithVersion(rows)
-		if err != nil {
-			return nil, err
-		}
-		recipes = append(recipes, rc)
-	}
-	return recipes, nil
-}
-
 func (r *recipeRepo) getRecipesByUserID(ctx context.Context, db db.DBTX, userID uuid.UUID) ([]*RecipeContainer, error) {
 	rows, err := db.QueryContext(ctx,
 		selectRecipeContainerWithVersionByUserIDQuery,

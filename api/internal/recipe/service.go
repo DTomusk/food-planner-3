@@ -243,10 +243,6 @@ const (
 	maxRecipePageSize     = 100
 )
 
-func (s *Service) GetAllRecipes(ctx context.Context) ([]*RecipeContainer, error) {
-	return s.recipeRepo.getAllRecipes(ctx, s.txRunner.DB())
-}
-
 func (s *Service) GetRecipes(ctx context.Context, count int, cursor *string) ([]*RecipeWithCursor, *string, error) {
 	if count <= 0 {
 		count = defaultRecipePageSize

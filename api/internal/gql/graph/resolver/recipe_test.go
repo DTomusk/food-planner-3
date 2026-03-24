@@ -11,6 +11,7 @@ import (
 	"foodplanner/internal/testutil/seeds"
 	"foodplanner/internal/user"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
@@ -423,28 +424,81 @@ func TestRecipeResolver_CurrentVersion_UsesPreloadedValue(t *testing.T) {
 	require.Same(t, preloadedVersion, resolvedVersion)
 }
 
-// TODO: add back once service figured out
-// func TestRecipeResolver_RecipesAndRecipe_NoData(t *testing.T) {
-// 	testutil.WithTx(t, func(tx *sql.Tx) {
-// 		// Arrange
-// 		txRunner := testutil.NewTestTxRunner(tx)
-// 		r := &Resolver{
-// 			RecipeService: recipe.NewService(txRunner, recipe.NewRecipeRepo(), recipe.NewRecipeVersionRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100), recipe.NewIngredientUsageRepo(), nil),
-// 		}
-// 		queryResolver := &queryResolver{r}
+func TestRecipeResolver_Recipes_EmptyConnection(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		txRunner := testutil.NewTestTxRunner(tx)
+		r := &Resolver{
+			RecipeService: recipe.NewService(txRunner, recipe.NewRecipeRepo(), recipe.NewRecipeVersionRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100), recipe.NewIngredientUsageRepo(), nil),
+		}
+		ctx := context.Background()
 
-// 		ctx := context.Background()
+		connection, err := (&queryResolver{r}).Recipes(ctx, nil)
 
-// 		// Act & Assert
-// 		recipes, err := queryResolver.Recipes(ctx)
-// 		require.NoError(t, err)
-// 		require.Len(t, recipes, 0)
+		require.NoError(t, err)
+		require.NotNil(t, connection)
+		require.Empty(t, connection.Edges)
+		require.NotNil(t, connection.PageInfo)
+		require.False(t, connection.PageInfo.HasNextPage)
+		require.Nil(t, connection.PageInfo.EndCursor)
+	})
+}
 
-// 		fetchedRecipe, err := queryResolver.Recipe(ctx, uuid.New().String())
-// 		require.NoError(t, err)
-// 		require.Nil(t, fetchedRecipe)
-// 	})
-// }
+func TestRecipeResolver_Recipes_PaginatesEdges(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		txRunner := testutil.NewTestTxRunner(tx)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		// Seed 3 recipes with descending created_at: Alpha newest, Gamma oldest.
+		now := time.Date(2026, time.March, 17, 12, 0, 0, 0, time.UTC)
+		names := []string{"Recipe Alpha", "Recipe Beta", "Recipe Gamma"}
+		for i, name := range names {
+			recipeID := uuid.New()
+			versionID := uuid.New()
+			createdAt := now.Add(-time.Duration(i) * time.Minute)
+			require.NoError(t, seeds.InsertRecipeContainer(ctx, tx, recipeID, testUser.ID))
+			require.NoError(t, seeds.InsertRecipeVersion(ctx, tx, versionID, recipeID, name, 10, 20, 2, 1))
+			require.NoError(t, seeds.SetRecipeContainerCurrentVersion(ctx, tx, recipeID, versionID))
+			_, err = tx.ExecContext(ctx, `UPDATE recipe_containers SET created_at = $1 WHERE id = $2`, createdAt, recipeID)
+			require.NoError(t, err)
+			_, err = tx.ExecContext(ctx, `UPDATE recipe_versions SET created_at = $1 WHERE id = $2`, createdAt, versionID)
+			require.NoError(t, err)
+		}
+
+		r := &Resolver{
+			RecipeService: recipe.NewService(txRunner, recipe.NewRecipeRepo(), recipe.NewRecipeVersionRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100), recipe.NewIngredientUsageRepo(), nil),
+		}
+		qr := &queryResolver{r}
+
+		// First page: 2 of 3 items.
+		firstPage, err := qr.Recipes(ctx, &model.PaginationInput{First: ptrInt32(2)})
+		require.NoError(t, err)
+		require.NotNil(t, firstPage)
+		require.Len(t, firstPage.Edges, 2)
+		require.True(t, firstPage.PageInfo.HasNextPage)
+		require.NotNil(t, firstPage.PageInfo.EndCursor)
+		require.Equal(t, "Recipe Alpha", firstPage.Edges[0].Node.CurrentVersion.Name)
+		require.Equal(t, "Recipe Beta", firstPage.Edges[1].Node.CurrentVersion.Name)
+		require.NotEmpty(t, firstPage.Edges[0].Cursor)
+		require.NotEmpty(t, firstPage.Edges[1].Cursor)
+		// EndCursor is the cursor of the last edge on the page.
+		require.Equal(t, *firstPage.PageInfo.EndCursor, firstPage.Edges[1].Cursor)
+
+		// Second page: remaining item, no next page.
+		secondPage, err := qr.Recipes(ctx, &model.PaginationInput{
+			First: ptrInt32(2),
+			After: firstPage.PageInfo.EndCursor,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, secondPage)
+		require.Len(t, secondPage.Edges, 1)
+		require.Equal(t, "Recipe Gamma", secondPage.Edges[0].Node.CurrentVersion.Name)
+		require.False(t, secondPage.PageInfo.HasNextPage)
+		require.Nil(t, secondPage.PageInfo.EndCursor)
+	})
+}
 
 func TestRecipeVersionResolver_NoDataPaths(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
