@@ -7,6 +7,7 @@ import (
 	"foodplanner/internal/testutil"
 	"foodplanner/internal/testutil/seeds"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -286,5 +287,75 @@ func TestCreateRecipe_NoSource(t *testing.T) {
 
 		// Assert
 		require.NoError(t, err)
+	})
+}
+
+func TestGetRecipes_PaginatesAcrossPages(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		txRunner := testutil.NewTestTxRunner(tx)
+		s := NewService(
+			txRunner,
+			NewRecipeRepo(),
+			NewRecipeVersionRepo(),
+			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
+			NewIngredientUsageRepo(),
+			nil,
+		)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err, "Failed to seed test user")
+
+		newestCreatedAt := time.Date(2026, time.March, 17, 11, 42, 48, 147630000, time.UTC)
+		middleCreatedAt := newestCreatedAt.Add(-1 * time.Minute)
+		oldestCreatedAt := newestCreatedAt.Add(-2 * time.Minute)
+
+		newest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "Newest", newestCreatedAt, nil)
+		middle := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "Middle", middleCreatedAt, nil)
+		oldest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "Oldest", oldestCreatedAt, nil)
+
+		firstPage, nextCursor, err := s.GetRecipes(ctx, 2, nil)
+
+		require.NoError(t, err)
+		require.Len(t, firstPage, 2)
+		require.Equal(t, newest.RecipeID, firstPage[0].ID)
+		require.Equal(t, middle.RecipeID, firstPage[1].ID)
+		require.NotNil(t, nextCursor)
+
+		parsedCursor, err := ParseRecipeCursor(nextCursor)
+		require.NoError(t, err)
+		require.NotNil(t, parsedCursor)
+		require.True(t, middle.CreatedAt.Equal(parsedCursor.CreatedAt))
+		require.Equal(t, middle.RecipeID, parsedCursor.ID)
+
+		secondPage, finalCursor, err := s.GetRecipes(ctx, 2, nextCursor)
+
+		require.NoError(t, err)
+		require.Len(t, secondPage, 1)
+		require.Equal(t, oldest.RecipeID, secondPage[0].ID)
+		require.Nil(t, finalCursor)
+	})
+}
+
+func TestGetRecipes_InvalidCursor(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		txRunner := testutil.NewTestTxRunner(tx)
+		s := NewService(
+			txRunner,
+			NewRecipeRepo(),
+			NewRecipeVersionRepo(),
+			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
+			NewIngredientUsageRepo(),
+			nil,
+		)
+
+		invalidCursor := "not-a-valid-cursor"
+
+		recipes, nextCursor, err := s.GetRecipes(ctx, 2, &invalidCursor)
+
+		require.ErrorIs(t, err, ErrInvalidCursor)
+		require.Nil(t, recipes)
+		require.Nil(t, nextCursor)
 	})
 }
