@@ -242,6 +242,11 @@ func (s *Service) GetAllRecipes(ctx context.Context) ([]*RecipeContainer, error)
 	return s.recipeRepo.getAllRecipes(ctx, s.txRunner.DB())
 }
 
+func (s *Service) GetRecipes(ctx context.Context, count int, cursor *string) ([]*RecipeContainer, *string, error) {
+	//return s.recipeRepo.getRecipes(ctx, s.txRunner.DB(), count, cursor)
+	return nil, nil, nil
+}
+
 func (s *Service) GetRecipeByID(ctx context.Context, id uuid.UUID) (*RecipeContainer, error) {
 	return s.recipeRepo.getRecipeByID(ctx, s.txRunner.DB(), id)
 }
