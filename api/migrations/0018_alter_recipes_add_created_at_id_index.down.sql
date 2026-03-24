@@ -1,0 +1,1 @@
+DELETE INDEX idx_recipes_created_at_id;
