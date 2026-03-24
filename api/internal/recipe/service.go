@@ -238,13 +238,45 @@ func (s *Service) validateAndConvertIngredientUsages(ctx context.Context, logger
 	return newIngredientUsages(ingredientUsageRequests, ingredientByID)
 }
 
+const (
+	defaultRecipePageSize = 20
+	maxRecipePageSize     = 100
+)
+
 func (s *Service) GetAllRecipes(ctx context.Context) ([]*RecipeContainer, error) {
 	return s.recipeRepo.getAllRecipes(ctx, s.txRunner.DB())
 }
 
 func (s *Service) GetRecipes(ctx context.Context, count int, cursor *string) ([]*RecipeContainer, *string, error) {
-	//return s.recipeRepo.getRecipes(ctx, s.txRunner.DB(), count, cursor)
-	return nil, nil, nil
+	if count <= 0 {
+		count = defaultRecipePageSize
+	}
+	if count > maxRecipePageSize {
+		count = maxRecipePageSize
+	}
+
+	c, err := ParseRecipeCursor(cursor)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	rows, err := s.recipeRepo.getRecipes(ctx, s.txRunner.DB(), count+1, c)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var nextCursor *string
+	if len(rows) > count {
+		rows = rows[:count]
+		last := rows[len(rows)-1]
+		encoded := (&RecipeCursor{
+			CreatedAt: last.CreatedAt,
+			ID:        last.ID,
+		}).String()
+		nextCursor = &encoded
+	}
+
+	return rows, nextCursor, nil
 }
 
 func (s *Service) GetRecipeByID(ctx context.Context, id uuid.UUID) (*RecipeContainer, error) {

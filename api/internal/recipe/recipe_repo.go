@@ -69,6 +69,46 @@ func (r *recipeRepo) getRecipeByID(ctx context.Context, db db.DBTX, id uuid.UUID
 	return rc, nil
 }
 
+func (r *recipeRepo) getRecipes(ctx context.Context, db db.DBTX, limit int, cursor *RecipeCursor) ([]*RecipeContainer, error) {
+	const baseQuery = selectRecipeContainerWithVersionBaseQuery + `
+	WHERE rc.deleted_on IS NULL`
+
+	var query string
+	var args []any
+
+	if cursor != nil {
+		query = baseQuery + `
+	AND (rc.created_at, rc.id) < ($1, $2)
+	ORDER BY rc.created_at DESC, rc.id DESC
+	LIMIT $3`
+		args = []any{cursor.CreatedAt, cursor.ID, limit}
+	} else {
+		query = baseQuery + `
+	ORDER BY rc.created_at DESC, rc.id DESC
+	LIMIT $1`
+		args = []any{limit}
+	}
+
+	rows, err := db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var recipes []*RecipeContainer
+	for rows.Next() {
+		rc, err := scanRecipeContainerWithVersion(rows)
+		if err != nil {
+			return nil, err
+		}
+		recipes = append(recipes, rc)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return recipes, nil
+}
+
 func (r *recipeRepo) getAllRecipes(ctx context.Context, db db.DBTX) ([]*RecipeContainer, error) {
 	rows, err := db.QueryContext(ctx,
 		selectRecipeContainerWithVersionBaseQuery,
