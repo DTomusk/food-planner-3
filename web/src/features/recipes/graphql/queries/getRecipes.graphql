@@ -1,8 +1,16 @@
 query GetRecipes {
     recipes {
-        id
-        currentVersion {
-            name
+        edges {
+            node {
+                id
+                currentVersion {
+                    name
+                }
+            }
+        }
+        pageInfo {
+            hasNextPage
+            endCursor
         }
     }
 }
