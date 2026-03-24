@@ -318,8 +318,20 @@ func TestGetRecipes_PaginatesAcrossPages(t *testing.T) {
 
 		require.NoError(t, err)
 		require.Len(t, firstPage, 2)
-		require.Equal(t, newest.RecipeID, firstPage[0].ID)
-		require.Equal(t, middle.RecipeID, firstPage[1].ID)
+		require.Equal(t, newest.RecipeID, firstPage[0].Recipe.ID)
+		require.Equal(t, middle.RecipeID, firstPage[1].Recipe.ID)
+
+		firstEdgeCursor, err := ParseRecipeCursor(&firstPage[0].Cursor)
+		require.NoError(t, err)
+		require.NotNil(t, firstEdgeCursor)
+		require.True(t, newest.CreatedAt.Equal(firstEdgeCursor.CreatedAt))
+		require.Equal(t, newest.RecipeID, firstEdgeCursor.ID)
+
+		secondEdgeCursor, err := ParseRecipeCursor(&firstPage[1].Cursor)
+		require.NoError(t, err)
+		require.NotNil(t, secondEdgeCursor)
+		require.True(t, middle.CreatedAt.Equal(secondEdgeCursor.CreatedAt))
+		require.Equal(t, middle.RecipeID, secondEdgeCursor.ID)
 		require.NotNil(t, nextCursor)
 
 		parsedCursor, err := ParseRecipeCursor(nextCursor)
@@ -332,7 +344,7 @@ func TestGetRecipes_PaginatesAcrossPages(t *testing.T) {
 
 		require.NoError(t, err)
 		require.Len(t, secondPage, 1)
-		require.Equal(t, oldest.RecipeID, secondPage[0].ID)
+		require.Equal(t, oldest.RecipeID, secondPage[0].Recipe.ID)
 		require.Nil(t, finalCursor)
 	})
 }

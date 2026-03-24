@@ -247,7 +247,7 @@ func (s *Service) GetAllRecipes(ctx context.Context) ([]*RecipeContainer, error)
 	return s.recipeRepo.getAllRecipes(ctx, s.txRunner.DB())
 }
 
-func (s *Service) GetRecipes(ctx context.Context, count int, cursor *string) ([]*RecipeContainer, *string, error) {
+func (s *Service) GetRecipes(ctx context.Context, count int, cursor *string) ([]*RecipeWithCursor, *string, error) {
 	if count <= 0 {
 		count = defaultRecipePageSize
 	}
@@ -269,14 +269,42 @@ func (s *Service) GetRecipes(ctx context.Context, count int, cursor *string) ([]
 	if len(rows) > count {
 		rows = rows[:count]
 		last := rows[len(rows)-1]
-		encoded := (&RecipeCursor{
-			CreatedAt: last.CreatedAt,
-			ID:        last.ID,
-		}).String()
+		encoded, err := recipeContainerCursor(last)
+		if err != nil {
+			return nil, nil, err
+		}
 		nextCursor = &encoded
 	}
 
-	return rows, nextCursor, nil
+	recipes := make([]*RecipeWithCursor, len(rows))
+	for i, row := range rows {
+		encoded, err := recipeContainerCursor(row)
+		if err != nil {
+			return nil, nil, err
+		}
+		recipes[i] = &RecipeWithCursor{
+			Recipe: row,
+			Cursor: encoded,
+		}
+	}
+
+	return recipes, nextCursor, nil
+}
+
+func recipeContainerCursor(recipeContainer *RecipeContainer) (string, error) {
+	if recipeContainer == nil {
+		return "", ErrInvalidCursor
+	}
+
+	encoded := (&RecipeCursor{
+		CreatedAt: recipeContainer.CreatedAt,
+		ID:        recipeContainer.ID,
+	}).String()
+	if encoded == "" {
+		return "", ErrInvalidCursor
+	}
+
+	return encoded, nil
 }
 
 func (s *Service) GetRecipeByID(ctx context.Context, id uuid.UUID) (*RecipeContainer, error) {
