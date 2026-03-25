@@ -7,19 +7,22 @@ import type { RecipePage } from "../types";
 
 type UseRecipesParams = {
     first?: number;
+    query?: string;
 };
 
 export function useRecipes(params: UseRecipesParams = {}) {
-    const { first = 20 } = params;
+    const { first = 20, query } = params;
+    const normalizedQuery = query?.trim() || null;
 
-    return useInfiniteQuery<GetRecipesQuery, ClientError, RecipePage, readonly ["recipes", number], string | null>({
-        queryKey: ["recipes", first],
+    return useInfiniteQuery<GetRecipesQuery, ClientError, RecipePage, readonly ["recipes", number, string | null], string | null>({
+        queryKey: ["recipes", first, normalizedQuery],
         initialPageParam: null,
         queryFn: ({ pageParam }) => graphqlRequest(GetRecipesDocument, {
             input: {
                 first,
                 after: pageParam ?? undefined,
             },
+            filter: normalizedQuery ? { query: normalizedQuery } : undefined,
         }),
         getNextPageParam: (lastPage) => {
             if (!lastPage.recipes.pageInfo.hasNextPage) {

@@ -521,6 +521,123 @@ func TestGetRecipes_ValidCursorWithMatchingHashAppliesBoundary(t *testing.T) {
 	})
 }
 
+func TestGetRecipes_SearchQueryReturnsRelevanceCursorsAndPaginates(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx, s, exactHigh, exactLow, fuzzy := setupRecipeSearchFixture(t, tx)
+
+		query := "chicken soup"
+		params := RecipeListParams{
+			Pagination: RecipePagination{First: 2},
+			Filter: RecipeFilter{
+				Query: &query,
+			},
+		}
+
+		firstPage, nextCursor, err := s.GetRecipes(ctx, params)
+
+		require.NoError(t, err)
+		require.Len(t, firstPage, 2)
+		require.NotNil(t, nextCursor)
+		require.Equal(t, exactHigh.RecipeID, firstPage[0].Recipe.ID)
+		require.Equal(t, exactLow.RecipeID, firstPage[1].Recipe.ID)
+
+		expectedHash := filterHashForParams(RecipeCursorModeRelevance, &query)
+		for _, edge := range firstPage {
+			parsed, err := ParseRecipeCursor(&edge.Cursor)
+			require.NoError(t, err)
+			require.NotNil(t, parsed)
+			require.Equal(t, RecipeCursorModeRelevance, parsed.Mode)
+			require.Equal(t, expectedHash, parsed.FilterHash)
+			require.NotNil(t, parsed.RelevanceScore)
+		}
+
+		parsedNext, err := ParseRecipeCursor(nextCursor)
+		require.NoError(t, err)
+		require.NotNil(t, parsedNext)
+		require.Equal(t, RecipeCursorModeRelevance, parsedNext.Mode)
+		require.Equal(t, expectedHash, parsedNext.FilterHash)
+		require.NotNil(t, parsedNext.RelevanceScore)
+
+		params.Pagination.After = nextCursor
+		secondPage, finalCursor, err := s.GetRecipes(ctx, params)
+
+		require.NoError(t, err)
+		require.Len(t, secondPage, 1)
+		require.Equal(t, fuzzy.RecipeID, secondPage[0].Recipe.ID)
+		require.Nil(t, finalCursor)
+
+		lastParsed, err := ParseRecipeCursor(&secondPage[0].Cursor)
+		require.NoError(t, err)
+		require.NotNil(t, lastParsed)
+		require.Equal(t, RecipeCursorModeRelevance, lastParsed.Mode)
+		require.Equal(t, expectedHash, lastParsed.FilterHash)
+		require.NotNil(t, lastParsed.RelevanceScore)
+	})
+}
+
+func TestGetRecipes_SearchQueryWithStaleNewestCursorIsIgnored(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx, s, exactHigh, exactLow, _ := setupRecipeSearchFixture(t, tx)
+
+		staleCursor := (&RecipeCursor{
+			Mode:       RecipeCursorModeNewest,
+			FilterHash: filterHashForParams(RecipeCursorModeNewest, nil),
+			CreatedAt:  exactHigh.CreatedAt,
+			ID:         exactHigh.RecipeID,
+		}).String()
+		require.NotEmpty(t, staleCursor)
+
+		query := "chicken soup"
+		params := RecipeListParams{
+			Pagination: RecipePagination{First: 2, After: &staleCursor},
+			Filter: RecipeFilter{
+				Query: &query,
+			},
+		}
+
+		recipes, _, err := s.GetRecipes(ctx, params)
+
+		require.NoError(t, err)
+		require.Len(t, recipes, 2)
+		// If stale mode cursor is ignored, we start at the first page of search results.
+		require.Equal(t, exactHigh.RecipeID, recipes[0].Recipe.ID)
+		require.Equal(t, exactLow.RecipeID, recipes[1].Recipe.ID)
+	})
+}
+
+func TestGetRecipes_SearchQueryWithStaleRelevanceHashIsIgnored(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx, s, exactHigh, exactLow, _ := setupRecipeSearchFixture(t, tx)
+
+		otherQuery := "pasta"
+		score := 0.9
+		staleCursor := (&RecipeCursor{
+			Mode:           RecipeCursorModeRelevance,
+			FilterHash:     filterHashForParams(RecipeCursorModeRelevance, &otherQuery),
+			CreatedAt:      exactHigh.CreatedAt,
+			ID:             exactHigh.RecipeID,
+			RelevanceScore: &score,
+		}).String()
+		require.NotEmpty(t, staleCursor)
+
+		query := "chicken soup"
+		params := RecipeListParams{
+			Pagination: RecipePagination{First: 2, After: &staleCursor},
+			Filter: RecipeFilter{
+				Query: &query,
+			},
+		}
+
+		recipes, _, err := s.GetRecipes(ctx, params)
+
+		require.NoError(t, err)
+		require.Len(t, recipes, 2)
+		// If stale hash is ignored, we start at the first page for the current search query.
+		require.Equal(t, exactHigh.RecipeID, recipes[0].Recipe.ID)
+		require.Equal(t, exactLow.RecipeID, recipes[1].Recipe.ID)
+	})
+}
+
 func setupRecipeListFixture(t *testing.T, tx *sql.Tx) (context.Context, *Service, listedRecipeSeed, listedRecipeSeed, listedRecipeSeed) {
 	t.Helper()
 
@@ -549,4 +666,34 @@ func setupRecipeListFixture(t *testing.T, tx *sql.Tx) (context.Context, *Service
 	oldest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "Oldest", oldestCreatedAt, nil)
 
 	return ctx, s, newest, middle, oldest
+}
+
+func setupRecipeSearchFixture(t *testing.T, tx *sql.Tx) (context.Context, *Service, listedRecipeSeed, listedRecipeSeed, listedRecipeSeed) {
+	t.Helper()
+
+	ctx := context.Background()
+	txRunner := testutil.NewTestTxRunner(tx)
+	repo, err := NewRecipeRepo(0.15, 0.85)
+	require.NoError(t, err)
+	s := NewService(
+		txRunner,
+		repo,
+		NewRecipeVersionRepo(),
+		ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
+		NewIngredientUsageRepo(),
+		nil,
+	)
+
+	testUser, err := seeds.SeedTestUser(ctx, tx)
+	require.NoError(t, err, "Failed to seed test user")
+
+	sameCreatedAt := time.Date(2026, time.March, 17, 11, 40, 48, 147630000, time.UTC)
+	olderCreatedAt := sameCreatedAt.Add(-1 * time.Minute)
+
+	exactHigh := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("ffffffff-ffff-ffff-ffff-fffffffffff1"), uuid.New(), "Chicken Soup", sameCreatedAt, nil)
+	exactLow := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("00000000-0000-0000-0000-000000000002"), uuid.New(), "Chicken Soup", sameCreatedAt, nil)
+	fuzzy := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("11111111-1111-1111-1111-111111111111"), uuid.New(), "Chikcen Soup", olderCreatedAt, nil)
+	seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("22222222-2222-2222-2222-222222222222"), uuid.New(), "Beef Chili", olderCreatedAt, nil)
+
+	return ctx, s, exactHigh, exactLow, fuzzy
 }
