@@ -12,7 +12,7 @@ import { Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function RecipeListingPage() {
-    const { data, isLoading, error } = useRecipes();
+    const { data, isLoading, error, hasNextPage, fetchNextPage, isFetchingNextPage } = useRecipes({ first: 20 });
     const { isAuthenticated } = useAuth();
     
     const navigate = useNavigate();
@@ -39,6 +39,19 @@ export default function RecipeListingPage() {
                     <>
                         <SectionTitle text="Top recipes" />
                         <RecipeList recipes={data.recipes} />
+                        {hasNextPage && (
+                            <Inline>
+                                <Button
+                                    onClick={() => {
+                                        void fetchNextPage();
+                                    }}
+                                    variant="secondary"
+                                    loading={isFetchingNextPage}
+                                >
+                                    Load more
+                                </Button>
+                            </Inline>
+                        )}
                     </>
                 )}
                 </Stack>

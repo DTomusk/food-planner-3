@@ -1,5 +1,5 @@
-query GetRecipes {
-    recipes {
+query GetRecipes($input: PaginationInput) {
+    recipes(pagination: $input) {
         edges {
             node {
                 id
