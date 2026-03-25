@@ -8,14 +8,16 @@ import type { RecipePage } from "../types";
 type UseRecipesParams = {
     first?: number;
     query?: string;
+    enabled?: boolean;
 };
 
 export function useRecipes(params: UseRecipesParams = {}) {
-    const { first = 20, query } = params;
+    const { first = 20, query, enabled = true } = params;
     const normalizedQuery = query?.trim() || null;
 
     return useInfiniteQuery<GetRecipesQuery, ClientError, RecipePage, readonly ["recipes", number, string | null], string | null>({
         queryKey: ["recipes", first, normalizedQuery],
+        enabled,
         initialPageParam: null,
         queryFn: ({ pageParam }) => graphqlRequest(GetRecipesDocument, {
             input: {
