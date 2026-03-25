@@ -76,7 +76,25 @@ func (r *queryResolver) Recipes(ctx context.Context, pagination *model.Paginatio
 		}
 		after = pagination.After
 	}
-	recipes, endCursor, err := r.RecipeService.GetRecipes(ctx, first, after)
+
+	var filterModel *model.RecipeFilterInput
+	if filter != nil {
+		filterModel = filter
+	} else {
+		filterModel = &model.RecipeFilterInput{}
+	}
+
+	params := recipe.RecipeListParams{
+		Pagination: recipe.RecipePagination{
+			First: first,
+			After: after,
+		},
+		Filter: recipe.RecipeFilter{
+			Query: filterModel.Query,
+		},
+	}
+
+	recipes, endCursor, err := r.RecipeService.GetRecipes(ctx, params)
 	if err != nil {
 		logger.Error("Failed to get all recipes", "error", err)
 		return nil, err

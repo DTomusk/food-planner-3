@@ -314,7 +314,15 @@ func TestGetRecipes_PaginatesAcrossPages(t *testing.T) {
 		middle := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "Middle", middleCreatedAt, nil)
 		oldest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "Oldest", oldestCreatedAt, nil)
 
-		firstPage, nextCursor, err := s.GetRecipes(ctx, 2, nil)
+		params := RecipeListParams{
+			Pagination: RecipePagination{
+				First: 2,
+				After: nil,
+			},
+			Filter: RecipeFilter{},
+		}
+
+		firstPage, nextCursor, err := s.GetRecipes(ctx, params)
 
 		require.NoError(t, err)
 		require.Len(t, firstPage, 2)
@@ -340,7 +348,8 @@ func TestGetRecipes_PaginatesAcrossPages(t *testing.T) {
 		require.True(t, middle.CreatedAt.Equal(parsedCursor.CreatedAt))
 		require.Equal(t, middle.RecipeID, parsedCursor.ID)
 
-		secondPage, finalCursor, err := s.GetRecipes(ctx, 2, nextCursor)
+		params.Pagination.After = nextCursor
+		secondPage, finalCursor, err := s.GetRecipes(ctx, params)
 
 		require.NoError(t, err)
 		require.Len(t, secondPage, 1)
@@ -364,7 +373,15 @@ func TestGetRecipes_InvalidCursor(t *testing.T) {
 
 		invalidCursor := "not-a-valid-cursor"
 
-		recipes, nextCursor, err := s.GetRecipes(ctx, 2, &invalidCursor)
+		params := RecipeListParams{
+			Pagination: RecipePagination{
+				First: 2,
+				After: &invalidCursor,
+			},
+			Filter: RecipeFilter{},
+		}
+
+		recipes, nextCursor, err := s.GetRecipes(ctx, params)
 
 		require.ErrorIs(t, err, ErrInvalidCursor)
 		require.Nil(t, recipes)

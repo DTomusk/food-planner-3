@@ -243,7 +243,10 @@ const (
 	maxRecipePageSize     = 100
 )
 
-func (s *Service) GetRecipes(ctx context.Context, count int, cursor *string) ([]*RecipeWithCursor, *string, error) {
+func (s *Service) GetRecipes(ctx context.Context, params RecipeListParams) ([]*RecipeWithCursor, *string, error) {
+	count := params.Pagination.First
+	cursor := params.Pagination.After
+
 	if count <= 0 {
 		count = defaultRecipePageSize
 	}

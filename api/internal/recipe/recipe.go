@@ -31,11 +31,6 @@ type RecipeVersion struct {
 	CreatedAt time.Time
 }
 
-type RecipeWithCursor struct {
-	Recipe *RecipeContainer
-	Cursor string
-}
-
 func NewRecipe(
 	name string,
 	userID uuid.UUID,

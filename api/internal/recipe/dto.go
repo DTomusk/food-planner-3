@@ -28,3 +28,22 @@ type UpdateRecipeRequest struct {
 	RecipeId string              `json:"recipe_id" validate:"required,uuid4"`
 	Request  CreateRecipeRequest `json:"request" validate:"required,dive"`
 }
+
+type RecipeListParams struct {
+	Pagination RecipePagination
+	Filter     RecipeFilter
+}
+
+type RecipePagination struct {
+	First int
+	After *string
+}
+
+type RecipeFilter struct {
+	Query *string
+}
+
+type RecipeWithCursor struct {
+	Recipe *RecipeContainer
+	Cursor string
+}
