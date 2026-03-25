@@ -245,8 +245,8 @@ const (
 
 func (s *Service) GetRecipes(ctx context.Context, params RecipeListParams) ([]*RecipeWithCursor, *string, error) {
 	count := params.Pagination.First
-	cursor := params.Pagination.After
 
+	// Default limits if invalid
 	if count <= 0 {
 		count = defaultRecipePageSize
 	}
@@ -254,35 +254,70 @@ func (s *Service) GetRecipes(ctx context.Context, params RecipeListParams) ([]*R
 		count = maxRecipePageSize
 	}
 
+	// Extract query from filter object
+	var query *string
+	if params.Filter.Query != nil && *params.Filter.Query != "" {
+		trimmed := strings.TrimSpace(*params.Filter.Query)
+		if trimmed != "" {
+			query = &trimmed
+		}
+	}
+
+	// If a query is included, then set the mode to relevance, otherwise use the default newest mode
+	mode := RecipeCursorModeNewest
+	if query != nil {
+		mode = RecipeCursorModeRelevance
+	}
+	filterHash := filterHashForParams(mode, query)
+
+	cursor := params.Pagination.After
 	c, err := ParseRecipeCursor(cursor)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	rows, err := s.recipeRepo.getRecipes(ctx, s.txRunner.DB(), count+1, c)
+	// Matches compares the mode and filter hash of the cursor to the current request
+	// If they don't match, then we nullify the cursor and query from the start
+	if !c.Matches(mode, filterHash) {
+		c = nil
+	}
+
+	// Query recipes
+	var rows []*RecipeListRow
+	switch mode {
+	case RecipeCursorModeNewest:
+		rows, err = s.recipeRepo.getRecipesByCreatedAt(ctx, s.txRunner.DB(), count+1, c)
+	case RecipeCursorModeRelevance:
+		rows, err = s.recipeRepo.getRecipesByRelevance(ctx, s.txRunner.DB(), *query, count+1, c)
+	default:
+		return nil, nil, ErrInvalidCursor
+	}
+
 	if err != nil {
 		return nil, nil, err
 	}
 
+	// Once we've done the query, set the starting cursor for the next page
 	var nextCursor *string
 	if len(rows) > count {
 		rows = rows[:count]
 		last := rows[len(rows)-1]
-		encoded, err := recipeContainerCursor(last)
+		encoded, err := recipeContainerCursor(last, mode, filterHash)
 		if err != nil {
 			return nil, nil, err
 		}
 		nextCursor = &encoded
 	}
 
+	// Construct the response objects with cursors
 	recipes := make([]*RecipeWithCursor, len(rows))
 	for i, row := range rows {
-		encoded, err := recipeContainerCursor(row)
+		encoded, err := recipeContainerCursor(row, mode, filterHash)
 		if err != nil {
 			return nil, nil, err
 		}
 		recipes[i] = &RecipeWithCursor{
-			Recipe: row,
+			Recipe: row.Recipe,
 			Cursor: encoded,
 		}
 	}
@@ -290,15 +325,31 @@ func (s *Service) GetRecipes(ctx context.Context, params RecipeListParams) ([]*R
 	return recipes, nextCursor, nil
 }
 
-func recipeContainerCursor(recipeContainer *RecipeContainer) (string, error) {
-	if recipeContainer == nil {
+func recipeContainerCursor(
+	row *RecipeListRow,
+	mode RecipeCursorMode,
+	filterHash string,
+) (string, error) {
+	if row == nil {
 		return "", ErrInvalidCursor
 	}
 
-	encoded := (&RecipeCursor{
-		CreatedAt: recipeContainer.CreatedAt,
-		ID:        recipeContainer.ID,
-	}).String()
+	if row.Recipe == nil {
+		return "", ErrInvalidCursor
+	}
+
+	cursor := &RecipeCursor{
+		Mode:       mode,
+		FilterHash: filterHash,
+		CreatedAt:  row.Recipe.CreatedAt,
+		ID:         row.Recipe.ID,
+	}
+
+	if mode == RecipeCursorModeRelevance && row.RelevanceScore != nil {
+		cursor.RelevanceScore = row.RelevanceScore
+	}
+
+	encoded := cursor.String()
 	if encoded == "" {
 		return "", ErrInvalidCursor
 	}

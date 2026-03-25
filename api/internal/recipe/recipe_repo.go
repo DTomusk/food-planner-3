@@ -69,7 +69,7 @@ func (r *recipeRepo) getRecipeByID(ctx context.Context, db db.DBTX, id uuid.UUID
 	return rc, nil
 }
 
-func (r *recipeRepo) getRecipes(ctx context.Context, db db.DBTX, limit int, cursor *RecipeCursor) ([]*RecipeContainer, error) {
+func (r *recipeRepo) getRecipesByCreatedAt(ctx context.Context, db db.DBTX, limit int, cursor *RecipeCursor) ([]*RecipeListRow, error) {
 	const baseQuery = selectRecipeContainerWithVersionBaseQuery + `
 	WHERE rc.deleted_on IS NULL`
 
@@ -95,18 +95,22 @@ func (r *recipeRepo) getRecipes(ctx context.Context, db db.DBTX, limit int, curs
 	}
 	defer rows.Close()
 
-	var recipes []*RecipeContainer
+	var recipes []*RecipeListRow
 	for rows.Next() {
 		rc, err := scanRecipeContainerWithVersion(rows)
 		if err != nil {
 			return nil, err
 		}
-		recipes = append(recipes, rc)
+		recipes = append(recipes, &RecipeListRow{Recipe: rc})
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 	return recipes, nil
+}
+
+func (r *recipeRepo) getRecipesByRelevance(ctx context.Context, db db.DBTX, query string, limit int, cursor *RecipeCursor) ([]*RecipeListRow, error) {
+	return nil, nil
 }
 
 func (r *recipeRepo) getRecipesByUserID(ctx context.Context, db db.DBTX, userID uuid.UUID) ([]*RecipeContainer, error) {

@@ -119,13 +119,13 @@ func TestGetRecipes_ReturnsActiveRecipesOrderedByCreatedAtAndIDDesc(t *testing.T
 		older := seedRecipeForListTests(t, ctx, tx, testUser.ID, olderID, uuid.New(), "Older", olderCreatedAt, nil)
 		seedRecipeForListTests(t, ctx, tx, testUser.ID, deletedID, uuid.New(), "Deleted", deletedCreatedAt, &deletedOn)
 
-		recipes, err := r.getRecipes(ctx, tx, 10, nil)
+		recipes, err := r.getRecipesByCreatedAt(ctx, tx, 10, nil)
 
 		require.NoError(t, err)
 		require.Len(t, recipes, 3)
-		require.Equal(t, newestHigh.RecipeID, recipes[0].ID)
-		require.Equal(t, newestLow.RecipeID, recipes[1].ID)
-		require.Equal(t, older.RecipeID, recipes[2].ID)
+		require.Equal(t, newestHigh.RecipeID, recipes[0].Recipe.ID)
+		require.Equal(t, newestLow.RecipeID, recipes[1].Recipe.ID)
+		require.Equal(t, older.RecipeID, recipes[2].Recipe.ID)
 	})
 }
 
@@ -149,12 +149,12 @@ func TestGetRecipes_AppliesCursorBoundary(t *testing.T) {
 			ID:        newestHigh.RecipeID,
 		}
 
-		recipes, err := r.getRecipes(ctx, tx, 10, cursor)
+		recipes, err := r.getRecipesByCreatedAt(ctx, tx, 10, cursor)
 
 		require.NoError(t, err)
 		require.Len(t, recipes, 2)
-		require.Equal(t, newestLow.RecipeID, recipes[0].ID)
-		require.Equal(t, older.RecipeID, recipes[1].ID)
+		require.Equal(t, newestLow.RecipeID, recipes[0].Recipe.ID)
+		require.Equal(t, older.RecipeID, recipes[1].Recipe.ID)
 	})
 }
 

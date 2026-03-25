@@ -39,11 +39,12 @@ type RecipePagination struct {
 	After *string
 }
 
-type RecipeFilter struct {
-	Query *string
-}
-
 type RecipeWithCursor struct {
 	Recipe *RecipeContainer
 	Cursor string
+}
+
+type RecipeListRow struct {
+	Recipe         *RecipeContainer
+	RelevanceScore *float64
 }
