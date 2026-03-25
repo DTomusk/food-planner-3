@@ -288,6 +288,7 @@ func (s *Service) GetRecipes(ctx context.Context, params RecipeListParams) ([]*R
 	case RecipeCursorModeNewest:
 		rows, err = s.recipeRepo.getRecipesByCreatedAt(ctx, s.txRunner.DB(), count+1, c)
 	case RecipeCursorModeRelevance:
+		// query can be safely dereferenced as checked above
 		rows, err = s.recipeRepo.getRecipesByRelevance(ctx, s.txRunner.DB(), *query, count+1, c)
 	default:
 		return nil, nil, ErrInvalidCursor
