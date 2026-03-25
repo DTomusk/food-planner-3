@@ -1,0 +1,2 @@
+DROP INDEX IF EXISTS idx_recipe_versions_name_fts_gin;
+DROP INDEX IF EXISTS idx_recipe_versions_name_trgm_gin;
