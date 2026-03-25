@@ -3,10 +3,10 @@ import { GetRecipesDocument, type GetRecipesQuery } from "../../../lib/graphql.g
 import { graphqlRequest } from "@/lib";
 import { mapRecipeSummary } from "../mappers/recipeMapper";
 import type { ClientError } from "graphql-request";
-import type { RecipeSummary } from "../types";
+import type { RecipePage } from "../types";
 
 export function useRecipes() {
-    return useQuery<GetRecipesQuery, ClientError, RecipeSummary[]>({
+    return useQuery<GetRecipesQuery, ClientError, RecipePage>({
         queryKey: ["recipes"],
         queryFn: () => graphqlRequest(GetRecipesDocument),
         select: (data) => {

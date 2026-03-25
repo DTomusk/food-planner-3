@@ -35,6 +35,12 @@ export type RecipeSource = {
     instructions?: string;
 }
 
+export type RecipePage = {
+    recipes: RecipeSummary[];
+    endCursor: string | null;
+    hasNextPage: boolean;
+}
+
 export type RecipeSummary = {
     id: string;
     name: string;
