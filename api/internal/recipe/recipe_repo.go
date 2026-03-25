@@ -8,7 +8,10 @@ import (
 	"github.com/google/uuid"
 )
 
-type recipeRepo struct{}
+type recipeRepo struct {
+	trigramWeight  float64
+	fullTextWeight float64
+}
 
 const (
 	selectRecipeContainerWithVersionBaseQuery = `SELECT 
@@ -23,7 +26,10 @@ const (
 )
 
 func NewRecipeRepo() *recipeRepo {
-	return &recipeRepo{}
+	return &recipeRepo{
+		trigramWeight:  0.15,
+		fullTextWeight: 0.85,
+	}
 }
 
 func (r *recipeRepo) createRecipeContainer(ctx context.Context, tx *sql.Tx, recipeContainer *RecipeContainer) (*RecipeContainer, error) {
@@ -110,7 +116,111 @@ func (r *recipeRepo) getRecipesByCreatedAt(ctx context.Context, db db.DBTX, limi
 }
 
 func (r *recipeRepo) getRecipesByRelevance(ctx context.Context, db db.DBTX, query string, limit int, cursor *RecipeCursor) ([]*RecipeListRow, error) {
-	return nil, nil
+	// Relevance score is a mix of full-text search ranking and trigram similarity, weighted towards full-text search. Sorting is done by relevance score first, then created_at and id to ensure a deterministic order.
+	// this can be fine tuned in the future
+	scoreExpression := `
+		($1 * ts_rank_cd(to_tsvector('english', coalesce(rv.name, '')), websearch_to_tsquery('english', $3)) 
+		+ $2 * similarity(lower(rv.name), lower($3))) AS relevance_score
+	`
+
+	baseQuery := `
+WITH ranked AS (
+    SELECT
+		rc.id AS container_id,
+        rc.user_id,
+		rc.created_at AS container_created_at,
+        rc.current_version_id,
+        rv.id AS version_id,
+		rv.recipe_id AS version_recipe_id,
+        rv.name,
+        rv.prep_mins,
+        rv.cook_mins,
+        rv.portions,
+        rv.created_at AS version_created_at,
+        rv.version,
+    ` + scoreExpression + `
+    FROM recipe_containers rc
+    JOIN recipe_versions rv ON rc.current_version_id = rv.id
+    WHERE rc.deleted_on IS NULL
+      AND (
+        to_tsvector('english', coalesce(rv.name, '')) @@ websearch_to_tsquery('english', $3)
+        OR lower(rv.name) % lower($3)
+      )
+)
+SELECT
+	container_id,
+    user_id,
+	container_created_at,
+    current_version_id,
+    version_id,
+	version_recipe_id,
+    name,
+    prep_mins,
+    cook_mins,
+    portions,
+    version_created_at,
+    version,
+    relevance_score
+FROM ranked
+`
+
+	var q string
+	var args []any
+
+	if cursor != nil {
+		if cursor.RelevanceScore == nil {
+			return nil, ErrInvalidCursor
+		}
+
+		q = baseQuery + `
+		WHERE (relevance_score, container_created_at, container_id) < ($4, $5, $6)
+		ORDER BY relevance_score DESC, container_created_at DESC, container_id DESC
+		LIMIT $7`
+
+		args = []any{r.fullTextWeight, r.trigramWeight, query, *cursor.RelevanceScore, cursor.CreatedAt, cursor.ID, limit}
+	} else {
+		q = baseQuery + `
+	ORDER BY relevance_score DESC, container_created_at DESC, container_id DESC
+	LIMIT $4`
+		args = []any{r.fullTextWeight, r.trigramWeight, query, limit}
+	}
+
+	rows, err := db.QueryContext(ctx, q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	results := make([]*RecipeListRow, 0, limit)
+	for rows.Next() {
+		var rc RecipeContainer
+		var rv RecipeVersion
+		score := new(float64)
+		err := rows.Scan(
+			&rc.ID,
+			&rc.UserID,
+			&rc.CreatedAt,
+			&rc.CurrentVersionID,
+			&rv.ID,
+			&rv.RecipeID,
+			&rv.Name,
+			&rv.PrepMins,
+			&rv.CookMins,
+			&rv.Portions,
+			&rv.CreatedAt,
+			&rv.Version,
+			score,
+		)
+		if err != nil {
+			return nil, err
+		}
+		rc.CurrentVersion = &rv
+		results = append(results, &RecipeListRow{Recipe: &rc, RelevanceScore: score})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return results, nil
 }
 
 func (r *recipeRepo) getRecipesByUserID(ctx context.Context, db db.DBTX, userID uuid.UUID) ([]*RecipeContainer, error) {
