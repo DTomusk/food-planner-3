@@ -80,6 +80,10 @@ type RecipeEdge struct {
 	Cursor string  `json:"cursor"`
 }
 
+type RecipeFilterInput struct {
+	Query *string `json:"query,omitempty"`
+}
+
 type RecipeSource struct {
 	Type         int32   `json:"type"`
 	URL          *string `json:"url,omitempty"`

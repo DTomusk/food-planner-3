@@ -432,7 +432,7 @@ func TestRecipeResolver_Recipes_EmptyConnection(t *testing.T) {
 		}
 		ctx := context.Background()
 
-		connection, err := (&queryResolver{r}).Recipes(ctx, nil)
+		connection, err := (&queryResolver{r}).Recipes(ctx, nil, nil)
 
 		require.NoError(t, err)
 		require.NotNil(t, connection)
@@ -473,7 +473,7 @@ func TestRecipeResolver_Recipes_PaginatesEdges(t *testing.T) {
 		qr := &queryResolver{r}
 
 		// First page: 2 of 3 items.
-		firstPage, err := qr.Recipes(ctx, &model.PaginationInput{First: ptrInt32(2)})
+		firstPage, err := qr.Recipes(ctx, &model.PaginationInput{First: ptrInt32(2)}, nil)
 		require.NoError(t, err)
 		require.NotNil(t, firstPage)
 		require.Len(t, firstPage.Edges, 2)
@@ -490,7 +490,7 @@ func TestRecipeResolver_Recipes_PaginatesEdges(t *testing.T) {
 		secondPage, err := qr.Recipes(ctx, &model.PaginationInput{
 			First: ptrInt32(2),
 			After: firstPage.PageInfo.EndCursor,
-		})
+		}, nil)
 		require.NoError(t, err)
 		require.NotNil(t, secondPage)
 		require.Len(t, secondPage.Edges, 1)

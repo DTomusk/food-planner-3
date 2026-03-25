@@ -48,6 +48,7 @@ type RecipeSource {
 extend type Query {
   recipes(
     pagination: PaginationInput
+    filter: RecipeFilterInput
   ): RecipeConnection!
   recipe(id: ID!): Recipe
 }
@@ -61,6 +62,10 @@ type RecipeConnection {
 type RecipeEdge {
   node: Recipe!
   cursor: String!
+}
+
+input RecipeFilterInput {
+  query: String
 }
 
 input CreateRecipeInput {
