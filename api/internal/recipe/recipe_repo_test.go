@@ -21,10 +21,24 @@ type listedRecipeSeed struct {
 	CreatedAt time.Time
 }
 
+func TestNewRepo_ValidatesWeights(t *testing.T) {
+	_, err := NewRecipeRepo(-0.1, 1.1)
+	require.Error(t, err)
+	_, err = NewRecipeRepo(0.5, 0.6)
+	require.Error(t, err)
+	_, err = NewRecipeRepo(0.15, 0.85)
+	require.NoError(t, err)
+	_, err = NewRecipeRepo(0, 1)
+	require.NoError(t, err)
+	_, err = NewRecipeRepo(1, 0)
+	require.NoError(t, err)
+}
+
 func TestGetRecipe_DoesNotErrorWhenNotFound(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
-		r := NewRecipeRepo()
+		r, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
 
 		// Act
 		recipeContainer, err := r.getRecipeByID(context.Background(), tx, uuid.MustParse("04061e4e-6d4c-41d1-abcf-8b214927e1ed"))
@@ -39,7 +53,8 @@ func TestGetRecipesByUserID(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
 		ctx := context.Background()
-		r := NewRecipeRepo()
+		r, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
 
 		testUser, err := seeds.SeedTestUser(ctx, tx)
 		require.NoError(t, err, "Failed to seed test user")
@@ -99,7 +114,8 @@ func TestGetRecipesByUserID(t *testing.T) {
 func TestGetRecipes_ReturnsActiveRecipesOrderedByCreatedAtAndIDDesc(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		ctx := context.Background()
-		r := NewRecipeRepo()
+		r, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
 
 		testUser, err := seeds.SeedTestUser(ctx, tx)
 		require.NoError(t, err, "Failed to seed test user")
@@ -132,7 +148,8 @@ func TestGetRecipes_ReturnsActiveRecipesOrderedByCreatedAtAndIDDesc(t *testing.T
 func TestGetRecipes_AppliesCursorBoundary(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		ctx := context.Background()
-		r := NewRecipeRepo()
+		r, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
 
 		testUser, err := seeds.SeedTestUser(ctx, tx)
 		require.NoError(t, err, "Failed to seed test user")
@@ -161,7 +178,8 @@ func TestGetRecipes_AppliesCursorBoundary(t *testing.T) {
 func TestGetRecipesByRelevance_ReturnsMatchesOrderedByScoreThenCreatedAtThenIDDesc(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		ctx := context.Background()
-		r := NewRecipeRepo()
+		r, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
 
 		testUser, err := seeds.SeedTestUser(ctx, tx)
 		require.NoError(t, err, "Failed to seed test user")
@@ -191,7 +209,8 @@ func TestGetRecipesByRelevance_ReturnsMatchesOrderedByScoreThenCreatedAtThenIDDe
 func TestGetRecipesByRelevance_AppliesCursorBoundary(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		ctx := context.Background()
-		r := NewRecipeRepo()
+		r, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
 
 		testUser, err := seeds.SeedTestUser(ctx, tx)
 		require.NoError(t, err, "Failed to seed test user")
@@ -225,7 +244,8 @@ func TestGetRecipesByRelevance_AppliesCursorBoundary(t *testing.T) {
 func TestGetRecipesByRelevance_ReturnsErrInvalidCursorWhenScoreMissing(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		ctx := context.Background()
-		r := NewRecipeRepo()
+		r, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
 
 		cursor := &RecipeCursor{
 			CreatedAt: time.Now().UTC(),
@@ -242,7 +262,8 @@ func TestGetRecipesByRelevance_ReturnsErrInvalidCursorWhenScoreMissing(t *testin
 func TestGetRecipesByRelevance_SupportsFuzzyMatching(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		ctx := context.Background()
-		r := NewRecipeRepo()
+		r, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
 
 		testUser, err := seeds.SeedTestUser(ctx, tx)
 		require.NoError(t, err, "Failed to seed test user")

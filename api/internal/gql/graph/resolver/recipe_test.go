@@ -40,7 +40,9 @@ func TestRecipeResolver_CreateAndGetRecipe(t *testing.T) {
 		require.NoError(t, err, "Failed to seed test user")
 
 		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100)
-		service := recipe.NewService(txRunner, recipe.NewRecipeRepo(), recipe.NewRecipeVersionRepo(), ingredientService, recipe.NewIngredientUsageRepo(), nil)
+		repo, err := recipe.NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		service := recipe.NewService(txRunner, repo, recipe.NewRecipeVersionRepo(), ingredientService, recipe.NewIngredientUsageRepo(), nil)
 		r := &Resolver{
 			RecipeService: service,
 		}
@@ -98,7 +100,9 @@ func TestRecipeResolver_CreateAndGetRecipe_WithResolver(t *testing.T) {
 		require.NoError(t, err, "Failed to seed test user")
 
 		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100)
-		service := recipe.NewService(txRunner, recipe.NewRecipeRepo(), recipe.NewRecipeVersionRepo(), ingredientService, recipe.NewIngredientUsageRepo(), nil)
+		repo, err := recipe.NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		service := recipe.NewService(txRunner, repo, recipe.NewRecipeVersionRepo(), ingredientService, recipe.NewIngredientUsageRepo(), nil)
 		r := &Resolver{
 			IngredientsService: ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
 			RecipeService:      service,
@@ -182,7 +186,9 @@ func TestRecipeResolver_CreateRecipe_Unauthenticated(t *testing.T) {
 		require.NoError(t, err, "Failed to seed test ingredient")
 
 		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100)
-		service := recipe.NewService(txRunner, recipe.NewRecipeRepo(), recipe.NewRecipeVersionRepo(), ingredientService, recipe.NewIngredientUsageRepo(), nil)
+		repo, err := recipe.NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		service := recipe.NewService(txRunner, repo, recipe.NewRecipeVersionRepo(), ingredientService, recipe.NewIngredientUsageRepo(), nil)
 		r := &Resolver{
 			RecipeService: service,
 		}
@@ -233,7 +239,9 @@ func TestRecipeResolver_UpdateRecipe_Unauthenticated(t *testing.T) {
 		require.NoError(t, err, "Failed to seed test user")
 
 		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100)
-		service := recipe.NewService(txRunner, recipe.NewRecipeRepo(), recipe.NewRecipeVersionRepo(), ingredientService, recipe.NewIngredientUsageRepo(), nil)
+		repo, err := recipe.NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		service := recipe.NewService(txRunner, repo, recipe.NewRecipeVersionRepo(), ingredientService, recipe.NewIngredientUsageRepo(), nil)
 		r := &Resolver{
 			RecipeService: service,
 		}
@@ -309,7 +317,9 @@ func TestRecipeResolver_UpdateRecipe_WithVersionResolvers(t *testing.T) {
 		require.NoError(t, err, "Failed to seed test user")
 
 		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100)
-		service := recipe.NewService(txRunner, recipe.NewRecipeRepo(), recipe.NewRecipeVersionRepo(), ingredientService, recipe.NewIngredientUsageRepo(), nil)
+		repo, err := recipe.NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		service := recipe.NewService(txRunner, repo, recipe.NewRecipeVersionRepo(), ingredientService, recipe.NewIngredientUsageRepo(), nil)
 		r := &Resolver{
 			IngredientsService: ingredientService,
 			RecipeService:      service,
@@ -427,8 +437,11 @@ func TestRecipeResolver_CurrentVersion_UsesPreloadedValue(t *testing.T) {
 func TestRecipeResolver_Recipes_EmptyConnection(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		txRunner := testutil.NewTestTxRunner(tx)
+		repo, err := recipe.NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+
 		r := &Resolver{
-			RecipeService: recipe.NewService(txRunner, recipe.NewRecipeRepo(), recipe.NewRecipeVersionRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100), recipe.NewIngredientUsageRepo(), nil),
+			RecipeService: recipe.NewService(txRunner, repo, recipe.NewRecipeVersionRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100), recipe.NewIngredientUsageRepo(), nil),
 		}
 		ctx := context.Background()
 
@@ -467,8 +480,11 @@ func TestRecipeResolver_Recipes_PaginatesEdges(t *testing.T) {
 			require.NoError(t, err)
 		}
 
+		repo, err := recipe.NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+
 		r := &Resolver{
-			RecipeService: recipe.NewService(txRunner, recipe.NewRecipeRepo(), recipe.NewRecipeVersionRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100), recipe.NewIngredientUsageRepo(), nil),
+			RecipeService: recipe.NewService(txRunner, repo, recipe.NewRecipeVersionRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100), recipe.NewIngredientUsageRepo(), nil),
 		}
 		qr := &queryResolver{r}
 
@@ -521,8 +537,11 @@ func TestRecipeVersionResolver_NoDataPaths(t *testing.T) {
 		err = seeds.SetRecipeContainerCurrentVersion(ctx, tx, recipeID, versionID)
 		require.NoError(t, err)
 
+		repo, err := recipe.NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+
 		r := &Resolver{
-			RecipeService:      recipe.NewService(txRunner, recipe.NewRecipeRepo(), recipe.NewRecipeVersionRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100), recipe.NewIngredientUsageRepo(), nil),
+			RecipeService:      recipe.NewService(txRunner, repo, recipe.NewRecipeVersionRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100), recipe.NewIngredientUsageRepo(), nil),
 			IngredientsService: ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
 		}
 		recipeVersionResolver := &recipeVersionResolver{r}

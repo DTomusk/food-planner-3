@@ -3,6 +3,7 @@ package recipe
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"foodplanner/internal/db"
 
 	"github.com/google/uuid"
@@ -25,11 +26,17 @@ const (
 	WHERE rc.user_id = $1`
 )
 
-func NewRecipeRepo() *recipeRepo {
-	return &recipeRepo{
-		trigramWeight:  0.15,
-		fullTextWeight: 0.85,
+func NewRecipeRepo(trigramWeight, fullTextWeight float64) (*recipeRepo, error) {
+	if trigramWeight < 0 || fullTextWeight < 0 {
+		return nil, fmt.Errorf("weights must be non-negative")
 	}
+	if trigramWeight+fullTextWeight != 1 {
+		return nil, fmt.Errorf("weights must sum to 1")
+	}
+	return &recipeRepo{
+		trigramWeight:  trigramWeight,
+		fullTextWeight: fullTextWeight,
+	}, nil
 }
 
 func (r *recipeRepo) createRecipeContainer(ctx context.Context, tx *sql.Tx, recipeContainer *RecipeContainer) (*RecipeContainer, error) {

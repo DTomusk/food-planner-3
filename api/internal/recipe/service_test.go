@@ -32,9 +32,11 @@ func TestCreateRecipe(t *testing.T) {
 		testUser, err := seeds.SeedTestUser(ctx, tx)
 		require.NoError(t, err, "Failed to seed test user")
 
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
 		s := NewService(
 			txRunner,
-			NewRecipeRepo(),
+			repo,
 			NewRecipeVersionRepo(),
 			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
 			NewIngredientUsageRepo(),
@@ -96,9 +98,11 @@ func TestCreateRecipeWithDuplicateIngredients(t *testing.T) {
 		testUser, err := seeds.SeedTestUser(ctx, tx)
 		require.NoError(t, err, "Failed to seed test user")
 
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
 		s := NewService(
 			txRunner,
-			NewRecipeRepo(),
+			repo,
 			NewRecipeVersionRepo(),
 			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
 			NewIngredientUsageRepo(),
@@ -130,9 +134,11 @@ func TestCreateRecipeWithNonexistentIngredient(t *testing.T) {
 
 		testUser, err := seeds.SeedTestUser(ctx, tx)
 		require.NoError(t, err, "Failed to seed test user")
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
 		s := NewService(
 			txRunner,
-			NewRecipeRepo(),
+			repo,
 			NewRecipeVersionRepo(),
 			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
 			NewIngredientUsageRepo(),
@@ -173,9 +179,11 @@ func TestCreateRecipeWithInvalidUnit(t *testing.T) {
 		require.NoError(t, err, "Failed to seed test ingredient")
 		testUser, err := seeds.SeedTestUser(ctx, tx)
 		require.NoError(t, err, "Failed to seed test user")
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
 		s := NewService(
 			txRunner,
-			NewRecipeRepo(),
+			repo,
 			NewRecipeVersionRepo(),
 			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
 			NewIngredientUsageRepo(),
@@ -214,9 +222,11 @@ func TestCreateRecipeNotPreferredUnit(t *testing.T) {
 		require.NoError(t, err, "Failed to seed test ingredient")
 		testUser, err := seeds.SeedTestUser(ctx, tx)
 		require.NoError(t, err, "Failed to seed test user")
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
 		s := NewService(
 			txRunner,
-			NewRecipeRepo(),
+			repo,
 			NewRecipeVersionRepo(),
 			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
 			NewIngredientUsageRepo(),
@@ -259,9 +269,11 @@ func TestCreateRecipe_NoSource(t *testing.T) {
 		testUser, err := seeds.SeedTestUser(ctx, tx)
 		require.NoError(t, err, "Failed to seed test user")
 
+		repo, err := NewRecipeRepo(0.15, 0.85)
+
 		s := NewService(
 			txRunner,
-			NewRecipeRepo(),
+			repo,
 			NewRecipeVersionRepo(),
 			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
 			NewIngredientUsageRepo(),
@@ -294,9 +306,11 @@ func TestGetRecipes_PaginatesAcrossPages(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		ctx := context.Background()
 		txRunner := testutil.NewTestTxRunner(tx)
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
 		s := NewService(
 			txRunner,
-			NewRecipeRepo(),
+			repo,
 			NewRecipeVersionRepo(),
 			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
 			NewIngredientUsageRepo(),
@@ -362,9 +376,11 @@ func TestGetRecipes_InvalidCursor(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		ctx := context.Background()
 		txRunner := testutil.NewTestTxRunner(tx)
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
 		s := NewService(
 			txRunner,
-			NewRecipeRepo(),
+			repo,
 			NewRecipeVersionRepo(),
 			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
 			NewIngredientUsageRepo(),
@@ -510,9 +526,11 @@ func setupRecipeListFixture(t *testing.T, tx *sql.Tx) (context.Context, *Service
 
 	ctx := context.Background()
 	txRunner := testutil.NewTestTxRunner(tx)
+	repo, err := NewRecipeRepo(0.15, 0.85)
+	require.NoError(t, err)
 	s := NewService(
 		txRunner,
-		NewRecipeRepo(),
+		repo,
 		NewRecipeVersionRepo(),
 		ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
 		NewIngredientUsageRepo(),
