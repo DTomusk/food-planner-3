@@ -1,9 +1,17 @@
-query GetMyRecipes {
+query GetMyRecipes($input: PaginationInput) {
     me {
-        recipes {
-            id
-            currentVersion {
-                name
+        recipes(pagination: $input) {
+            edges {
+                node {
+                    id
+                    currentVersion {
+                        name
+                    }
+                }
+            }
+            pageInfo {
+                hasNextPage
+                endCursor
             }
         }
     }

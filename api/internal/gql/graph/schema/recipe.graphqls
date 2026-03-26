@@ -66,6 +66,7 @@ type RecipeEdge {
 
 input RecipeFilterInput {
   query: String
+  userID: String
 }
 
 input CreateRecipeInput {

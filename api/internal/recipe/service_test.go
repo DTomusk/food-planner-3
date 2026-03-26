@@ -426,14 +426,14 @@ func TestGetRecipes_CursorIncludesModeAndFilterHashForNewest(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, edgeCursor)
 		require.Equal(t, RecipeCursorModeNewest, edgeCursor.Mode)
-		require.Equal(t, filterHashForParams(RecipeCursorModeNewest, nil), edgeCursor.FilterHash)
+		require.Equal(t, filterHashForParams(RecipeCursorModeNewest, nil, nil), edgeCursor.FilterHash)
 		require.Nil(t, edgeCursor.RelevanceScore)
 
 		pageCursor, err := ParseRecipeCursor(nextCursor)
 		require.NoError(t, err)
 		require.NotNil(t, pageCursor)
 		require.Equal(t, RecipeCursorModeNewest, pageCursor.Mode)
-		require.Equal(t, filterHashForParams(RecipeCursorModeNewest, nil), pageCursor.FilterHash)
+		require.Equal(t, filterHashForParams(RecipeCursorModeNewest, nil, nil), pageCursor.FilterHash)
 	})
 }
 
@@ -445,7 +445,7 @@ func TestGetRecipes_StaleCursorModeIsIgnored(t *testing.T) {
 		score := 0.8
 		staleCursor := (&RecipeCursor{
 			Mode:           RecipeCursorModeRelevance,
-			FilterHash:     filterHashForParams(RecipeCursorModeRelevance, &searchQuery),
+			FilterHash:     filterHashForParams(RecipeCursorModeRelevance, &searchQuery, nil),
 			CreatedAt:      newest.CreatedAt,
 			ID:             newest.RecipeID,
 			RelevanceScore: &score,
@@ -500,7 +500,7 @@ func TestGetRecipes_ValidCursorWithMatchingHashAppliesBoundary(t *testing.T) {
 
 		validCursor := (&RecipeCursor{
 			Mode:       RecipeCursorModeNewest,
-			FilterHash: filterHashForParams(RecipeCursorModeNewest, nil),
+			FilterHash: filterHashForParams(RecipeCursorModeNewest, nil, nil),
 			CreatedAt:  newest.CreatedAt,
 			ID:         newest.RecipeID,
 		}).String()
@@ -541,7 +541,7 @@ func TestGetRecipes_SearchQueryReturnsRelevanceCursorsAndPaginates(t *testing.T)
 		require.Equal(t, exactHigh.RecipeID, firstPage[0].Recipe.ID)
 		require.Equal(t, exactLow.RecipeID, firstPage[1].Recipe.ID)
 
-		expectedHash := filterHashForParams(RecipeCursorModeRelevance, &query)
+		expectedHash := filterHashForParams(RecipeCursorModeRelevance, &query, nil)
 		for _, edge := range firstPage {
 			parsed, err := ParseRecipeCursor(&edge.Cursor)
 			require.NoError(t, err)
@@ -581,7 +581,7 @@ func TestGetRecipes_SearchQueryWithStaleNewestCursorIsIgnored(t *testing.T) {
 
 		staleCursor := (&RecipeCursor{
 			Mode:       RecipeCursorModeNewest,
-			FilterHash: filterHashForParams(RecipeCursorModeNewest, nil),
+			FilterHash: filterHashForParams(RecipeCursorModeNewest, nil, nil),
 			CreatedAt:  exactHigh.CreatedAt,
 			ID:         exactHigh.RecipeID,
 		}).String()
@@ -613,7 +613,7 @@ func TestGetRecipes_SearchQueryWithStaleRelevanceHashIsIgnored(t *testing.T) {
 		score := 0.9
 		staleCursor := (&RecipeCursor{
 			Mode:           RecipeCursorModeRelevance,
-			FilterHash:     filterHashForParams(RecipeCursorModeRelevance, &otherQuery),
+			FilterHash:     filterHashForParams(RecipeCursorModeRelevance, &otherQuery, nil),
 			CreatedAt:      exactHigh.CreatedAt,
 			ID:             exactHigh.RecipeID,
 			RelevanceScore: &score,

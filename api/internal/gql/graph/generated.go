@@ -147,7 +147,7 @@ type ComplexityRoot struct {
 	User struct {
 		Email    func(childComplexity int) int
 		ID       func(childComplexity int) int
-		Recipes  func(childComplexity int) int
+		Recipes  func(childComplexity int, pagination *model.PaginationInput, filter *model.RecipeFilterInput) int
 		Username func(childComplexity int) int
 	}
 }
@@ -184,7 +184,7 @@ type RecipeVersionResolver interface {
 	Source(ctx context.Context, obj *model.RecipeVersion) (*model.RecipeSource, error)
 }
 type UserResolver interface {
-	Recipes(ctx context.Context, obj *model.User) ([]*model.Recipe, error)
+	Recipes(ctx context.Context, obj *model.User, pagination *model.PaginationInput, filter *model.RecipeFilterInput) (*model.RecipeConnection, error)
 }
 
 type executableSchema struct {
@@ -611,7 +611,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		return e.complexity.User.Recipes(childComplexity), true
+		args, err := ec.field_User_recipes_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.User.Recipes(childComplexity, args["pagination"].(*model.PaginationInput), args["filter"].(*model.RecipeFilterInput)), true
 	case "User.username":
 		if e.complexity.User.Username == nil {
 			break
@@ -856,6 +861,22 @@ func (ec *executionContext) field_Recipe_version_args(ctx context.Context, rawAr
 		return nil, err
 	}
 	args["version"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_User_recipes_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "pagination", ec.unmarshalOPaginationInput2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐPaginationInput)
+	if err != nil {
+		return nil, err
+	}
+	args["pagination"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalORecipeFilterInput2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipeFilterInput)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg1
 	return args, nil
 }
 
@@ -3152,16 +3173,17 @@ func (ec *executionContext) _User_recipes(ctx context.Context, field graphql.Col
 		field,
 		ec.fieldContext_User_recipes,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.User().Recipes(ctx, obj)
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.User().Recipes(ctx, obj, fc.Args["pagination"].(*model.PaginationInput), fc.Args["filter"].(*model.RecipeFilterInput))
 		},
 		nil,
-		ec.marshalNRecipe2ᚕᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipeᚄ,
+		ec.marshalNRecipeConnection2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipeConnection,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_User_recipes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_User_recipes(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "User",
 		Field:      field,
@@ -3169,21 +3191,26 @@ func (ec *executionContext) fieldContext_User_recipes(_ context.Context, field g
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_Recipe_id(ctx, field)
-			case "author":
-				return ec.fieldContext_Recipe_author(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_Recipe_createdAt(ctx, field)
-			case "currentVersion":
-				return ec.fieldContext_Recipe_currentVersion(ctx, field)
-			case "versions":
-				return ec.fieldContext_Recipe_versions(ctx, field)
-			case "version":
-				return ec.fieldContext_Recipe_version(ctx, field)
+			case "edges":
+				return ec.fieldContext_RecipeConnection_edges(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_RecipeConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_RecipeConnection_totalCount(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Recipe", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type RecipeConnection", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_User_recipes_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -4833,7 +4860,7 @@ func (ec *executionContext) unmarshalInputRecipeFilterInput(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"query"}
+	fieldsInOrder := [...]string{"query", "userID"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -4847,6 +4874,13 @@ func (ec *executionContext) unmarshalInputRecipeFilterInput(ctx context.Context,
 				return it, err
 			}
 			it.Query = data
+		case "userID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userID"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UserID = data
 		}
 	}
 
@@ -6623,50 +6657,6 @@ func (ec *executionContext) marshalNPageInfo2ᚖfoodplannerᚋinternalᚋgqlᚋg
 
 func (ec *executionContext) marshalNRecipe2foodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipe(ctx context.Context, sel ast.SelectionSet, v model.Recipe) graphql.Marshaler {
 	return ec._Recipe(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNRecipe2ᚕᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipeᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Recipe) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNRecipe2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipe(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
 }
 
 func (ec *executionContext) marshalNRecipe2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipe(ctx context.Context, sel ast.SelectionSet, v *model.Recipe) graphql.Marshaler {

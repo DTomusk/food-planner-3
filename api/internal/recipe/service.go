@@ -268,7 +268,7 @@ func (s *Service) GetRecipes(ctx context.Context, params RecipeListParams) ([]*R
 	if query != nil {
 		mode = RecipeCursorModeRelevance
 	}
-	filterHash := filterHashForParams(mode, query)
+	filterHash := filterHashForParams(mode, query, params.Filter.UserID)
 
 	cursor := params.Pagination.After
 	c, err := ParseRecipeCursor(cursor)

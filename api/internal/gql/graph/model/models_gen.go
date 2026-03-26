@@ -81,7 +81,8 @@ type RecipeEdge struct {
 }
 
 type RecipeFilterInput struct {
-	Query *string `json:"query,omitempty"`
+	Query  *string `json:"query,omitempty"`
+	UserID *string `json:"userID,omitempty"`
 }
 
 type RecipeSource struct {
@@ -115,10 +116,10 @@ type UpdateRecipeInput struct {
 }
 
 type User struct {
-	ID       string    `json:"id"`
-	Email    string    `json:"email"`
-	Username string    `json:"username"`
-	Recipes  []*Recipe `json:"recipes"`
+	ID       string            `json:"id"`
+	Email    string            `json:"email"`
+	Username string            `json:"username"`
+	Recipes  *RecipeConnection `json:"recipes"`
 }
 
 type SortDirection string

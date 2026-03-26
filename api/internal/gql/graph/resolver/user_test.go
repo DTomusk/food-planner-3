@@ -129,15 +129,16 @@ func TestUserResolver_Recipes(t *testing.T) {
 		}
 		userResolver := &userResolver{r}
 
-		recipeModels, err := userResolver.Recipes(ctx, &model.User{ID: testUser.ID.String()})
+		pagination := &model.PaginationInput{}
+		c, err := userResolver.Recipes(ctx, &model.User{ID: testUser.ID.String()}, pagination, nil)
 		require.NoError(t, err, "Failed to fetch recipes for user")
-		require.Len(t, recipeModels, 2, "Expected to find exactly 2 recipes for user")
+		require.Len(t, c.Edges, 2, "Expected to find exactly 2 recipes for user")
 
-		actualNames := make(map[string]struct{}, len(recipeModels))
-		for _, recipeModel := range recipeModels {
-			require.Equal(t, testUser.ID.String(), recipeModel.AuthorID, "Expected recipe to belong to test user")
-			require.NotNil(t, recipeModel.CurrentVersion, "Expected current version to be populated")
-			actualNames[recipeModel.CurrentVersion.Name] = struct{}{}
+		actualNames := make(map[string]struct{}, len(c.Edges))
+		for _, edge := range c.Edges {
+			require.Equal(t, testUser.ID.String(), edge.Node.AuthorID, "Expected recipe to belong to test user")
+			require.NotNil(t, edge.Node.CurrentVersion, "Expected current version to be populated")
+			actualNames[edge.Node.CurrentVersion.Name] = struct{}{}
 		}
 
 		for _, expectedName := range expectedRecipeNames {
@@ -165,8 +166,10 @@ func TestUserResolver_Recipes_NoRecipes(t *testing.T) {
 		}
 		userResolver := &userResolver{r}
 
-		recipeModels, err := userResolver.Recipes(ctx, &model.User{ID: testUser.ID.String()})
+		pagination := &model.PaginationInput{}
+
+		c, err := userResolver.Recipes(ctx, &model.User{ID: testUser.ID.String()}, pagination, nil)
 		require.NoError(t, err, "Failed to fetch recipes for user")
-		require.Len(t, recipeModels, 0, "Expected no recipes for user")
+		require.Len(t, c.Edges, 0, "Expected no recipes for user")
 	})
 }
