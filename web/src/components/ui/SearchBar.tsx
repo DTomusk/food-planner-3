@@ -31,7 +31,7 @@ export default function SearchBar(
                 placeholder={placeholder}
                 aria-label="Search"
                 disabled={isDisabled}
-                className="w-full rounded-md border bg-white border-gray-300 px-4 py-2 pr-10 focus-ring disabled:cursor-not-allowed disabled:bg-gray-100"
+                className="w-full rounded-md border bg-white border-black px-4 py-2 pr-10 focus-ring disabled:cursor-not-allowed disabled:bg-gray-100"
             />
 
             <button
