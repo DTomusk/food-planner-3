@@ -1,4 +1,4 @@
-import type { GetRecipeQuery, GetRecipesQuery, GetRecipeVersionQuery } from "@/lib";
+import type { GetRecipeQuery, GetRecipeVersionQuery, RecipeConnectionListFieldsFragment } from "@/lib";
 import type { Recipe, RecipePage, User } from "../types";
 
 export function mapRecipeDetail(
@@ -69,7 +69,7 @@ export function mapRecipeVersionDetail(
 }
 
 export function mapRecipeSummary(
-    gqlRecipes: GetRecipesQuery["recipes"]
+    gqlRecipes: RecipeConnectionListFieldsFragment
 ): RecipePage {
     return {
         recipes: gqlRecipes.edges.map((edge) => ({
