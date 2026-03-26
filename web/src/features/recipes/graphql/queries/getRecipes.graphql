@@ -1,16 +1,5 @@
 query GetRecipes($input: PaginationInput, $filter: RecipeFilterInput) {
-    recipes(pagination: $input, filter: $filter) {
-        edges {
-            node {
-                id
-                currentVersion {
-                    name
-                }
-            }
-        }
-        pageInfo {
-            hasNextPage
-            endCursor
-        }
-    }
+  recipes(pagination: $input, filter: $filter) {
+    ...RecipeConnectionListFields
+  }
 }
