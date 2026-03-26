@@ -51,9 +51,9 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 // Recipes is the resolver for the recipes field.
 func (r *userResolver) Recipes(ctx context.Context, obj *model.User, pagination *model.PaginationInput, filter *model.RecipeFilterInput) (*model.RecipeConnection, error) {
 	logger := logging.FromContext(ctx)
-	effectiveFilter := filter
-	if effectiveFilter == nil {
-		effectiveFilter = &model.RecipeFilterInput{UserID: &obj.ID}
+	effectiveFilter := &model.RecipeFilterInput{UserID: &obj.ID}
+	if filter != nil {
+		effectiveFilter.Query = filter.Query
 	}
 
 	connection, err := r.listRecipes(ctx, pagination, effectiveFilter)

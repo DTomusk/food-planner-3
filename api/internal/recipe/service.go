@@ -286,10 +286,10 @@ func (s *Service) GetRecipes(ctx context.Context, params RecipeListParams) ([]*R
 	var rows []*RecipeListRow
 	switch mode {
 	case RecipeCursorModeNewest:
-		rows, err = s.recipeRepo.getRecipesByCreatedAt(ctx, s.txRunner.DB(), count+1, c)
+		rows, err = s.recipeRepo.getRecipesByCreatedAt(ctx, s.txRunner.DB(), count+1, c, params.Filter.UserID)
 	case RecipeCursorModeRelevance:
 		// query can be safely dereferenced as checked above
-		rows, err = s.recipeRepo.getRecipesByRelevance(ctx, s.txRunner.DB(), *query, count+1, c)
+		rows, err = s.recipeRepo.getRecipesByRelevance(ctx, s.txRunner.DB(), *query, count+1, c, params.Filter.UserID)
 	default:
 		return nil, nil, ErrInvalidCursor
 	}

@@ -173,3 +173,52 @@ func TestUserResolver_Recipes_NoRecipes(t *testing.T) {
 		require.Len(t, c.Edges, 0, "Expected no recipes for user")
 	})
 }
+
+func TestUserResolver_Recipes_ForcesParentUserScope(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err, "Failed to seed test user")
+
+		otherUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err, "Failed to seed other user")
+
+		testUserRecipeID := uuid.New()
+		testUserVersionID := uuid.New()
+		err = seeds.InsertRecipeContainer(ctx, tx, testUserRecipeID, testUser.ID)
+		require.NoError(t, err)
+		err = seeds.InsertRecipeVersion(ctx, tx, testUserVersionID, testUserRecipeID, "Scoped Recipe", 15, 25, 2, 1)
+		require.NoError(t, err)
+		err = seeds.SetRecipeContainerCurrentVersion(ctx, tx, testUserRecipeID, testUserVersionID)
+		require.NoError(t, err)
+
+		otherUserRecipeID := uuid.New()
+		otherUserVersionID := uuid.New()
+		err = seeds.InsertRecipeContainer(ctx, tx, otherUserRecipeID, otherUser.ID)
+		require.NoError(t, err)
+		err = seeds.InsertRecipeVersion(ctx, tx, otherUserVersionID, otherUserRecipeID, "Other Recipe", 10, 20, 2, 1)
+		require.NoError(t, err)
+		err = seeds.SetRecipeContainerCurrentVersion(ctx, tx, otherUserRecipeID, otherUserVersionID)
+		require.NoError(t, err)
+
+		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100)
+		recipeRepo, err := recipe.NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		recipeService := recipe.NewService(txRunner, recipeRepo, recipe.NewRecipeVersionRepo(), ingredientService, recipe.NewIngredientUsageRepo(), nil)
+
+		r := &Resolver{RecipeService: recipeService}
+		userResolver := &userResolver{r}
+
+		otherUserID := otherUser.ID.String()
+		pagination := &model.PaginationInput{}
+		filter := &model.RecipeFilterInput{UserID: &otherUserID}
+
+		c, err := userResolver.Recipes(ctx, &model.User{ID: testUser.ID.String()}, pagination, filter)
+		require.NoError(t, err)
+		require.Len(t, c.Edges, 1)
+		require.Equal(t, testUser.ID.String(), c.Edges[0].Node.AuthorID)
+		require.Equal(t, "Scoped Recipe", c.Edges[0].Node.CurrentVersion.Name)
+	})
+}

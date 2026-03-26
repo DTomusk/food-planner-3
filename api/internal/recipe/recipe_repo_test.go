@@ -135,7 +135,7 @@ func TestGetRecipes_ReturnsActiveRecipesOrderedByCreatedAtAndIDDesc(t *testing.T
 		older := seedRecipeForListTests(t, ctx, tx, testUser.ID, olderID, uuid.New(), "Older", olderCreatedAt, nil)
 		seedRecipeForListTests(t, ctx, tx, testUser.ID, deletedID, uuid.New(), "Deleted", deletedCreatedAt, &deletedOn)
 
-		recipes, err := r.getRecipesByCreatedAt(ctx, tx, 10, nil)
+		recipes, err := r.getRecipesByCreatedAt(ctx, tx, 10, nil, nil)
 
 		require.NoError(t, err)
 		require.Len(t, recipes, 3)
@@ -166,7 +166,7 @@ func TestGetRecipes_AppliesCursorBoundary(t *testing.T) {
 			ID:        newestHigh.RecipeID,
 		}
 
-		recipes, err := r.getRecipesByCreatedAt(ctx, tx, 10, cursor)
+		recipes, err := r.getRecipesByCreatedAt(ctx, tx, 10, cursor, nil)
 
 		require.NoError(t, err)
 		require.Len(t, recipes, 2)
@@ -192,7 +192,7 @@ func TestGetRecipesByRelevance_ReturnsMatchesOrderedByScoreThenCreatedAtThenIDDe
 		fuzzy := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("11111111-1111-1111-1111-111111111111"), uuid.New(), "Chikcen Soup", olderCreatedAt, nil)
 		seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("22222222-2222-2222-2222-222222222222"), uuid.New(), "Beef Chili", olderCreatedAt, nil)
 
-		recipes, err := r.getRecipesByRelevance(ctx, tx, "chicken soup", 10, nil)
+		recipes, err := r.getRecipesByRelevance(ctx, tx, "chicken soup", 10, nil, nil)
 
 		require.NoError(t, err)
 		require.Len(t, recipes, 3)
@@ -222,7 +222,7 @@ func TestGetRecipesByRelevance_AppliesCursorBoundary(t *testing.T) {
 		seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("00000000-0000-0000-0000-000000000002"), uuid.New(), "Chicken Soup", sameCreatedAt, nil)
 		fuzzy := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("11111111-1111-1111-1111-111111111111"), uuid.New(), "Chikcen Soup", olderCreatedAt, nil)
 
-		firstPage, err := r.getRecipesByRelevance(ctx, tx, "chicken soup", 2, nil)
+		firstPage, err := r.getRecipesByRelevance(ctx, tx, "chicken soup", 2, nil, nil)
 		require.NoError(t, err)
 		require.Len(t, firstPage, 2)
 		require.NotNil(t, firstPage[1].RelevanceScore)
@@ -233,7 +233,7 @@ func TestGetRecipesByRelevance_AppliesCursorBoundary(t *testing.T) {
 			RelevanceScore: firstPage[1].RelevanceScore,
 		}
 
-		secondPage, err := r.getRecipesByRelevance(ctx, tx, "chicken soup", 10, cursor)
+		secondPage, err := r.getRecipesByRelevance(ctx, tx, "chicken soup", 10, cursor, nil)
 
 		require.NoError(t, err)
 		require.Len(t, secondPage, 1)
@@ -252,7 +252,7 @@ func TestGetRecipesByRelevance_ReturnsErrInvalidCursorWhenScoreMissing(t *testin
 			ID:        uuid.New(),
 		}
 
-		recipes, err := r.getRecipesByRelevance(ctx, tx, "chicken", 10, cursor)
+		recipes, err := r.getRecipesByRelevance(ctx, tx, "chicken", 10, cursor, nil)
 
 		require.ErrorIs(t, err, ErrInvalidCursor)
 		require.Nil(t, recipes)
@@ -271,7 +271,7 @@ func TestGetRecipesByRelevance_SupportsFuzzyMatching(t *testing.T) {
 		createdAt := time.Date(2026, time.March, 17, 11, 40, 48, 147630000, time.UTC)
 		expected := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("33333333-3333-3333-3333-333333333333"), uuid.New(), "Chicken Soup", createdAt, nil)
 
-		recipes, err := r.getRecipesByRelevance(ctx, tx, "chikcen soup", 10, nil)
+		recipes, err := r.getRecipesByRelevance(ctx, tx, "chikcen soup", 10, nil, nil)
 
 		require.NoError(t, err)
 		require.NotEmpty(t, recipes)

@@ -638,6 +638,55 @@ func TestGetRecipes_SearchQueryWithStaleRelevanceHashIsIgnored(t *testing.T) {
 	})
 }
 
+func TestGetRecipes_FiltersByUserID(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		txRunner := testutil.NewTestTxRunner(tx)
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		s := NewService(
+			txRunner,
+			repo,
+			NewRecipeVersionRepo(),
+			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
+			NewIngredientUsageRepo(),
+			nil,
+		)
+
+		userA, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+		userB, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		base := time.Date(2026, time.March, 17, 11, 42, 48, 147630000, time.UTC)
+		aNewest := seedRecipeForListTests(t, ctx, tx, userA.ID, uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "A Newest", base, nil)
+		aOlder := seedRecipeForListTests(t, ctx, tx, userA.ID, uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "A Older", base.Add(-1*time.Minute), nil)
+		_ = seedRecipeForListTests(t, ctx, tx, userB.ID, uuid.MustParse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "B Recipe", base.Add(-2*time.Minute), nil)
+
+		userAID := userA.ID
+		params := RecipeListParams{
+			Pagination: RecipePagination{First: 10},
+			Filter:     RecipeFilter{UserID: &userAID},
+		}
+
+		recipes, nextCursor, err := s.GetRecipes(ctx, params)
+		require.NoError(t, err)
+		require.Len(t, recipes, 2)
+		require.Nil(t, nextCursor)
+		require.Equal(t, aNewest.RecipeID, recipes[0].Recipe.ID)
+		require.Equal(t, aOlder.RecipeID, recipes[1].Recipe.ID)
+
+		for _, row := range recipes {
+			require.Equal(t, userA.ID, row.Recipe.UserID)
+		}
+
+		parsed, err := ParseRecipeCursor(&recipes[0].Cursor)
+		require.NoError(t, err)
+		require.NotNil(t, parsed)
+		require.Equal(t, filterHashForParams(RecipeCursorModeNewest, nil, &userAID), parsed.FilterHash)
+	})
+}
+
 func setupRecipeListFixture(t *testing.T, tx *sql.Tx) (context.Context, *Service, listedRecipeSeed, listedRecipeSeed, listedRecipeSeed) {
 	t.Helper()
 

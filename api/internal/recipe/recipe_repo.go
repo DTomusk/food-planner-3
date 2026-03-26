@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"foodplanner/internal/db"
+	"strings"
 
 	"github.com/google/uuid"
 )
@@ -82,25 +83,25 @@ func (r *recipeRepo) getRecipeByID(ctx context.Context, db db.DBTX, id uuid.UUID
 	return rc, nil
 }
 
-func (r *recipeRepo) getRecipesByCreatedAt(ctx context.Context, db db.DBTX, limit int, cursor *RecipeCursor) ([]*RecipeListRow, error) {
-	const baseQuery = selectRecipeContainerWithVersionBaseQuery + `
-	WHERE rc.deleted_on IS NULL`
+func (r *recipeRepo) getRecipesByCreatedAt(ctx context.Context, db db.DBTX, limit int, cursor *RecipeCursor, userID *uuid.UUID) ([]*RecipeListRow, error) {
+	conditions := []string{"rc.deleted_on IS NULL"}
+	args := make([]any, 0, 4)
 
-	var query string
-	var args []any
+	if userID != nil {
+		conditions = append(conditions, fmt.Sprintf("rc.user_id = $%d", len(args)+1))
+		args = append(args, *userID)
+	}
 
 	if cursor != nil {
-		query = baseQuery + `
-	AND (rc.created_at, rc.id) < ($1, $2)
-	ORDER BY rc.created_at DESC, rc.id DESC
-	LIMIT $3`
-		args = []any{cursor.CreatedAt, cursor.ID, limit}
-	} else {
-		query = baseQuery + `
-	ORDER BY rc.created_at DESC, rc.id DESC
-	LIMIT $1`
-		args = []any{limit}
+		conditions = append(conditions, fmt.Sprintf("(rc.created_at, rc.id) < ($%d, $%d)", len(args)+1, len(args)+2))
+		args = append(args, cursor.CreatedAt, cursor.ID)
 	}
+
+	query := selectRecipeContainerWithVersionBaseQuery + `
+	WHERE ` + strings.Join(conditions, " AND ") + `
+	ORDER BY rc.created_at DESC, rc.id DESC
+	LIMIT $` + fmt.Sprintf("%d", len(args)+1)
+	args = append(args, limit)
 
 	rows, err := db.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -122,13 +123,22 @@ func (r *recipeRepo) getRecipesByCreatedAt(ctx context.Context, db db.DBTX, limi
 	return recipes, nil
 }
 
-func (r *recipeRepo) getRecipesByRelevance(ctx context.Context, db db.DBTX, query string, limit int, cursor *RecipeCursor) ([]*RecipeListRow, error) {
+func (r *recipeRepo) getRecipesByRelevance(ctx context.Context, db db.DBTX, query string, limit int, cursor *RecipeCursor, userID *uuid.UUID) ([]*RecipeListRow, error) {
 	// Relevance score is a mix of full-text search ranking and trigram similarity, weighted towards full-text search. Sorting is done by relevance score first, then created_at and id to ensure a deterministic order.
 	// this can be fine tuned in the future
 	scoreExpression := `
 		($1 * ts_rank_cd(to_tsvector('english', coalesce(rv.name, '')), websearch_to_tsquery('english', $3)) 
 		+ $2 * similarity(lower(rv.name), lower($3))) AS relevance_score
 	`
+
+	userFilterClause := ""
+	args := []any{r.fullTextWeight, r.trigramWeight, query}
+	nextArg := 4
+	if userID != nil {
+		userFilterClause = fmt.Sprintf("      AND rc.user_id = $%d\n", nextArg)
+		args = append(args, *userID)
+		nextArg++
+	}
 
 	baseQuery := `
 WITH ranked AS (
@@ -149,6 +159,7 @@ WITH ranked AS (
     FROM recipe_containers rc
     JOIN recipe_versions rv ON rc.current_version_id = rv.id
     WHERE rc.deleted_on IS NULL
+` + userFilterClause + `
       AND (
         to_tsvector('english', coalesce(rv.name, '')) @@ websearch_to_tsquery('english', $3)
         OR lower(rv.name) % lower($3)
@@ -172,24 +183,28 @@ FROM ranked
 `
 
 	var q string
-	var args []any
 
 	if cursor != nil {
 		if cursor.RelevanceScore == nil {
 			return nil, ErrInvalidCursor
 		}
 
-		q = baseQuery + `
-		WHERE (relevance_score, container_created_at, container_id) < ($4, $5, $6)
-		ORDER BY relevance_score DESC, container_created_at DESC, container_id DESC
-		LIMIT $7`
+		relevanceArg := nextArg
+		createdAtArg := nextArg + 1
+		idArg := nextArg + 2
+		limitArg := nextArg + 3
 
-		args = []any{r.fullTextWeight, r.trigramWeight, query, *cursor.RelevanceScore, cursor.CreatedAt, cursor.ID, limit}
+		q = baseQuery + fmt.Sprintf(`
+		WHERE (relevance_score, container_created_at, container_id) < ($%d, $%d, $%d)
+		ORDER BY relevance_score DESC, container_created_at DESC, container_id DESC
+		LIMIT $%d`, relevanceArg, createdAtArg, idArg, limitArg)
+
+		args = append(args, *cursor.RelevanceScore, cursor.CreatedAt, cursor.ID, limit)
 	} else {
-		q = baseQuery + `
+		q = baseQuery + fmt.Sprintf(`
 	ORDER BY relevance_score DESC, container_created_at DESC, container_id DESC
-	LIMIT $4`
-		args = []any{r.fullTextWeight, r.trigramWeight, query, limit}
+	LIMIT $%d`, nextArg)
+		args = append(args, limit)
 	}
 
 	rows, err := db.QueryContext(ctx, q, args...)
