@@ -10,6 +10,8 @@ import (
 	"foodplanner/internal/recipe"
 	"foodplanner/internal/user"
 	"net/http"
+
+	"github.com/google/uuid"
 )
 
 func mapUsers(users []*user.User) []*model.User {
@@ -68,6 +70,90 @@ func mapRecipeVersion(recipeVersion *recipe.RecipeVersion) *model.RecipeVersion 
 		CreatedAt: recipeVersion.CreatedAt,
 		Version:   int32(recipeVersion.Version),
 	}
+}
+
+func buildRecipeListParams(
+	pagination *model.PaginationInput,
+	filter *model.RecipeFilterInput,
+) (recipe.RecipeListParams, error) {
+	first := 20
+	var after *string
+	if pagination != nil {
+		if pagination.First != nil {
+			first = int(*pagination.First)
+		}
+		after = pagination.After
+	}
+
+	var query *string
+	var userID *uuid.UUID
+	if filter != nil {
+		query = filter.Query
+		if filter.UserID != nil {
+			parsed, err := uuid.Parse(*filter.UserID)
+			if err != nil {
+				return recipe.RecipeListParams{}, fmt.Errorf("invalid userID in recipe filter: %w", err)
+			}
+			userID = &parsed
+		}
+	}
+
+	return recipe.RecipeListParams{
+		Pagination: recipe.RecipePagination{
+			First: first,
+			After: after,
+		},
+		Filter: recipe.RecipeFilter{
+			Query:  query,
+			UserID: userID,
+		},
+	}, nil
+}
+
+func buildRecipeConnection(
+	recipes []*recipe.RecipeWithCursor,
+	endCursor *string,
+) (*model.RecipeConnection, error) {
+	if recipes == nil {
+		return &model.RecipeConnection{
+			Edges:    []*model.RecipeEdge{},
+			PageInfo: &model.PageInfo{HasNextPage: false, EndCursor: nil},
+		}, nil
+	}
+
+	connection := &model.RecipeConnection{
+		Edges:    make([]*model.RecipeEdge, len(recipes)),
+		PageInfo: &model.PageInfo{HasNextPage: endCursor != nil, EndCursor: endCursor},
+	}
+	for i, recipeWithCursor := range recipes {
+		if recipeWithCursor == nil || recipeWithCursor.Recipe == nil {
+			return nil, fmt.Errorf("recipe service returned invalid recipe page item")
+		}
+		connection.Edges[i] = &model.RecipeEdge{
+			Cursor: recipeWithCursor.Cursor,
+			Node:   mapRecipe(recipeWithCursor.Recipe),
+		}
+	}
+
+	return connection, nil
+}
+
+func (r *Resolver) listRecipes(
+	ctx context.Context,
+	pagination *model.PaginationInput,
+	filter *model.RecipeFilterInput,
+) (*model.RecipeConnection, error) {
+	params, err := buildRecipeListParams(pagination, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	recipes, endCursor, err := r.RecipeService.GetRecipes(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+
+	return buildRecipeConnection(recipes, endCursor)
 }
 
 func toCreateRecipeRequest(input *model.CreateRecipeInput, userID string) (recipe.CreateRecipeRequest, error) {

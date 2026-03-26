@@ -68,58 +68,10 @@ func (r *mutationResolver) UpdateRecipe(ctx context.Context, input model.UpdateR
 // Recipes is the resolver for the recipes field.
 func (r *queryResolver) Recipes(ctx context.Context, pagination *model.PaginationInput, filter *model.RecipeFilterInput) (*model.RecipeConnection, error) {
 	logger := logging.FromContext(ctx)
-	first := 20
-	var after *string
-	if pagination != nil {
-		if pagination.First != nil {
-			first = int(*pagination.First)
-		}
-		after = pagination.After
-	}
-
-	var filterModel *model.RecipeFilterInput
-	if filter != nil {
-		filterModel = filter
-	} else {
-		filterModel = &model.RecipeFilterInput{}
-	}
-
-	params := recipe.RecipeListParams{
-		Pagination: recipe.RecipePagination{
-			First: first,
-			After: after,
-		},
-		Filter: recipe.RecipeFilter{
-			Query: filterModel.Query,
-		},
-	}
-
-	recipes, endCursor, err := r.RecipeService.GetRecipes(ctx, params)
+	connection, err := r.listRecipes(ctx, pagination, filter)
 	if err != nil {
 		logger.Error("Failed to get all recipes", "error", err)
 		return nil, err
-	}
-
-	if recipes == nil {
-		return &model.RecipeConnection{
-			Edges:    []*model.RecipeEdge{},
-			PageInfo: &model.PageInfo{HasNextPage: false, EndCursor: nil},
-		}, nil
-	}
-
-	connection := &model.RecipeConnection{
-		Edges:    make([]*model.RecipeEdge, len(recipes)),
-		PageInfo: &model.PageInfo{HasNextPage: endCursor != nil, EndCursor: endCursor},
-	}
-	for i, recipeWithCursor := range recipes {
-		if recipeWithCursor == nil || recipeWithCursor.Recipe == nil {
-			logger.Error("Recipe service returned invalid recipe page item")
-			return nil, fmt.Errorf("recipe service returned invalid recipe page item")
-		}
-		connection.Edges[i] = &model.RecipeEdge{
-			Cursor: recipeWithCursor.Cursor,
-			Node:   mapRecipe(recipeWithCursor.Recipe),
-		}
 	}
 	return connection, nil
 }

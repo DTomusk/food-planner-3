@@ -7,11 +7,9 @@ package resolver
 
 import (
 	"context"
-	"fmt"
 	"foodplanner/internal/gql/graph"
 	"foodplanner/internal/gql/graph/model"
 	"foodplanner/internal/logging"
-	"foodplanner/internal/recipe"
 
 	"github.com/google/uuid"
 )
@@ -53,70 +51,15 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 // Recipes is the resolver for the recipes field.
 func (r *userResolver) Recipes(ctx context.Context, obj *model.User, pagination *model.PaginationInput, filter *model.RecipeFilterInput) (*model.RecipeConnection, error) {
 	logger := logging.FromContext(ctx)
-	first := 20
-	var after *string
-	if pagination != nil {
-		if pagination.First != nil {
-			first = int(*pagination.First)
-		}
-		after = pagination.After
+	effectiveFilter := filter
+	if effectiveFilter == nil {
+		effectiveFilter = &model.RecipeFilterInput{UserID: &obj.ID}
 	}
 
-	var filterModel *model.RecipeFilterInput
-	if filter != nil {
-		filterModel = filter
-	} else {
-		filterModel = &model.RecipeFilterInput{
-			UserID: &obj.ID,
-		}
-	}
-
-	var userID *uuid.UUID
-	if filterModel.UserID != nil {
-		parsed, err := uuid.Parse(*filterModel.UserID)
-		if err != nil {
-			logger.Error("Invalid userID in recipe filter", "error", err, "userID", *filterModel.UserID)
-			return nil, fmt.Errorf("invalid userID in recipe filter: %w", err)
-		}
-		userID = &parsed
-	}
-	params := recipe.RecipeListParams{
-		Pagination: recipe.RecipePagination{
-			First: first,
-			After: after,
-		},
-		Filter: recipe.RecipeFilter{
-			Query:  filterModel.Query,
-			UserID: userID,
-		},
-	}
-
-	recipes, endCursor, err := r.RecipeService.GetRecipes(ctx, params)
+	connection, err := r.listRecipes(ctx, pagination, effectiveFilter)
 	if err != nil {
 		logger.Error("Failed to get all recipes", "error", err)
 		return nil, err
-	}
-
-	if recipes == nil {
-		return &model.RecipeConnection{
-			Edges:    []*model.RecipeEdge{},
-			PageInfo: &model.PageInfo{HasNextPage: false, EndCursor: nil},
-		}, nil
-	}
-
-	connection := &model.RecipeConnection{
-		Edges:    make([]*model.RecipeEdge, len(recipes)),
-		PageInfo: &model.PageInfo{HasNextPage: endCursor != nil, EndCursor: endCursor},
-	}
-	for i, recipeWithCursor := range recipes {
-		if recipeWithCursor == nil || recipeWithCursor.Recipe == nil {
-			logger.Error("Recipe service returned invalid recipe page item")
-			return nil, fmt.Errorf("recipe service returned invalid recipe page item")
-		}
-		connection.Edges[i] = &model.RecipeEdge{
-			Cursor: recipeWithCursor.Cursor,
-			Node:   mapRecipe(recipeWithCursor.Recipe),
-		}
 	}
 	return connection, nil
 }
