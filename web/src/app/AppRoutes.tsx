@@ -11,7 +11,6 @@ import ProtectedLayout from "./ProtectedLayout";
 import MyRecipesPage from "@/pages/MyRecipesPage";
 import UserPage from "@/pages/UserPage";
 import RecipeUpdatePage from "@/pages/RecipeUpdatePage";
-import RecipeSearchPage from "@/pages/RecipeSearchPage";
 
 function AuthLayout() {
   return (
@@ -35,7 +34,6 @@ export function AppRoutes() {
             <Route path="create" element={<RecipeCreatePage />} />
             <Route path=":id/edit" element={<RecipeUpdatePage />} />
           </Route>
-          <Route path="search" element={<RecipeSearchPage />} />
           <Route path=":id/versions/:version" element={<RecipeVersionPage />} />
           <Route path=":id" element={<RecipePage />} />
         </Route>

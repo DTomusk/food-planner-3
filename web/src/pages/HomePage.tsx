@@ -11,7 +11,7 @@ export default function HomePage() {
   const handleSubmitSearch = () => {
     const trimmedQuery = searchQuery.trim();
     if (trimmedQuery) {
-      navigate(`recipes/search?q=${encodeURIComponent(trimmedQuery)}`);
+      navigate(`/recipes?q=${encodeURIComponent(trimmedQuery)}`);
     }
   };
 
