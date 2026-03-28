@@ -49,15 +49,19 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 }
 
 // Recipes is the resolver for the recipes field.
-func (r *userResolver) Recipes(ctx context.Context, obj *model.User) ([]*model.Recipe, error) {
+func (r *userResolver) Recipes(ctx context.Context, obj *model.User, pagination *model.PaginationInput, filter *model.RecipeFilterInput) (*model.RecipeConnection, error) {
 	logger := logging.FromContext(ctx)
+	effectiveFilter := &model.RecipeFilterInput{UserID: &obj.ID}
+	if filter != nil {
+		effectiveFilter.Query = filter.Query
+	}
 
-	recipes, err := r.RecipeService.GetRecipesByUserID(ctx, uuid.MustParse(obj.ID))
+	connection, err := r.listRecipes(ctx, pagination, effectiveFilter)
 	if err != nil {
-		logger.Error("Failed to get active recipes for user", "error", err)
+		logger.Error("Failed to get all recipes", "error", err)
 		return nil, err
 	}
-	return mapRecipes(recipes), nil
+	return connection, nil
 }
 
 // User returns graph.UserResolver implementation.

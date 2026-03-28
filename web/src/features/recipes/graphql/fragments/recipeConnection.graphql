@@ -1,0 +1,14 @@
+fragment RecipeConnectionListFields on RecipeConnection {
+  edges {
+    node {
+      id
+      currentVersion {
+        name
+      }
+    }
+  }
+  pageInfo {
+    hasNextPage
+    endCursor
+  }
+}

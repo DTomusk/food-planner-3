@@ -1,12 +1,9 @@
-query GetUser($id: ID!) {
+query GetUser($id: ID!, $input: PaginationInput) {
     user(id: $id) {
         id 
         username
-        recipes {
-            id
-            currentVersion {
-                name
-            }
+        recipes(pagination: $input) {
+            ...RecipeConnectionListFields
         }
     }
 }

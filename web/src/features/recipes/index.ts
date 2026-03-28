@@ -8,6 +8,7 @@ export { useRecipes } from "./hooks/useRecipes";
 export { useCreateRecipe } from "./hooks/useCreateRecipe";
 export { useRecipe } from "./hooks/useRecipe";
 export { useMyRecipes } from "./hooks/useMyRecipes";
+export { requireRecipeConnection, toRecipeSummaryList } from "./hooks/recipeConnectionPage";
 
 // Types
 export type { Recipe } from "./types";

@@ -19,6 +19,8 @@ type Config struct {
 	RecipeRetentionDays        int
 	RefreshTokenSecret         string
 	RefreshTokenExpirationDays int
+	RecipeSearchTrigramWeight  float64
+	RecipeSearchFullTextWeight float64
 }
 
 func Load() (*Config, error) {
@@ -95,6 +97,24 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("invalid REFRESH_TOKEN_EXPIRATION_DAYS: %v", err)
 	}
 
+	recipeSearchTrigramWeightStr := os.Getenv("RECIPE_SEARCH_TRIGRAM_WEIGHT")
+	if recipeSearchTrigramWeightStr == "" {
+		return nil, fmt.Errorf("RECIPE_SEARCH_TRIGRAM_WEIGHT not set in environment")
+	}
+	recipeSearchTrigramWeight, err := strconv.ParseFloat(recipeSearchTrigramWeightStr, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid RECIPE_SEARCH_TRIGRAM_WEIGHT: %v", err)
+	}
+
+	recipeSearchFullTextWeightStr := os.Getenv("RECIPE_SEARCH_FULL_TEXT_WEIGHT")
+	if recipeSearchFullTextWeightStr == "" {
+		return nil, fmt.Errorf("RECIPE_SEARCH_FULL_TEXT_WEIGHT not set in environment")
+	}
+	recipeSearchFullTextWeight, err := strconv.ParseFloat(recipeSearchFullTextWeightStr, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid RECIPE_SEARCH_FULL_TEXT_WEIGHT: %v", err)
+	}
+
 	return &Config{
 		DatabaseURL:                db_url,
 		ServerPort:                 port,
@@ -106,5 +126,7 @@ func Load() (*Config, error) {
 		RecipeRetentionDays:        recipeRetentionDays,
 		RefreshTokenSecret:         refreshTokenSecret,
 		RefreshTokenExpirationDays: refreshTokenExpirationDays,
+		RecipeSearchTrigramWeight:  recipeSearchTrigramWeight,
+		RecipeSearchFullTextWeight: recipeSearchFullTextWeight,
 	}, nil
 }

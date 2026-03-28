@@ -20,3 +20,18 @@ directive @goField(
   name: String
   omittable: Boolean
 ) on FIELD_DEFINITION
+
+input PaginationInput {
+  first: Int
+  after: String
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  endCursor: String
+}
+
+enum SortDirection {
+  ASC
+  DESC
+}

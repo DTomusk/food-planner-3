@@ -48,9 +48,14 @@ func main() {
 
 	ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), cfg.IngredientUpsertBatchSize)
 
+	recipeRepo, err := recipe.NewRecipeRepo(cfg.RecipeSearchTrigramWeight, cfg.RecipeSearchFullTextWeight)
+	if err != nil {
+		log.Fatalf("Failed to create recipe repository: %v", err)
+	}
+
 	recipeService := recipe.NewService(
 		txRunner,
-		recipe.NewRecipeRepo(),
+		recipeRepo,
 		recipe.NewRecipeVersionRepo(),
 		ingredientService,
 		recipe.NewIngredientUsageRepo(),

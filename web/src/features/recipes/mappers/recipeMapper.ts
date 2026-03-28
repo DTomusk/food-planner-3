@@ -1,5 +1,5 @@
-import type { GetRecipeQuery, GetRecipesQuery, GetRecipeVersionQuery } from "@/lib";
-import type { Recipe, RecipeSummary, User } from "../types";
+import type { GetRecipeQuery, GetRecipeVersionQuery, RecipeConnectionListFieldsFragment } from "@/lib";
+import type { Recipe, RecipePage, User } from "../types";
 
 export function mapRecipeDetail(
     gqlRecipe: NonNullable<GetRecipeQuery["recipe"]>
@@ -69,10 +69,14 @@ export function mapRecipeVersionDetail(
 }
 
 export function mapRecipeSummary(
-    gqlRecipes: GetRecipesQuery["recipes"]
-): RecipeSummary[] {
-    return gqlRecipes.map((gqlRecipe) => ({
-        id: gqlRecipe.id,
-        name: gqlRecipe.currentVersion.name,
-    }));
+    gqlRecipes: RecipeConnectionListFieldsFragment
+): RecipePage {
+    return {
+        recipes: gqlRecipes.edges.map((edge) => ({
+            id: edge.node.id,
+            name: edge.node.currentVersion.name,
+        })),
+        endCursor: gqlRecipes.pageInfo.endCursor || null,
+        hasNextPage: gqlRecipes.pageInfo.hasNextPage,
+    };
 }

@@ -1,8 +1,5 @@
-query GetRecipes {
-    recipes {
-        id
-        currentVersion {
-            name
-        }
-    }
+query GetRecipes($input: PaginationInput, $filter: RecipeFilterInput) {
+  recipes(pagination: $input, filter: $filter) {
+    ...RecipeConnectionListFields
+  }
 }

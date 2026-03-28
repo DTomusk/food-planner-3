@@ -1,10 +1,7 @@
-query GetMyRecipes {
+query GetMyRecipes($input: PaginationInput) {
     me {
-        recipes {
-            id
-            currentVersion {
-                name
-            }
+        recipes(pagination: $input) {
+            ...RecipeConnectionListFields
         }
     }
 }
