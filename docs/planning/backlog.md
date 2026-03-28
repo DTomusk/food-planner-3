@@ -79,6 +79,25 @@
     - Why: 
     - DoD: 
 
+- [ ] Nav bar item styling 
+    - Priority: medium
+    - Area: UI, navigation
+    - Type: feature
+    - Why: currently, the nav bar items suck, they don't look good. We should make them look better
+    - DoD: 
+        - nav items look better 
+        - mobile considered
+
+- [ ] Forking recipes
+    - Priority: low
+    - Area: recipes
+    - Type: feature
+    - Why: people on recipe sites often comment that they made the recipe with a billion substitutions. Users should be able to save versions of recipes with their own special changes 
+    - DoD: 
+        - user can copy a specific recipe version 
+        - they can make changes 
+        - UI shows that it's a fork of a given recipe with a link to the parent 
+
 ## Item template 
 
 - [ ] Item name
