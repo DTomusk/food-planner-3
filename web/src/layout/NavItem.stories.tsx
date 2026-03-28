@@ -3,7 +3,7 @@ import NavItem from "./NavItem";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 const meta = {
-    title: "UI/NavItem",
+    title: "Nav/NavItem",
     component: NavItem,
     tags: ["autodocs"],
     parameters: { layout: "centered" },

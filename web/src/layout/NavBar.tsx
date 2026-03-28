@@ -1,5 +1,5 @@
 import { Stack } from "@/components";
-import NavItem from "@/components/ui/NavItem";
+import NavItem from "@/layout/NavItem";
 import IconButton from "@/components/ui/IconButton";
 import MobileNavDrawer from "./MobileNavDrawer";
 import { useAuth } from "@/features/auth/hooks/useAuth";
