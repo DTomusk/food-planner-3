@@ -1,8 +1,9 @@
 import Stack from "@/components/layout/Stack";
-import Link from "@/components/ui/Link";
+import NavItem from "@/components/ui/NavItem";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useSignOut } from "@/features/auth/hooks/useSignOut";
 import { commonStrings } from "@/lib";
+import { Home } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 export default function NavBar() {
@@ -23,9 +24,10 @@ export default function NavBar() {
             <Stack space="lg">
                 <h1 className="cursor-pointer text-lg font-semibold tracking-tight" onClick={() => navigate("/")}>FoodSmash</h1>
                 <Stack space="sm">
-                    {isAuthenticated && <Link onClick={() => navigate("/me/recipes")}>My recipes</Link>}
-                    {!isAuthenticated && <Link onClick={handleSignInClick}>{commonStrings.auth.signIn}</Link>}
-                    {isAuthenticated && <Link onClick={() => mutate()}>{commonStrings.auth.signOut}</Link>}
+                    <NavItem onClick={() => navigate("/")} icon={<Home />} label="Home" />
+                    {isAuthenticated && <NavItem onClick={() => navigate("/me/recipes")} label="My recipes" />}
+                    {!isAuthenticated && <NavItem onClick={handleSignInClick} label={commonStrings.auth.signIn} />}
+                    {isAuthenticated && <NavItem onClick={() => mutate()} label={commonStrings.auth.signOut} />}
                 </Stack>
             </Stack>
         </nav>
