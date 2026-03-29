@@ -47,7 +47,7 @@ export default function RecipeListingPage() {
     return (
         <Page>
             <PageTitle text="Recipes" />
-            <Container size="md">
+            <Container size="sm">
                 <Stack space="lg">
                 {!isAuthenticated && <Alert type="info" message="Please sign in to add a new recipe." />}
                 {isAuthenticated && 
@@ -69,23 +69,23 @@ export default function RecipeListingPage() {
                     onSubmit={handleSubmitSearch}
                 />
                 {data && (
-                    <>
-                        <SectionTitle text={hasQuery ? "Search results" : "Top recipes"} />
-                        <RecipeList recipes={data.recipes} />
-                        {hasNextPage && (
-                            <Inline>
-                                <Button
-                                    onClick={() => {
-                                        void fetchNextPage();
-                                    }}
-                                    variant="secondary"
-                                    loading={isFetchingNextPage}
-                                >
-                                    Load more
-                                </Button>
-                            </Inline>
-                        )}
-                    </>
+                <>
+                    <SectionTitle text={hasQuery ? "Search results" : "Top recipes"} />
+                    <RecipeList recipes={data.recipes} />
+                    {hasNextPage && (
+                        <Inline>
+                            <Button
+                                onClick={() => {
+                                    void fetchNextPage();
+                                }}
+                                variant="secondary"
+                                loading={isFetchingNextPage}
+                            >
+                                Load more
+                            </Button>
+                        </Inline>
+                    )}
+                </>
                 )}
                 </Stack>
             </Container>
