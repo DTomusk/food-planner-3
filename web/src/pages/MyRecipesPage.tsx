@@ -1,5 +1,4 @@
 import { Alert, PageTitle, Spinner, Button, Inline } from "@/components";
-import Container from "@/components/layout/Container";
 import Stack from "@/components/layout/Stack";
 import IconButton from "@/components/ui/IconButton";
 import Text from "@/components/ui/Text";
@@ -17,8 +16,8 @@ export default function MyRecipesPage() {
     return (
         <Page>
             <PageTitle text="My recipes" />
-            <Container size="md">
-                <Stack space="lg">
+            <div className="max-w-md md:max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+            <Stack space="lg">
             {isLoading && <Spinner/>}
             {error && <Alert message={extractErrorMessage(error)} closable />}
             {data && (
@@ -53,7 +52,7 @@ export default function MyRecipesPage() {
                 </>
             )}
                 </Stack>
-            </Container>
+            </div>
         </Page>
     );
 }
