@@ -2,18 +2,6 @@
 
 ## Ready 
 
-- [ ] Recipe search  
-    - Priority: medium
-    - Area: recipes fullstack
-    - Type: feature
-    - Why: you can't currently search for recipes, this is atrocious
-    - DoD: 
-        - graphql query for searching recipe 
-        - ranked search results by relevance 
-        - paginated results 
-        - recipes/search page 
-        - search bar component (maybe on home page)
-
 ## Planning
 
 - [ ] Manual content moderation
@@ -79,15 +67,6 @@
     - Why: 
     - DoD: 
 
-- [ ] Nav bar item styling 
-    - Priority: medium
-    - Area: UI, navigation
-    - Type: feature
-    - Why: currently, the nav bar items suck, they don't look good. We should make them look better
-    - DoD: 
-        - nav items look better 
-        - mobile considered
-
 - [ ] Forking recipes
     - Priority: low
     - Area: recipes
@@ -108,6 +87,27 @@
     - DoD: 
 
 ## Done
+
+- [x] Nav bar item styling 
+    - Priority: medium
+    - Area: UI, navigation
+    - Type: feature
+    - Why: currently, the nav bar items suck, they don't look good. We should make them look better
+    - DoD: 
+        - nav items look better 
+        - mobile considered
+
+- [x] Recipe search  
+    - Priority: medium
+    - Area: recipes fullstack
+    - Type: feature
+    - Why: you can't currently search for recipes, this is atrocious
+    - DoD: 
+        - graphql query for searching recipe 
+        - ranked search results by relevance 
+        - paginated results 
+        - recipes/search page 
+        - search bar component (maybe on home page)
 
 - [x] Ingredient search 
     - Priority: high 

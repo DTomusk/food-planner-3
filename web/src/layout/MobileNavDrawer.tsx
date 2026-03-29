@@ -18,7 +18,7 @@ export default function MobileNavDrawer({ open, onClose, children }: MobileNavDr
             />
             <DialogPanel
                 transition
-                className="fixed right-0 top-0 h-full w-64 bg-white border border-black px-4 py-6 shadow-lg transition duration-300 ease-out data-closed:translate-x-full"
+                className="fixed right-0 top-0 h-full w-64 bg-white border-x border-x-black px-4 py-6 shadow-lg transition duration-300 ease-out data-closed:translate-x-full"
             >
                 <Stack space="lg">
                     <div className="flex justify-end">
