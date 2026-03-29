@@ -44,6 +44,7 @@ export type RecipePage = {
 export type RecipeSummary = {
     id: string;
     name: string;
+    imageUrl: string | null;
 };
 
 export type RecipeFormValues = z.infer<typeof recipeFormSchema>;
