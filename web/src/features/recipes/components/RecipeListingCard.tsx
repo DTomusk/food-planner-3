@@ -1,5 +1,7 @@
+import { Inline, } from "@/components";
 import type { RecipeSummary } from "../types";
 import ImageDisplay from "@/components/ui/ImageDisplay";
+import Heading from "@/components/ui/Heading";
 
 interface RecipeListingCardProps {
     recipe: RecipeSummary;
@@ -17,15 +19,13 @@ export default function RecipeListingCard({ recipe, onClick, actions }: RecipeLi
                 <ImageDisplay
                     imageUrl={recipe.imageUrl}
                     altText={recipe.name}
-                    containerClassName="aspect-square w-full shrink-0 md:w-40"
+                    containerClassName="aspect-square w-full shrink-0 md:w-48 lg:w-64"
                 />
                 <div className="flex min-w-0 flex-1 flex-col justify-between gap-3 p-4">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                        <h3 className="min-w-0 flex-1 text-lg font-semibold text-slate-900 md:text-xl">
-                            {recipe.name}
-                        </h3>
-                        {actions && <div className="shrink-0 self-start">{actions}</div>}
-                    </div>
+                    <Inline justify="between" align="start" gap="md">
+                        <Heading text={recipe.name} />
+                        {actions && <Inline className="shrink-0 self-start">{actions}</Inline>}
+                    </Inline>
                 </div>
             </div>
         </div>
