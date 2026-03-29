@@ -82,6 +82,17 @@
         - they can make changes 
         - UI shows that it's a fork of a given recipe with a link to the parent 
 
+- [ ] Are you sure you want to exit form
+    - Priority: medium
+    - Area: recipes, frontend
+    - Type: feature
+    - Why: users can lose a lot of progress by accidentally clicking off a form 
+    - DoD: 
+        - Users get a warning whenever they perform an action that would take them off a form page 
+            - clicking back 
+            - back (mouse)
+            - closing tab/window 
+
 ## Item template 
 
 - [ ] Item name

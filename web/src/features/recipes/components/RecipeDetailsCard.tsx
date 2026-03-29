@@ -4,7 +4,7 @@ import ImageDisplay from "@/components/ui/ImageDisplay";
 
 type RecipeDetailsCardProps = {
     recipeTitle: string;
-    imageUrl: string;
+    imageUrl: string | null;
     description: string;
     prepTimeMinutes: number;
     cookTimeMinutes: number;
