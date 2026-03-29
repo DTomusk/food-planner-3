@@ -2,6 +2,18 @@
 
 ## Ready 
 
+- [ ] Add images to recipes
+    - Priority: high
+    - Area: recipes, fullstack
+    - Type: feature
+    - Why: it's important to know what a dish looks like
+    - DoD:
+        - recipe version stores image 
+        - image appears on listing and detail screens 
+        - image infrastructure figured out, provider (at least current) chosen 
+        - recipes default to a standard empty image when image not populated 
+        - file drop component built and added to recipe form 
+
 ## Planning
 
 - [ ] Manual content moderation
@@ -44,14 +56,7 @@
     - Area: 
     - Type: (bug, tech debt, feature)
     - Why: 
-    - DoD: 
-
-- [ ] Add images to recipes
-    - Priority: 
-    - Area: 
-    - Type: (bug, tech debt, feature)
-    - Why: 
-    - DoD: 
+    - DoD:  
 
 - [ ] Dietary tags (gf, vegan etc.)
     - Priority: 
