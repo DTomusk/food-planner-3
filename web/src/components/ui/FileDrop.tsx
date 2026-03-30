@@ -2,6 +2,8 @@ import { UploadCloud } from "lucide-react";
 import { useDropzone, type Accept } from "react-dropzone";
 import Button from "./Button";
 import Text from "./Text";
+import Stack from "../layout/Stack";
+import ImageDisplay from "./ImageDisplay";
 
 type FileDropProps = {
     value: File | null;
@@ -33,19 +35,44 @@ export default function FileDrop({
     return (
         <div
             {...getRootProps()}
-            className={`w-full h-32 border-2 border-dashed rounded-md flex flex-col items-center justify-center cursor-pointer transition-colors ${isDragActive ? "border-primary-600 bg-primary-50" : "border-gray-300 hover:border-gray-500"}`}
+            className={`w-full border-2 border-dashed rounded-md flex flex-col items-center justify-center cursor-pointer transition-colors 
+            ${isDragActive ? "border-primary-600 bg-primary-50" : "border-gray-300 hover:border-primary-500"}`}
             onClick={open}
         >
             <input {...getInputProps()} />
-            {!value && (
-        <div className="flex flex-col items-center gap-3">
-            <UploadCloud className="w-10 h-10 text-gray-400" />
-            <Text variant="muted">{label}</Text>
+            {!value ? (
+            <Stack space="md" className="py-4 px-4 items-center">
+                <UploadCloud className="w-10 h-10 text-gray-400" />
+                <Text variant="muted">{label}</Text>
 
-            <Button variant="primaryOutline" onClick={open}>
-                Choose file
-            </Button>
-        </div>)}
+                <Button variant="primaryOutline" onClick={open}>
+                    Choose file
+                </Button>
+            </Stack>) : (
+            <Preview file={value} onRemove={() => onChange(null)} />
+            )}
         </div>
     )
+}
+
+function Preview({ file, onRemove } : { file: File; onRemove: () => void }) {
+  const preview = URL.createObjectURL(file);
+
+  return (
+    <Stack space="md" className="py-4 px-4 items-center">
+        <ImageDisplay imageUrl={preview} 
+            altText={file.name}
+            containerClassName="w-24 h-24 rounded-md overflow-hidden"
+            imageClassName="object-contain"
+        />
+        <Text>{file.name}</Text>
+
+        <Button
+            variant="dangerOutline"
+            onClick={onRemove}
+        >
+        Remove
+        </Button>
+    </Stack>
+  );
 }

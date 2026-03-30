@@ -24,3 +24,9 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
+
+export const WithFile: Story = {
+    args: {
+        value: new File([""], "example.png", { type: "image/png" }),
+    },
+};
