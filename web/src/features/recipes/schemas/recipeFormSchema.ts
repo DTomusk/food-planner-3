@@ -25,6 +25,7 @@ export const recipeFormSchema = z.object({
     bookTitle: z.string().trim().optional(),
     bookPage: z.number().int("Page number must be a whole number").min(1, "Page number must be at least 1").optional(),
     instructions: z.string().trim().optional(),
+    imgSrc: z.string().trim().optional(),
 }).superRefine((values, ctx) => {
     switch (values.sourceType) {
         case RecipeSourceType.Website:
@@ -75,7 +76,7 @@ export const recipeFormSchema = z.object({
 
 
 export const recipeFormSections = {
-    details: ["name", "prepMins", "cookMins", "portions"] as const,
+    details: ["name", "prepMins", "cookMins", "portions", "imgSrc"] as const,
     ingredients: ["ingredientUsages"] as const,
     source: ["sourceType", "url", "bookTitle", "bookPage", "instructions"] as const
 }

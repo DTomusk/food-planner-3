@@ -75,6 +75,7 @@ export function mapRecipeSummary(
         recipes: gqlRecipes.edges.map((edge) => ({
             id: edge.node.id,
             name: edge.node.currentVersion.name,
+            imageUrl: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80", // TODO: add image URL to API and use it here
         })),
         endCursor: gqlRecipes.pageInfo.endCursor || null,
         hasNextPage: gqlRecipes.pageInfo.hasNextPage,
