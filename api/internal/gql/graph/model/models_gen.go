@@ -14,6 +14,12 @@ type AuthPayload struct {
 	User *User  `json:"user"`
 }
 
+type CreateImageUploadURLInput struct {
+	FileName string `json:"fileName"`
+	FileType string `json:"fileType"`
+	FileSize int32  `json:"fileSize"`
+}
+
 type CreateIngredientUsageInput struct {
 	IngredientID string  `json:"ingredientID"`
 	Unit         int32   `json:"unit"`
@@ -35,6 +41,11 @@ type CreateRecipeSourceInput struct {
 	BookTitle    *string `json:"bookTitle,omitempty"`
 	BookPage     *int32  `json:"bookPage,omitempty"`
 	Instructions *string `json:"instructions,omitempty"`
+}
+
+type ImageUploadPayload struct {
+	UploadURL string `json:"uploadUrl"`
+	FileURL   string `json:"fileUrl"`
 }
 
 type Ingredient struct {

@@ -1,0 +1,14 @@
+extend type Mutation {
+    createImageUploadUrl(input: CreateImageUploadUrlInput!): ImageUploadPayload!
+}
+
+input CreateImageUploadUrlInput {
+    fileName: String!
+    fileType: String!
+    fileSize: Int!
+}
+
+type ImageUploadPayload {
+    uploadUrl: String!
+    fileUrl: String!
+}
