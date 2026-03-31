@@ -22,6 +22,7 @@ type UploadProvider interface {
 	CreateSignedUploadURL(ctx context.Context, req CreateSignedUploadURLRequest) (*CreateSignedUploadURLResponse, error)
 }
 
+// Static upload provider is for testing
 type StaticUploadProvider struct {
 	uploadBaseURL string
 	publicBaseURL string
