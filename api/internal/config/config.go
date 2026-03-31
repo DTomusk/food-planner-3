@@ -21,6 +21,7 @@ type Config struct {
 	RefreshTokenExpirationDays int
 	RecipeSearchTrigramWeight  float64
 	RecipeSearchFullTextWeight float64
+	UploadMaxImageSizeBytes    int64
 	R2AccountID                string
 	R2EndpointURL              string
 	R2BucketName               string
@@ -123,6 +124,59 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("invalid RECIPE_SEARCH_FULL_TEXT_WEIGHT: %v", err)
 	}
 
+	uploadMaxImageSizeBytesStr := os.Getenv("UPLOAD_MAX_IMAGE_SIZE_BYTES")
+	if uploadMaxImageSizeBytesStr == "" {
+		return nil, fmt.Errorf("UPLOAD_MAX_IMAGE_SIZE_BYTES not set in environment")
+	}
+	uploadMaxImageSizeBytes, err := strconv.ParseInt(uploadMaxImageSizeBytesStr, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid UPLOAD_MAX_IMAGE_SIZE_BYTES: %v", err)
+	}
+
+	r2AccountID := os.Getenv("R2_ACCOUNT_ID")
+	if r2AccountID == "" {
+		return nil, fmt.Errorf("R2_ACCOUNT_ID not set in environment")
+	}
+
+	r2EndpointURL := os.Getenv("R2_ENDPOINT_URL")
+	if r2EndpointURL == "" {
+		return nil, fmt.Errorf("R2_ENDPOINT_URL not set in environment")
+	}
+
+	r2BucketName := os.Getenv("R2_BUCKET_NAME")
+	if r2BucketName == "" {
+		return nil, fmt.Errorf("R2_BUCKET_NAME not set in environment")
+	}
+
+	r2AccessKeyID := os.Getenv("R2_ACCESS_KEY_ID")
+	if r2AccessKeyID == "" {
+		return nil, fmt.Errorf("R2_ACCESS_KEY_ID not set in environment")
+	}
+
+	r2SecretAccessKey := os.Getenv("R2_SECRET_ACCESS_KEY")
+	if r2SecretAccessKey == "" {
+		return nil, fmt.Errorf("R2_SECRET_ACCESS_KEY not set in environment")
+	}
+
+	r2PublicBaseURL := os.Getenv("R2_PUBLIC_BASE_URL")
+	if r2PublicBaseURL == "" {
+		return nil, fmt.Errorf("R2_PUBLIC_BASE_URL not set in environment")
+	}
+
+	r2Region := os.Getenv("R2_REGION")
+	if r2Region == "" {
+		return nil, fmt.Errorf("R2_REGION not set in environment")
+	}
+
+	r2PresignExpiryStr := os.Getenv("R2_PRESIGN_EXPIRY")
+	if r2PresignExpiryStr == "" {
+		return nil, fmt.Errorf("R2_PRESIGN_EXPIRY not set in environment")
+	}
+	r2PresignExpiry, err := strconv.Atoi(r2PresignExpiryStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid R2_PRESIGN_EXPIRY: %v", err)
+	}
+
 	return &Config{
 		DatabaseURL:                db_url,
 		ServerPort:                 port,
@@ -136,5 +190,14 @@ func Load() (*Config, error) {
 		RefreshTokenExpirationDays: refreshTokenExpirationDays,
 		RecipeSearchTrigramWeight:  recipeSearchTrigramWeight,
 		RecipeSearchFullTextWeight: recipeSearchFullTextWeight,
+		UploadMaxImageSizeBytes:    uploadMaxImageSizeBytes,
+		R2AccountID:                r2AccountID,
+		R2EndpointURL:              r2EndpointURL,
+		R2BucketName:               r2BucketName,
+		R2AccessKeyID:              r2AccessKeyID,
+		R2SecretAccessKey:          r2SecretAccessKey,
+		R2PublicBaseURL:            r2PublicBaseURL,
+		R2Region:                   r2Region,
+		R2PresignExpiry:            r2PresignExpiry,
 	}, nil
 }

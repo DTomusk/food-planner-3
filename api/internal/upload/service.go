@@ -20,13 +20,16 @@ type UploadService struct {
 	provider          UploadProvider
 }
 
-func NewUploadServiceWithProvider(provider UploadProvider) *UploadService {
+func NewUploadServiceWithProvider(provider UploadProvider, maxImageSizeBytes int64) *UploadService {
+	if maxImageSizeBytes <= 0 {
+		maxImageSizeBytes = defaultMaxImageSizeBytes
+	}
 	return &UploadService{
 		allowedImageTypes: map[string]struct{}{
 			"image/jpeg": {},
 			"image/png":  {},
 		},
-		maxImageSizeBytes: defaultMaxImageSizeBytes,
+		maxImageSizeBytes: maxImageSizeBytes,
 		provider:          provider,
 	}
 }
