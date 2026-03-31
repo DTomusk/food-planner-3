@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"database/sql"
+	"errors"
 	"foodplanner/internal/auth"
 	refreshtokens "foodplanner/internal/auth/refresh_tokens"
 	"foodplanner/internal/config"
@@ -16,6 +18,9 @@ import (
 	"foodplanner/internal/user"
 	"log"
 	"net/http"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
@@ -28,6 +33,9 @@ import (
 )
 
 func main() {
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
@@ -68,7 +76,20 @@ func main() {
 	refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), cfg.RefreshTokenSecret, cfg.RefreshTokenExpirationDays)
 	authService := auth.NewAuthService(txRunner.DB(), userService, jwtService, refreshTokenService)
 
-	uploadService := upload.NewUploadService()
+	uploadProvider, err := upload.NewR2UploadProvider(ctx, upload.R2UploadProviderConfig{
+		AccountID:       cfg.R2AccountID,
+		EndpointURL:     cfg.R2EndpointURL,
+		BucketName:      cfg.R2BucketName,
+		AccessKeyID:     cfg.R2AccessKeyID,
+		SecretAccessKey: cfg.R2SecretAccessKey,
+		PublicBaseURL:   cfg.R2PublicBaseURL,
+		Region:          cfg.R2Region,
+		PresignExpiry:   time.Duration(cfg.R2PresignExpiry) * time.Second,
+	})
+	if err != nil {
+		log.Fatalf("Failed to create R2 upload provider: %v", err)
+	}
+	uploadService := upload.NewUploadServiceWithProvider(uploadProvider)
 
 	srv := handler.New(
 		graph.NewExecutableSchema(
@@ -123,7 +144,32 @@ func main() {
 		AllowCredentials: true,
 	})
 
-	handler := c.Handler(http.DefaultServeMux)
+	httpHandler := c.Handler(http.DefaultServeMux)
+	server := &http.Server{
+		Addr:    ":" + cfg.ServerPort,
+		Handler: httpHandler,
+	}
 
-	log.Fatal(http.ListenAndServe(":"+cfg.ServerPort, handler))
+	serverErrCh := make(chan error, 1)
+	go func() {
+		serverErrCh <- server.ListenAndServe()
+	}()
+
+	select {
+	case err := <-serverErrCh:
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("HTTP server failed: %v", err)
+		}
+	case <-ctx.Done():
+		log.Println("Shutdown signal received")
+	}
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(shutdownCtx); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		log.Fatalf("HTTP shutdown failed: %v", err)
+	}
+
+	log.Println("HTTP server stopped cleanly")
 }
