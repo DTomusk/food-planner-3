@@ -44,7 +44,7 @@ func (s *UploadService) CreateImageUploadURL(ctx context.Context, req CreateImag
 	}
 
 	uploadID := uuid.New()
-	objectKey := buildObjectKey(req.OwnerUserID, uploadID, req.FileName)
+	objectKey := buildObjectKey(req.OwnerUserID, uploadID, req.FileName, req.Purpose)
 
 	providerResponse, err := s.provider.CreateSignedUploadURL(ctx, CreateSignedUploadURLRequest{
 		ObjectKey:     objectKey,
@@ -66,6 +66,10 @@ func (s *UploadService) CreateImageUploadURL(ctx context.Context, req CreateImag
 func (s *UploadService) validateCreateImageUploadURLRequest(req CreateImageUploadURLRequest) error {
 	if req.OwnerUserID == uuid.Nil {
 		return ErrInvalidOwnerUserID
+	}
+
+	if !req.Purpose.IsValid() {
+		return fmt.Errorf("%w: %s", ErrInvalidPurpose, req.Purpose)
 	}
 
 	if strings.TrimSpace(req.FileName) == "" {
@@ -91,11 +95,11 @@ func (s *UploadService) validateCreateImageUploadURLRequest(req CreateImageUploa
 	return nil
 }
 
-func buildObjectKey(userID, uploadID uuid.UUID, fileName string) string {
+func buildObjectKey(userID, uploadID uuid.UUID, fileName string, purpose UploadPurpose) string {
 	ext := strings.ToLower(strings.TrimSpace(filepath.Ext(fileName)))
 	if ext == "" {
 		ext = ".bin"
 	}
 
-	return fmt.Sprintf("recipe-images/%s/%s%s", userID.String(), uploadID.String(), ext)
+	return fmt.Sprintf("%s/%s/%s%s", purpose, userID.String(), uploadID.String(), ext)
 }

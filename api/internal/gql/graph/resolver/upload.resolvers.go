@@ -40,6 +40,7 @@ func (r *mutationResolver) CreateImageUploadURL(ctx context.Context, input model
 		FileName:      input.FileName,
 		FileType:      input.FileType,
 		FileSizeBytes: int64(input.FileSize),
+		Purpose:       upload.UploadPurposeRecipeImage,
 	}
 
 	result, err := r.UploadService.CreateImageUploadURL(ctx, request)
