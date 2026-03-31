@@ -12,6 +12,7 @@ import (
 	"foodplanner/internal/ingredient"
 	"foodplanner/internal/middleware"
 	"foodplanner/internal/recipe"
+	"foodplanner/internal/upload"
 	"foodplanner/internal/user"
 	"log"
 	"net/http"
@@ -67,6 +68,8 @@ func main() {
 	refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), cfg.RefreshTokenSecret, cfg.RefreshTokenExpirationDays)
 	authService := auth.NewAuthService(txRunner.DB(), userService, jwtService, refreshTokenService)
 
+	uploadService := upload.NewUploadService()
+
 	srv := handler.New(
 		graph.NewExecutableSchema(
 			graph.Config{
@@ -74,6 +77,7 @@ func main() {
 					AuthService:        authService,
 					RecipeService:      recipeService,
 					IngredientsService: ingredientService,
+					UploadService:      uploadService,
 					UserService:        userService,
 				},
 				Directives: graph.DirectiveRoot{

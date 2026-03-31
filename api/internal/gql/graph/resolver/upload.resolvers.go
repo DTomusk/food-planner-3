@@ -7,11 +7,51 @@ package resolver
 
 import (
 	"context"
-	"fmt"
+	grapherrors "foodplanner/internal/gql/graph/errors"
 	"foodplanner/internal/gql/graph/model"
+	"foodplanner/internal/logging"
+	"foodplanner/internal/upload"
+
+	"github.com/google/uuid"
 )
 
 // CreateImageUploadURL is the resolver for the createImageUploadUrl field.
 func (r *mutationResolver) CreateImageUploadURL(ctx context.Context, input model.CreateImageUploadURLInput) (*model.ImageUploadPayload, error) {
-	panic(fmt.Errorf("not implemented: CreateImageUploadURL - createImageUploadUrl"))
+	logger := logging.FromContext(ctx)
+	claims, err := RequireAuth(ctx)
+	if err != nil {
+		logger.Error("Unauthenticated access to CreateImageUploadURL mutation", "error", err)
+		return nil, err
+	}
+
+	if r.UploadService == nil {
+		logger.Error("Upload service is not configured")
+		return nil, grapherrors.NewInternalError("upload service is not configured")
+	}
+
+	ownerUserID, err := uuid.Parse(claims.UserID)
+	if err != nil {
+		logger.Error("Invalid user ID in auth claims", "error", err, "claimsUserID", claims.UserID)
+		return nil, grapherrors.NewInternalError("invalid user identity")
+	}
+
+	request := upload.CreateImageUploadURLRequest{
+		OwnerUserID:   ownerUserID,
+		FileName:      input.FileName,
+		FileType:      input.FileType,
+		FileSizeBytes: int64(input.FileSize),
+	}
+
+	result, err := r.UploadService.CreateImageUploadURL(ctx, request)
+	if err != nil {
+		logger.Error("Failed to create image upload URL", "error", err, "userID", ownerUserID.String())
+		return nil, err
+	}
+
+	return &model.ImageUploadPayload{
+		UploadURL: result.UploadURL,
+		FileURL:   result.FileURL,
+		UploadID:  result.UploadID.String(),
+	}, nil
+
 }

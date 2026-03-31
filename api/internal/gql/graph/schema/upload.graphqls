@@ -1,5 +1,5 @@
 extend type Mutation {
-    createImageUploadUrl(input: CreateImageUploadUrlInput!): ImageUploadPayload!
+    createImageUploadUrl(input: CreateImageUploadUrlInput!): ImageUploadPayload! @auth
 }
 
 input CreateImageUploadUrlInput {
@@ -11,4 +11,5 @@ input CreateImageUploadUrlInput {
 type ImageUploadPayload {
     uploadUrl: String!
     fileUrl: String!
+    uploadId: ID!
 }

@@ -46,6 +46,7 @@ type CreateRecipeSourceInput struct {
 type ImageUploadPayload struct {
 	UploadURL string `json:"uploadUrl"`
 	FileURL   string `json:"fileUrl"`
+	UploadID  string `json:"uploadId"`
 }
 
 type Ingredient struct {

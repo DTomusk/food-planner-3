@@ -4,6 +4,7 @@ import (
 	"foodplanner/internal/auth"
 	"foodplanner/internal/ingredient"
 	"foodplanner/internal/recipe"
+	"foodplanner/internal/upload"
 	"foodplanner/internal/user"
 )
 
@@ -16,5 +17,6 @@ type Resolver struct {
 	AuthService        *auth.AuthService
 	IngredientsService *ingredient.IngredientService
 	RecipeService      *recipe.Service
+	UploadService      *upload.UploadService
 	UserService        *user.UserService
 }

@@ -59,6 +59,7 @@ type ComplexityRoot struct {
 
 	ImageUploadPayload struct {
 		FileURL   func(childComplexity int) int
+		UploadID  func(childComplexity int) int
 		UploadURL func(childComplexity int) int
 	}
 
@@ -232,6 +233,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ImageUploadPayload.FileURL(childComplexity), true
+	case "ImageUploadPayload.uploadId":
+		if e.complexity.ImageUploadPayload.UploadID == nil {
+			break
+		}
+
+		return e.complexity.ImageUploadPayload.UploadID(childComplexity), true
 	case "ImageUploadPayload.uploadUrl":
 		if e.complexity.ImageUploadPayload.UploadURL == nil {
 			break
@@ -1102,6 +1109,35 @@ func (ec *executionContext) fieldContext_ImageUploadPayload_fileUrl(_ context.Co
 	return fc, nil
 }
 
+func (ec *executionContext) _ImageUploadPayload_uploadId(ctx context.Context, field graphql.CollectedField, obj *model.ImageUploadPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ImageUploadPayload_uploadId,
+		func(ctx context.Context) (any, error) {
+			return obj.UploadID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ImageUploadPayload_uploadId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ImageUploadPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Ingredient_id(ctx context.Context, field graphql.CollectedField, obj *model.Ingredient) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1755,7 +1791,20 @@ func (ec *executionContext) _Mutation_createImageUploadUrl(ctx context.Context, 
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Mutation().CreateImageUploadURL(ctx, fc.Args["input"].(model.CreateImageUploadURLInput))
 		},
-		nil,
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				if ec.directives.Auth == nil {
+					var zeroVal *model.ImageUploadPayload
+					return zeroVal, errors.New("directive auth is not implemented")
+				}
+				return ec.directives.Auth(ctx, nil, directive0)
+			}
+
+			next = directive1
+			return next
+		},
 		ec.marshalNImageUploadPayload2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐImageUploadPayload,
 		true,
 		true,
@@ -1774,6 +1823,8 @@ func (ec *executionContext) fieldContext_Mutation_createImageUploadUrl(ctx conte
 				return ec.fieldContext_ImageUploadPayload_uploadUrl(ctx, field)
 			case "fileUrl":
 				return ec.fieldContext_ImageUploadPayload_fileUrl(ctx, field)
+			case "uploadId":
+				return ec.fieldContext_ImageUploadPayload_uploadId(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ImageUploadPayload", field.Name)
 		},
@@ -5256,6 +5307,11 @@ func (ec *executionContext) _ImageUploadPayload(ctx context.Context, sel ast.Sel
 			}
 		case "fileUrl":
 			out.Values[i] = ec._ImageUploadPayload_fileUrl(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "uploadId":
+			out.Values[i] = ec._ImageUploadPayload_uploadId(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
