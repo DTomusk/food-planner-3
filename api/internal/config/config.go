@@ -21,6 +21,14 @@ type Config struct {
 	RefreshTokenExpirationDays int
 	RecipeSearchTrigramWeight  float64
 	RecipeSearchFullTextWeight float64
+	R2AccountID                string
+	R2EndpointURL              string
+	R2BucketName               string
+	R2AccessKeyID              string
+	R2SecretAccessKey          string
+	R2PublicBaseURL            string
+	R2Region                   string
+	R2PresignExpiry            int
 }
 
 func Load() (*Config, error) {

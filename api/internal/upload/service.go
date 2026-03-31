@@ -12,42 +12,51 @@ import (
 // TODO: move to config
 const (
 	defaultMaxImageSizeBytes = 5 * 1024 * 1024
-	defaultUploadBaseURL     = "https://upload-provider-not-configured.invalid"
-	defaultPublicBaseURL     = "https://public-image-base-not-configured.invalid"
 )
 
 type UploadService struct {
 	allowedImageTypes map[string]struct{}
 	maxImageSizeBytes int64
-	uploadBaseURL     string
-	publicBaseURL     string
+	provider          UploadProvider
 }
 
-func NewUploadService() *UploadService {
+func NewUploadServiceWithProvider(provider UploadProvider) *UploadService {
 	return &UploadService{
 		allowedImageTypes: map[string]struct{}{
 			"image/jpeg": {},
 			"image/png":  {},
 		},
 		maxImageSizeBytes: defaultMaxImageSizeBytes,
-		uploadBaseURL:     defaultUploadBaseURL,
-		publicBaseURL:     defaultPublicBaseURL,
+		provider:          provider,
 	}
 }
 
-func (s *UploadService) CreateImageUploadURL(_ context.Context, req CreateImageUploadURLRequest) (*CreateImageUploadURLResponse, error) {
+func (s *UploadService) CreateImageUploadURL(ctx context.Context, req CreateImageUploadURLRequest) (*CreateImageUploadURLResponse, error) {
 	if err := s.validateCreateImageUploadURLRequest(req); err != nil {
 		return nil, err
+	}
+
+	if s.provider == nil {
+		return nil, ErrProviderNotConfigured
 	}
 
 	uploadID := uuid.New()
 	objectKey := buildObjectKey(req.OwnerUserID, uploadID, req.FileName)
 
+	providerResponse, err := s.provider.CreateSignedUploadURL(ctx, CreateSignedUploadURLRequest{
+		ObjectKey:     objectKey,
+		FileType:      req.FileType,
+		FileSizeBytes: req.FileSizeBytes,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return &CreateImageUploadURLResponse{
 		UploadID:  uploadID,
 		ObjectKey: objectKey,
-		UploadURL: joinURL(s.uploadBaseURL, objectKey),
-		FileURL:   joinURL(s.publicBaseURL, objectKey),
+		UploadURL: providerResponse.UploadURL,
+		FileURL:   providerResponse.FileURL,
 	}, nil
 }
 
@@ -86,8 +95,4 @@ func buildObjectKey(userID, uploadID uuid.UUID, fileName string) string {
 	}
 
 	return fmt.Sprintf("recipe-images/%s/%s%s", userID.String(), uploadID.String(), ext)
-}
-
-func joinURL(baseURL, path string) string {
-	return strings.TrimRight(baseURL, "/") + "/" + strings.TrimLeft(path, "/")
 }
