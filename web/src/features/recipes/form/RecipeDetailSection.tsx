@@ -7,11 +7,11 @@ import Inline from "@/components/layout/Inline";
 import FileDrop from "@/components/ui/FileDrop";
 
 type RecipeDetailSectionProps = {
-  imageFile: File | null;
-  onImageFileChange: (file: File | null) => void;
+  imageFile?: File | null;
+  onImageFileChange?: (file: File | null) => void;
 }
 
-export default function RecipeDetailSection({ imageFile, onImageFileChange }: RecipeDetailSectionProps) {
+export default function RecipeDetailSection({ imageFile = null, onImageFileChange = () => {} }: RecipeDetailSectionProps) {
     const { register, formState: { errors } } = useFormContext<RecipeFormValues>();
 
     return (

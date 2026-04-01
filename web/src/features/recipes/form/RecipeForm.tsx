@@ -15,19 +15,21 @@ import { DEFAULT_RECIPE_FORM_VALUES } from "../mappers/recipeFormMapper";
 type RecipeFormProps = {
   onSubmit: (values: RecipeFormValues) => void;
   isSubmitting?: boolean;
+  isPreparingImageUpload?: boolean;
   ingredients: IngredientOptionModel[];
   defaultValues?: RecipeFormValues;
-  imageFile: File | null;
-  onImageFileChange: (file: File | null) => void;
+  imageFile?: File | null;
+  onImageFileChange?: (file: File | null) => void;
 };
 
 export default function RecipeForm({
   onSubmit,
   isSubmitting = false,
+  isPreparingImageUpload = false,
   ingredients,
   defaultValues,
-  imageFile,
-  onImageFileChange,
+  imageFile = null,
+  onImageFileChange = () => {},
 }: RecipeFormProps) {
   const methods = useForm<RecipeFormValues>({
     resolver: zodResolver(recipeFormSchema),
@@ -49,7 +51,7 @@ export default function RecipeForm({
             <IngredientSection ingredients={ingredients} />
             <RecipeSourceSection />
             <Inline justify="start">
-            <Button disabled={isSubmitting || (isSubmitted && !isValid)} type="submit" loading={isSubmitting}>
+            <Button disabled={isSubmitting || isPreparingImageUpload || (isSubmitted && !isValid)} type="submit" loading={isSubmitting || isPreparingImageUpload}>
               {commonStrings.forms.create}
             </Button>
             </Inline>
