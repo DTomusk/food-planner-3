@@ -3,6 +3,7 @@ package upload
 import (
 	"context"
 	"fmt"
+	"foodplanner/internal/db"
 	"path/filepath"
 	"strings"
 
@@ -15,22 +16,26 @@ const (
 )
 
 type UploadService struct {
+	db                db.DBTX
 	allowedImageTypes map[string]struct{}
 	maxImageSizeBytes int64
 	provider          UploadProvider
+	repo              *uploadRepo
 }
 
-func NewUploadServiceWithProvider(provider UploadProvider, maxImageSizeBytes int64) *UploadService {
+func NewUploadServiceWithProvider(db db.DBTX, provider UploadProvider, maxImageSizeBytes int64, repo *uploadRepo) *UploadService {
 	if maxImageSizeBytes <= 0 {
 		maxImageSizeBytes = defaultMaxImageSizeBytes
 	}
 	return &UploadService{
+		db: db,
 		allowedImageTypes: map[string]struct{}{
 			"image/jpeg": {},
 			"image/png":  {},
 		},
 		maxImageSizeBytes: maxImageSizeBytes,
 		provider:          provider,
+		repo:              repo,
 	}
 }
 
@@ -52,6 +57,24 @@ func (s *UploadService) CreateImageUploadURL(ctx context.Context, req CreateImag
 		FileSizeBytes: req.FileSizeBytes,
 	})
 	if err != nil {
+		return nil, err
+	}
+	if providerResponse.ExpiresAt.IsZero() {
+		return nil, ErrMissingUploadExpiry
+	}
+
+	upload := &Upload{
+		ID:            uploadID,
+		OwnerUserID:   req.OwnerUserID,
+		ObjectKey:     objectKey,
+		FileName:      req.FileName,
+		FileType:      req.FileType,
+		FileSizeBytes: req.FileSizeBytes,
+		Purpose:       req.Purpose,
+		ExpiresAt:     providerResponse.ExpiresAt,
+	}
+
+	if err := s.repo.saveUploadMetadata(ctx, s.db, upload); err != nil {
 		return nil, err
 	}
 
