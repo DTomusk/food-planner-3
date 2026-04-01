@@ -5,15 +5,14 @@ import type { RecipeFormValues } from "../types";
 import { useFormContext } from "react-hook-form";
 import Inline from "@/components/layout/Inline";
 import FileDrop from "@/components/ui/FileDrop";
-import { useState } from "react";
 
-export default function RecipeDetailSection() {
+type RecipeDetailSectionProps = {
+  imageFile: File | null;
+  onImageFileChange: (file: File | null) => void;
+}
+
+export default function RecipeDetailSection({ imageFile, onImageFileChange }: RecipeDetailSectionProps) {
     const { register, formState: { errors } } = useFormContext<RecipeFormValues>();
-    const [imageFile, setImageFile] = useState<File | null>(null);
-
-    const onFileChange = (file: File | null) => {
-        setImageFile(file);
-    }
 
     return (
         <FormSection title="Recipe details" collapsible defaultCollapsed={false}>
@@ -25,7 +24,7 @@ export default function RecipeDetailSection() {
               "image/png": [],
             }} 
             maxSize={5*1024*1024}
-            onChange={onFileChange}
+            onChange={onImageFileChange}
           />
           <FormField htmlFor="name" label="Recipe name" error={errors.name?.message}>
             <Input type="text" placeholder="Recipe name" 

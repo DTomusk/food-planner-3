@@ -3,6 +3,7 @@ import Container from "@/components/layout/Container";
 import { useIngredients } from "@/features/ingredients/hooks/useIngredients";
 import { RecipeForm, useCreateRecipe, type RecipeFormValues } from "@/features/recipes";
 import { mapFormValuesToCreateRecipeInput } from "@/features/recipes/mappers/recipeFormMapper";
+import { useUploadUrl } from "@/features/upload/hooks/useUploadUrl";
 import { Page } from "@/layout";
 import { extractErrorMessage } from "@/lib/errors";
 import { commonStrings } from "@/lib/strings";
@@ -10,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 
 export default function RecipeCreatePage() {
     const { mutate, isPending, error } = useCreateRecipe();
+    const { mutate: createUploadUrl } = useUploadUrl();
     const { data: ingredientsData } = useIngredients();
     const navigate = useNavigate();
 

@@ -1,0 +1,5 @@
+mutation CreateImageUploadURL($input: CreateImageUploadUrlInput!) {
+    createImageUploadUrl(input: $input) {
+        uploadUrl
+    }
+}

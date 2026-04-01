@@ -17,6 +17,8 @@ type RecipeFormProps = {
   isSubmitting?: boolean;
   ingredients: IngredientOptionModel[];
   defaultValues?: RecipeFormValues;
+  imageFile: File | null;
+  onImageFileChange: (file: File | null) => void;
 };
 
 export default function RecipeForm({
@@ -24,6 +26,8 @@ export default function RecipeForm({
   isSubmitting = false,
   ingredients,
   defaultValues,
+  imageFile,
+  onImageFileChange,
 }: RecipeFormProps) {
   const methods = useForm<RecipeFormValues>({
     resolver: zodResolver(recipeFormSchema),
@@ -41,7 +45,7 @@ export default function RecipeForm({
       <FormProvider {...methods}>
         <Form onSubmit={handleSubmit(onSubmit)}>
           <Stack space="lg">
-            <RecipeDetailSection />
+            <RecipeDetailSection imageFile={imageFile} onImageFileChange={onImageFileChange} />
             <IngredientSection ingredients={ingredients} />
             <RecipeSourceSection />
             <Inline justify="start">
