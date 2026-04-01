@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"foodplanner/internal/testutil"
+	"foodplanner/internal/testutil/seeds"
 	"testing"
 
 	"github.com/google/uuid"
@@ -15,18 +16,22 @@ func TestUploadServiceCreateImageUploadURLSuccess(t *testing.T) {
 	t.Parallel()
 
 	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
 		provider := NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com")
 		service := NewUploadServiceWithProvider(tx, provider, 10*1024*1024, NewUploadRepo())
 
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err, "Failed to seed test user")
+
 		req := CreateImageUploadURLRequest{
-			OwnerUserID:   uuid.New(),
+			OwnerUserID:   testUser.ID,
 			FileName:      "dish.PNG",
 			FileType:      "image/png",
 			FileSizeBytes: 1024,
 			Purpose:       UploadPurposeRecipeImage,
 		}
 
-		res, err := service.CreateImageUploadURL(context.Background(), req)
+		res, err := service.CreateImageUploadURL(ctx, req)
 		require.NoError(t, err)
 		require.NotNil(t, res)
 		require.NotEqual(t, uuid.Nil, res.UploadID)
@@ -40,18 +45,22 @@ func TestUploadServiceCreateImageUploadURLSuccess(t *testing.T) {
 
 func TestUploadServiceCreateImageUploadURLUsesBinExtensionWhenMissing(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
 		provider := NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com")
 		service := NewUploadServiceWithProvider(tx, provider, 10*1024*1024, NewUploadRepo())
 
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err, "Failed to seed test user")
+
 		req := CreateImageUploadURLRequest{
-			OwnerUserID:   uuid.New(),
+			OwnerUserID:   testUser.ID,
 			FileName:      "avatar",
 			FileType:      "image/png",
 			FileSizeBytes: 1024,
 			Purpose:       UploadPurposeRecipeImage,
 		}
 
-		res, err := service.CreateImageUploadURL(context.Background(), req)
+		res, err := service.CreateImageUploadURL(ctx, req)
 		require.NoError(t, err)
 		require.NotNil(t, res)
 		require.Contains(t, res.ObjectKey, ".bin")
@@ -60,11 +69,15 @@ func TestUploadServiceCreateImageUploadURLUsesBinExtensionWhenMissing(t *testing
 
 func TestUploadServiceCreateImageUploadURLValidationErrors(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
 		provider := NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com")
 		service := NewUploadServiceWithProvider(tx, provider, 100, NewUploadRepo())
 
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err, "Failed to seed test user")
+
 		baseReq := CreateImageUploadURLRequest{
-			OwnerUserID:   uuid.New(),
+			OwnerUserID:   testUser.ID,
 			FileName:      "image.png",
 			FileType:      "image/png",
 			FileSizeBytes: 10,
@@ -132,7 +145,7 @@ func TestUploadServiceCreateImageUploadURLValidationErrors(t *testing.T) {
 				req := baseReq
 				tc.mutate(&req)
 
-				res, err := service.CreateImageUploadURL(context.Background(), req)
+				res, err := service.CreateImageUploadURL(ctx, req)
 				require.Error(t, err)
 				require.ErrorIs(t, err, tc.wantErr)
 				require.Nil(t, res)
