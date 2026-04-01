@@ -74,6 +74,7 @@ func (s *UploadService) CreateImageUploadURL(ctx context.Context, req CreateImag
 		ExpiresAt:     providerResponse.ExpiresAt,
 	}
 
+	// persist upload metadata
 	if err := s.repo.saveUploadMetadata(ctx, s.db, upload); err != nil {
 		return nil, err
 	}
