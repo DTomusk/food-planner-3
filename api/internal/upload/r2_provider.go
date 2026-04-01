@@ -99,6 +99,7 @@ func (p *R2UploadProvider) CreateSignedUploadURL(ctx context.Context, req Create
 	if p == nil || p.presignClient == nil {
 		return nil, ErrProviderNotConfigured
 	}
+	now := time.Now().UTC()
 
 	objectKey := strings.TrimSpace(req.ObjectKey)
 	if objectKey == "" {
@@ -128,6 +129,7 @@ func (p *R2UploadProvider) CreateSignedUploadURL(ctx context.Context, req Create
 	return &CreateSignedUploadURLResponse{
 		UploadURL: presignedRequest.URL,
 		FileURL:   joinURL(p.publicBaseURL, objectKey),
+		ExpiresAt: now.Add(p.presignExpiry),
 	}, nil
 }
 

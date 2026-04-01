@@ -3,6 +3,7 @@ package upload
 import (
 	"context"
 	"strings"
+	"time"
 )
 
 type CreateSignedUploadURLRequest struct {
@@ -15,7 +16,8 @@ type CreateSignedUploadURLResponse struct {
 	// UploadURL is the presigned URL that clients can use to upload the file.
 	UploadURL string
 	// FileURL is the public URL where the uploaded file will be accessible after upload.
-	FileURL string
+	FileURL   string
+	ExpiresAt time.Time
 }
 
 type UploadProvider interface {
@@ -43,6 +45,7 @@ func (p *StaticUploadProvider) CreateSignedUploadURL(_ context.Context, req Crea
 	return &CreateSignedUploadURLResponse{
 		UploadURL: joinURL(p.uploadBaseURL, req.ObjectKey),
 		FileURL:   joinURL(p.publicBaseURL, req.ObjectKey),
+		ExpiresAt: time.Now().Add(defaultR2PresignExpiry),
 	}, nil
 }
 
