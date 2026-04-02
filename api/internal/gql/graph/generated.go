@@ -4993,7 +4993,7 @@ func (ec *executionContext) unmarshalInputCreateRecipeInput(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "ingredientUsages", "prepMins", "cookMins", "portions", "recipeSource", "imgSrc"}
+	fieldsInOrder := [...]string{"name", "ingredientUsages", "prepMins", "cookMins", "portions", "recipeSource", "imgUploadId"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -5042,13 +5042,13 @@ func (ec *executionContext) unmarshalInputCreateRecipeInput(ctx context.Context,
 				return it, err
 			}
 			it.RecipeSource = data
-		case "imgSrc":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imgSrc"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+		case "imgUploadId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imgUploadId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.ImgSrc = data
+			it.ImgUploadID = data
 		}
 	}
 

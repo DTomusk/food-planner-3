@@ -77,7 +77,7 @@ input CreateRecipeInput {
   cookMins: Int!
   portions: Int!
   recipeSource: CreateRecipeSourceInput!
-  imgSrc: String
+  imgUploadId: ID
 }
 
 input CreateIngredientUsageInput {

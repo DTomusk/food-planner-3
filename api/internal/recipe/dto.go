@@ -8,7 +8,7 @@ type CreateRecipeRequest struct {
 	CookMins    int                            `json:"cook_mins" validate:"required,gte=0"`
 	Portions    int                            `json:"portions" validate:"required,gt=0"`
 	Source      CreateRecipeSourceRequest      `json:"source" validate:"required,dive"`
-	ImgSrc      *string                        `json:"img_src,omitempty"`
+	ImgUploadId *string                        `json:"img_upload_id,omitempty"`
 }
 
 type CreateIngredientUsageRequest struct {

@@ -33,7 +33,7 @@ type CreateRecipeInput struct {
 	CookMins         int32                         `json:"cookMins"`
 	Portions         int32                         `json:"portions"`
 	RecipeSource     *CreateRecipeSourceInput      `json:"recipeSource"`
-	ImgSrc           *string                       `json:"imgSrc,omitempty"`
+	ImgUploadID      *string                       `json:"imgUploadId,omitempty"`
 }
 
 type CreateRecipeSourceInput struct {
