@@ -64,6 +64,7 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 		request.CookMins,
 		request.Portions,
 		recipeSource,
+		request.ImgSrc,
 	)
 	if err != nil {
 		logger.Error("Error creating recipe", "error", err)
@@ -165,6 +166,7 @@ func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest)
 		request.Request.CookMins,
 		request.Request.Portions,
 		recipeSource,
+		request.Request.ImgSrc,
 	)
 	if err != nil {
 		return nil, err

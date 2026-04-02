@@ -54,5 +54,4 @@ func (r *mutationResolver) CreateImageUploadURL(ctx context.Context, input model
 		FileURL:   result.FileURL,
 		UploadID:  result.UploadID.String(),
 	}, nil
-
 }

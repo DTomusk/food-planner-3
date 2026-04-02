@@ -8,7 +8,7 @@ const sourceTypeOptions = [
     RecipeSourceType.Original,
 ] as const;
 
-const urlSchema = z.string().url("Enter a valid URL");
+const urlSchema = z.url("Enter a valid URL");
 
 export const recipeFormSchema = z.object({
     name: z.string().min(1, "Recipe name is required"),

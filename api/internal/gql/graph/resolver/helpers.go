@@ -180,6 +180,7 @@ func toCreateRecipeRequest(input *model.CreateRecipeInput, userID string) (recip
 		CookMins:    int(input.CookMins),
 		Portions:    int(input.Portions),
 		Source:      recipeSourceRequest,
+		ImgSrc:      input.ImgSrc,
 	}, nil
 }
 

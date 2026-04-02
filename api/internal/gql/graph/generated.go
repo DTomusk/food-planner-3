@@ -136,6 +136,7 @@ type ComplexityRoot struct {
 		CookMins         func(childComplexity int) int
 		CreatedAt        func(childComplexity int) int
 		ID               func(childComplexity int) int
+		ImgSrc           func(childComplexity int) int
 		IngredientUsages func(childComplexity int) int
 		Name             func(childComplexity int) int
 		Portions         func(childComplexity int) int
@@ -190,6 +191,7 @@ type RecipeVersionResolver interface {
 	IngredientUsages(ctx context.Context, obj *model.RecipeVersion) ([]*model.IngredientUsage, error)
 
 	Source(ctx context.Context, obj *model.RecipeVersion) (*model.RecipeSource, error)
+	ImgSrc(ctx context.Context, obj *model.RecipeVersion) (*string, error)
 }
 type UserResolver interface {
 	Recipes(ctx context.Context, obj *model.User, pagination *model.PaginationInput, filter *model.RecipeFilterInput) (*model.RecipeConnection, error)
@@ -570,6 +572,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.RecipeVersion.ID(childComplexity), true
+	case "RecipeVersion.imgSrc":
+		if e.complexity.RecipeVersion.ImgSrc == nil {
+			break
+		}
+
+		return e.complexity.RecipeVersion.ImgSrc(childComplexity), true
 	case "RecipeVersion.ingredientUsages":
 		if e.complexity.RecipeVersion.IngredientUsages == nil {
 			break
@@ -2427,6 +2435,8 @@ func (ec *executionContext) fieldContext_Recipe_currentVersion(_ context.Context
 				return ec.fieldContext_RecipeVersion_portions(ctx, field)
 			case "source":
 				return ec.fieldContext_RecipeVersion_source(ctx, field)
+			case "imgSrc":
+				return ec.fieldContext_RecipeVersion_imgSrc(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_RecipeVersion_createdAt(ctx, field)
 			}
@@ -2478,6 +2488,8 @@ func (ec *executionContext) fieldContext_Recipe_versions(_ context.Context, fiel
 				return ec.fieldContext_RecipeVersion_portions(ctx, field)
 			case "source":
 				return ec.fieldContext_RecipeVersion_source(ctx, field)
+			case "imgSrc":
+				return ec.fieldContext_RecipeVersion_imgSrc(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_RecipeVersion_createdAt(ctx, field)
 			}
@@ -2530,6 +2542,8 @@ func (ec *executionContext) fieldContext_Recipe_version(ctx context.Context, fie
 				return ec.fieldContext_RecipeVersion_portions(ctx, field)
 			case "source":
 				return ec.fieldContext_RecipeVersion_source(ctx, field)
+			case "imgSrc":
+				return ec.fieldContext_RecipeVersion_imgSrc(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_RecipeVersion_createdAt(ctx, field)
 			}
@@ -3158,6 +3172,35 @@ func (ec *executionContext) fieldContext_RecipeVersion_source(_ context.Context,
 				return ec.fieldContext_RecipeSource_instructions(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type RecipeSource", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RecipeVersion_imgSrc(ctx context.Context, field graphql.CollectedField, obj *model.RecipeVersion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RecipeVersion_imgSrc,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.RecipeVersion().ImgSrc(ctx, obj)
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RecipeVersion_imgSrc(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RecipeVersion",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -4950,7 +4993,7 @@ func (ec *executionContext) unmarshalInputCreateRecipeInput(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "ingredientUsages", "prepMins", "cookMins", "portions", "recipeSource"}
+	fieldsInOrder := [...]string{"name", "ingredientUsages", "prepMins", "cookMins", "portions", "recipeSource", "imgSrc"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -4999,6 +5042,13 @@ func (ec *executionContext) unmarshalInputCreateRecipeInput(ctx context.Context,
 				return it, err
 			}
 			it.RecipeSource = data
+		case "imgSrc":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imgSrc"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ImgSrc = data
 		}
 	}
 
@@ -6201,6 +6251,39 @@ func (ec *executionContext) _RecipeVersion(ctx context.Context, sel ast.Selectio
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "imgSrc":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._RecipeVersion_imgSrc(ctx, field, obj)
 				return res
 			}
 

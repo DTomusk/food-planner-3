@@ -233,6 +233,11 @@ func (r *recipeVersionResolver) Source(ctx context.Context, obj *model.RecipeVer
 	}, nil
 }
 
+// ImgSrc is the resolver for the imgSrc field.
+func (r *recipeVersionResolver) ImgSrc(ctx context.Context, obj *model.RecipeVersion) (*string, error) {
+	panic(fmt.Errorf("not implemented: ImgSrc - imgSrc"))
+}
+
 // Recipe returns graph.RecipeResolver implementation.
 func (r *Resolver) Recipe() graph.RecipeResolver { return &recipeResolver{r} }
 
