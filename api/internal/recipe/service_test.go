@@ -6,6 +6,7 @@ import (
 	"foodplanner/internal/ingredient"
 	"foodplanner/internal/testutil"
 	"foodplanner/internal/testutil/seeds"
+	"foodplanner/internal/upload"
 	"testing"
 	"time"
 
@@ -41,6 +42,7 @@ func TestCreateRecipe(t *testing.T) {
 			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
 			NewIngredientUsageRepo(),
 			nil,
+			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
 		)
 		ingredientRequest := CreateIngredientUsageRequest{
 			IngredientID: ingredientID.String(),
@@ -107,7 +109,9 @@ func TestCreateRecipeWithDuplicateIngredients(t *testing.T) {
 			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
 			NewIngredientUsageRepo(),
 			nil,
+			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
 		)
+
 		ingredientRequest := CreateIngredientUsageRequest{
 			IngredientID: ingredientID.String(),
 			Quantity:     200,
@@ -143,6 +147,7 @@ func TestCreateRecipeWithNonexistentIngredient(t *testing.T) {
 			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
 			NewIngredientUsageRepo(),
 			nil,
+			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
 		)
 
 		ingredientRequest := CreateIngredientUsageRequest{
@@ -188,6 +193,7 @@ func TestCreateRecipeWithInvalidUnit(t *testing.T) {
 			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
 			NewIngredientUsageRepo(),
 			nil,
+			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
 		)
 		ingredientRequest := CreateIngredientUsageRequest{
 			IngredientID: ingredientID.String(),
@@ -231,6 +237,7 @@ func TestCreateRecipeNotPreferredUnit(t *testing.T) {
 			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
 			NewIngredientUsageRepo(),
 			nil,
+			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
 		)
 		ingredientRequest := CreateIngredientUsageRequest{
 			IngredientID: ingredientID.String(),
@@ -278,6 +285,7 @@ func TestCreateRecipe_NoSource(t *testing.T) {
 			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
 			NewIngredientUsageRepo(),
 			nil,
+			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
 		)
 		ingredientRequest := CreateIngredientUsageRequest{
 			IngredientID: ingredientID.String(),
@@ -315,6 +323,7 @@ func TestGetRecipes_PaginatesAcrossPages(t *testing.T) {
 			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
 			NewIngredientUsageRepo(),
 			nil,
+			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
 		)
 
 		testUser, err := seeds.SeedTestUser(ctx, tx)
@@ -385,6 +394,7 @@ func TestGetRecipes_InvalidCursor(t *testing.T) {
 			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
 			NewIngredientUsageRepo(),
 			nil,
+			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
 		)
 
 		invalidCursor := "not-a-valid-cursor"
@@ -651,6 +661,7 @@ func TestGetRecipes_FiltersByUserID(t *testing.T) {
 			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
 			NewIngredientUsageRepo(),
 			nil,
+			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
 		)
 
 		userA, err := seeds.SeedTestUser(ctx, tx)
@@ -701,6 +712,7 @@ func setupRecipeListFixture(t *testing.T, tx *sql.Tx) (context.Context, *Service
 		ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
 		NewIngredientUsageRepo(),
 		nil,
+		upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
 	)
 
 	testUser, err := seeds.SeedTestUser(ctx, tx)
@@ -731,6 +743,7 @@ func setupRecipeSearchFixture(t *testing.T, tx *sql.Tx) (context.Context, *Servi
 		ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
 		NewIngredientUsageRepo(),
 		nil,
+		upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
 	)
 
 	testUser, err := seeds.SeedTestUser(ctx, tx)

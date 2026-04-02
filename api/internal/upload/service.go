@@ -87,6 +87,10 @@ func (s *UploadService) CreateImageUploadURL(ctx context.Context, req CreateImag
 	}, nil
 }
 
+func (s *UploadService) ValidateAndGetFileURL(ctx context.Context, req ValidateAndGetFileURLRequest) (*string, error) {
+	return nil, nil
+}
+
 func (s *UploadService) validateCreateImageUploadURLRequest(req CreateImageUploadURLRequest) error {
 	if req.OwnerUserID == uuid.Nil {
 		return ErrInvalidOwnerUserID

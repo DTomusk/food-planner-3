@@ -62,15 +62,6 @@ func main() {
 		log.Fatalf("Failed to create recipe repository: %v", err)
 	}
 
-	recipeService := recipe.NewService(
-		txRunner,
-		recipeRepo,
-		recipe.NewRecipeVersionRepo(),
-		ingredientService,
-		recipe.NewIngredientUsageRepo(),
-		nil,
-	)
-
 	userService := user.NewUserService(txRunner.DB(), user.NewUserRepo())
 	jwtService := auth.NewJWTService(cfg.JWTSecret, cfg.JWTExpirationMinutes)
 	refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), cfg.RefreshTokenSecret, cfg.RefreshTokenExpirationDays)
@@ -91,6 +82,16 @@ func main() {
 	}
 	uploadRepo := upload.NewUploadRepo()
 	uploadService := upload.NewUploadServiceWithProvider(txRunner.DB(), uploadProvider, cfg.UploadMaxImageSizeBytes, uploadRepo)
+
+	recipeService := recipe.NewService(
+		txRunner,
+		recipeRepo,
+		recipe.NewRecipeVersionRepo(),
+		ingredientService,
+		recipe.NewIngredientUsageRepo(),
+		nil,
+		uploadService,
+	)
 
 	srv := handler.New(
 		graph.NewExecutableSchema(

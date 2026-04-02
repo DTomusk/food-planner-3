@@ -9,6 +9,7 @@ import (
 	"foodplanner/internal/recipe"
 	"foodplanner/internal/testutil"
 	"foodplanner/internal/testutil/seeds"
+	"foodplanner/internal/upload"
 	"foodplanner/internal/user"
 	"testing"
 	"time"
@@ -42,7 +43,17 @@ func TestRecipeResolver_CreateAndGetRecipe(t *testing.T) {
 		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100)
 		repo, err := recipe.NewRecipeRepo(0.15, 0.85)
 		require.NoError(t, err)
-		service := recipe.NewService(txRunner, repo, recipe.NewRecipeVersionRepo(), ingredientService, recipe.NewIngredientUsageRepo(), nil)
+		service := recipe.NewService(
+			txRunner,
+			repo,
+			recipe.NewRecipeVersionRepo(),
+			ingredientService,
+			recipe.NewIngredientUsageRepo(),
+			nil,
+			upload.NewUploadServiceWithProvider(
+				tx,
+				upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
+		)
 		r := &Resolver{
 			RecipeService: service,
 		}
@@ -102,9 +113,11 @@ func TestRecipeResolver_CreateAndGetRecipe_WithResolver(t *testing.T) {
 		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100)
 		repo, err := recipe.NewRecipeRepo(0.15, 0.85)
 		require.NoError(t, err)
-		service := recipe.NewService(txRunner, repo, recipe.NewRecipeVersionRepo(), ingredientService, recipe.NewIngredientUsageRepo(), nil)
+		service := recipe.NewService(txRunner, repo, recipe.NewRecipeVersionRepo(), ingredientService, recipe.NewIngredientUsageRepo(), nil,
+			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
+		)
 		r := &Resolver{
-			IngredientsService: ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
+			IngredientsService: ingredientService,
 			RecipeService:      service,
 			UserService:        user.NewUserService(tx, user.NewUserRepo()),
 		}
@@ -188,7 +201,10 @@ func TestRecipeResolver_CreateRecipe_Unauthenticated(t *testing.T) {
 		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100)
 		repo, err := recipe.NewRecipeRepo(0.15, 0.85)
 		require.NoError(t, err)
-		service := recipe.NewService(txRunner, repo, recipe.NewRecipeVersionRepo(), ingredientService, recipe.NewIngredientUsageRepo(), nil)
+		service := recipe.NewService(txRunner, repo, recipe.NewRecipeVersionRepo(), ingredientService, recipe.NewIngredientUsageRepo(), nil,
+			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
+		)
+
 		r := &Resolver{
 			RecipeService: service,
 		}
@@ -241,7 +257,9 @@ func TestRecipeResolver_UpdateRecipe_Unauthenticated(t *testing.T) {
 		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100)
 		repo, err := recipe.NewRecipeRepo(0.15, 0.85)
 		require.NoError(t, err)
-		service := recipe.NewService(txRunner, repo, recipe.NewRecipeVersionRepo(), ingredientService, recipe.NewIngredientUsageRepo(), nil)
+		service := recipe.NewService(txRunner, repo, recipe.NewRecipeVersionRepo(), ingredientService, recipe.NewIngredientUsageRepo(), nil,
+			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
+		)
 		r := &Resolver{
 			RecipeService: service,
 		}
@@ -319,7 +337,9 @@ func TestRecipeResolver_UpdateRecipe_WithVersionResolvers(t *testing.T) {
 		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100)
 		repo, err := recipe.NewRecipeRepo(0.15, 0.85)
 		require.NoError(t, err)
-		service := recipe.NewService(txRunner, repo, recipe.NewRecipeVersionRepo(), ingredientService, recipe.NewIngredientUsageRepo(), nil)
+		service := recipe.NewService(txRunner, repo, recipe.NewRecipeVersionRepo(), ingredientService, recipe.NewIngredientUsageRepo(), nil,
+			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
+		)
 		r := &Resolver{
 			IngredientsService: ingredientService,
 			RecipeService:      service,
@@ -441,7 +461,9 @@ func TestRecipeResolver_Recipes_EmptyConnection(t *testing.T) {
 		require.NoError(t, err)
 
 		r := &Resolver{
-			RecipeService: recipe.NewService(txRunner, repo, recipe.NewRecipeVersionRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100), recipe.NewIngredientUsageRepo(), nil),
+			RecipeService: recipe.NewService(txRunner, repo, recipe.NewRecipeVersionRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100), recipe.NewIngredientUsageRepo(), nil,
+				upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
+			),
 		}
 		ctx := context.Background()
 
@@ -484,7 +506,9 @@ func TestRecipeResolver_Recipes_PaginatesEdges(t *testing.T) {
 		require.NoError(t, err)
 
 		r := &Resolver{
-			RecipeService: recipe.NewService(txRunner, repo, recipe.NewRecipeVersionRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100), recipe.NewIngredientUsageRepo(), nil),
+			RecipeService: recipe.NewService(txRunner, repo, recipe.NewRecipeVersionRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100), recipe.NewIngredientUsageRepo(), nil,
+				upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
+			),
 		}
 		qr := &queryResolver{r}
 
@@ -541,7 +565,9 @@ func TestRecipeVersionResolver_NoDataPaths(t *testing.T) {
 		require.NoError(t, err)
 
 		r := &Resolver{
-			RecipeService:      recipe.NewService(txRunner, repo, recipe.NewRecipeVersionRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100), recipe.NewIngredientUsageRepo(), nil),
+			RecipeService: recipe.NewService(txRunner, repo, recipe.NewRecipeVersionRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100), recipe.NewIngredientUsageRepo(), nil,
+				upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
+			),
 			IngredientsService: ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
 		}
 		recipeVersionResolver := &recipeVersionResolver{r}

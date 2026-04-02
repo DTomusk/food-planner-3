@@ -6,6 +6,7 @@ import (
 	"foodplanner/internal/db"
 	"foodplanner/internal/ingredient"
 	"foodplanner/internal/logging"
+	"foodplanner/internal/upload"
 	"log/slog"
 	"strings"
 
@@ -19,6 +20,7 @@ type Service struct {
 	ingredientService   *ingredient.IngredientService
 	ingredientUsageRepo *ingredientUsageRepo
 	recipeRetentionDays *int
+	uploadService       *upload.UploadService
 }
 
 func NewService(
@@ -28,6 +30,7 @@ func NewService(
 	ingredientService *ingredient.IngredientService,
 	ingredientUsageRepo *ingredientUsageRepo,
 	recipeRetentionDays *int,
+	uploadService *upload.UploadService,
 ) *Service {
 	return &Service{
 		txRunner:            txRunner,
@@ -36,6 +39,7 @@ func NewService(
 		ingredientService:   ingredientService,
 		ingredientUsageRepo: ingredientUsageRepo,
 		recipeRetentionDays: recipeRetentionDays,
+		uploadService:       uploadService,
 	}
 }
 
@@ -56,6 +60,25 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 		return nil, err
 	}
 
+	// Validate that the img upload ID is valid and belongs to the user, if provided
+	var imgSrc *string
+
+	if request.ImgUploadID != nil {
+		uploadId, err := uuid.Parse(*request.ImgUploadID)
+		if err != nil {
+			logger.Error("Error parsing image upload ID", "error", err)
+			return nil, err
+		}
+		imgSrc, err = s.uploadService.ValidateAndGetFileURL(ctx, upload.ValidateAndGetFileURLRequest{
+			UploadID:    uploadId,
+			OwnerUserID: userID,
+		})
+		if err != nil {
+			logger.Error("Error validating image upload", "error", err)
+			return nil, err
+		}
+	}
+
 	recipeContainer, err := NewRecipe(
 		request.Name,
 		userID,
@@ -64,7 +87,7 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 		request.CookMins,
 		request.Portions,
 		recipeSource,
-		request.ImgSrc,
+		imgSrc,
 	)
 	if err != nil {
 		logger.Error("Error creating recipe", "error", err)
@@ -156,6 +179,26 @@ func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest)
 	if err != nil {
 		return nil, err
 	}
+
+	// Validate that the img upload ID is valid and belongs to the user, if provided
+	var imgSrc *string
+
+	if request.Request.ImgUploadID != nil {
+		uploadId, err := uuid.Parse(*request.Request.ImgUploadID)
+		if err != nil {
+			logger.Error("Error parsing image upload ID", "error", err)
+			return nil, err
+		}
+		imgSrc, err = s.uploadService.ValidateAndGetFileURL(ctx, upload.ValidateAndGetFileURLRequest{
+			UploadID:    uploadId,
+			OwnerUserID: uuid.MustParse(request.Request.UserID),
+		})
+		if err != nil {
+			logger.Error("Error validating image upload", "error", err)
+			return nil, err
+		}
+	}
+
 	// Instantiate entity
 	recipeVersion, err := NewRecipeVersion(
 		existingRecipe.ID,
@@ -166,7 +209,7 @@ func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest)
 		request.Request.CookMins,
 		request.Request.Portions,
 		recipeSource,
-		request.Request.ImgSrc,
+		imgSrc,
 	)
 	if err != nil {
 		return nil, err

@@ -31,3 +31,8 @@ type CreateImageUploadURLResponse struct {
 	UploadURL string
 	FileURL   string
 }
+
+type ValidateAndGetFileURLRequest struct {
+	UploadID    uuid.UUID
+	OwnerUserID uuid.UUID
+}

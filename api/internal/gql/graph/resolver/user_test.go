@@ -9,6 +9,7 @@ import (
 	"foodplanner/internal/recipe"
 	"foodplanner/internal/testutil"
 	"foodplanner/internal/testutil/seeds"
+	"foodplanner/internal/upload"
 	"foodplanner/internal/user"
 	"testing"
 
@@ -122,7 +123,9 @@ func TestUserResolver_Recipes(t *testing.T) {
 		recipeRepo, err := recipe.NewRecipeRepo(0.15, 0.85)
 		require.NoError(t, err)
 
-		recipeService := recipe.NewService(txRunner, recipeRepo, recipe.NewRecipeVersionRepo(), ingredientService, recipe.NewIngredientUsageRepo(), nil)
+		recipeService := recipe.NewService(txRunner, recipeRepo, recipe.NewRecipeVersionRepo(), ingredientService, recipe.NewIngredientUsageRepo(), nil,
+			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
+		)
 
 		r := &Resolver{
 			RecipeService: recipeService,
@@ -159,7 +162,9 @@ func TestUserResolver_Recipes_NoRecipes(t *testing.T) {
 		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100)
 		recipeRepo, err := recipe.NewRecipeRepo(0.15, 0.85)
 		require.NoError(t, err)
-		recipeService := recipe.NewService(txRunner, recipeRepo, recipe.NewRecipeVersionRepo(), ingredientService, recipe.NewIngredientUsageRepo(), nil)
+		recipeService := recipe.NewService(txRunner, recipeRepo, recipe.NewRecipeVersionRepo(), ingredientService, recipe.NewIngredientUsageRepo(), nil,
+			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
+		)
 
 		r := &Resolver{
 			RecipeService: recipeService,
@@ -206,7 +211,9 @@ func TestUserResolver_Recipes_ForcesParentUserScope(t *testing.T) {
 		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100)
 		recipeRepo, err := recipe.NewRecipeRepo(0.15, 0.85)
 		require.NoError(t, err)
-		recipeService := recipe.NewService(txRunner, recipeRepo, recipe.NewRecipeVersionRepo(), ingredientService, recipe.NewIngredientUsageRepo(), nil)
+		recipeService := recipe.NewService(txRunner, recipeRepo, recipe.NewRecipeVersionRepo(), ingredientService, recipe.NewIngredientUsageRepo(), nil,
+			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
+		)
 
 		r := &Resolver{RecipeService: recipeService}
 		userResolver := &userResolver{r}
