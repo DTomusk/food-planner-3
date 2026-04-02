@@ -72,6 +72,7 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 		imgSrc, err = s.uploadService.ValidateAndGetFileURL(ctx, upload.ValidateAndGetFileURLRequest{
 			UploadID:    uploadId,
 			OwnerUserID: userID,
+			Purpose:     upload.UploadPurposeRecipeImage,
 		})
 		if err != nil {
 			logger.Error("Error validating image upload", "error", err)
@@ -192,6 +193,7 @@ func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest)
 		imgSrc, err = s.uploadService.ValidateAndGetFileURL(ctx, upload.ValidateAndGetFileURLRequest{
 			UploadID:    uploadId,
 			OwnerUserID: uuid.MustParse(request.Request.UserID),
+			Purpose:     upload.UploadPurposeRecipeImage,
 		})
 		if err != nil {
 			logger.Error("Error validating image upload", "error", err)

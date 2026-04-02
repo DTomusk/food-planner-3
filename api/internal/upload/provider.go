@@ -22,6 +22,7 @@ type CreateSignedUploadURLResponse struct {
 
 type UploadProvider interface {
 	CreateSignedUploadURL(ctx context.Context, req CreateSignedUploadURLRequest) (*CreateSignedUploadURLResponse, error)
+	FileURLForObjectKey(objectKey string) string
 }
 
 // Static upload provider is for testing
@@ -44,9 +45,17 @@ func (p *StaticUploadProvider) CreateSignedUploadURL(_ context.Context, req Crea
 
 	return &CreateSignedUploadURLResponse{
 		UploadURL: joinURL(p.uploadBaseURL, req.ObjectKey),
-		FileURL:   joinURL(p.publicBaseURL, req.ObjectKey),
+		FileURL:   p.FileURLForObjectKey(req.ObjectKey),
 		ExpiresAt: time.Now().Add(defaultR2PresignExpiry),
 	}, nil
+}
+
+func (p *StaticUploadProvider) FileURLForObjectKey(objectKey string) string {
+	if p == nil {
+		return ""
+	}
+
+	return joinURL(p.publicBaseURL, objectKey)
 }
 
 func joinURL(baseURL, path string) string {

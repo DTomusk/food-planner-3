@@ -90,6 +90,53 @@ func TestSaveUploadMetadata_ReturnsErrorWhenOwnerDoesNotExist(t *testing.T) {
 	})
 }
 
+func TestGetUploadByID_ReturnsUpload(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		repo := NewUploadRepo()
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err, "Failed to seed test user")
+
+		expectedUpload := &Upload{
+			ID:            uuid.New(),
+			OwnerUserID:   testUser.ID,
+			ObjectKey:     fmt.Sprintf("%s/%s/%s.png", UploadPurposeRecipeImage, testUser.ID.String(), uuid.New().String()),
+			FileName:      "dish.png",
+			FileType:      "image/png",
+			FileSizeBytes: 1024,
+			Purpose:       UploadPurposeRecipeImage,
+			ExpiresAt:     time.Now().UTC().Add(10 * time.Minute),
+		}
+
+		err = repo.saveUploadMetadata(ctx, tx, expectedUpload)
+		require.NoError(t, err)
+
+		actualUpload, err := repo.getUploadByID(ctx, tx, expectedUpload.ID)
+		require.NoError(t, err)
+		require.NotNil(t, actualUpload)
+		require.Equal(t, expectedUpload.ID, actualUpload.ID)
+		require.Equal(t, expectedUpload.OwnerUserID, actualUpload.OwnerUserID)
+		require.Equal(t, expectedUpload.ObjectKey, actualUpload.ObjectKey)
+		require.Equal(t, expectedUpload.FileName, actualUpload.FileName)
+		require.Equal(t, expectedUpload.FileType, actualUpload.FileType)
+		require.Equal(t, expectedUpload.FileSizeBytes, actualUpload.FileSizeBytes)
+		require.Equal(t, expectedUpload.Purpose, actualUpload.Purpose)
+		require.WithinDuration(t, expectedUpload.ExpiresAt, actualUpload.ExpiresAt, time.Second)
+		require.False(t, actualUpload.Used)
+	})
+}
+
+func TestGetUploadByID_ReturnsNilWhenUploadDoesNotExist(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		repo := NewUploadRepo()
+
+		uploadRecord, err := repo.getUploadByID(context.Background(), tx, uuid.New())
+		require.NoError(t, err)
+		require.Nil(t, uploadRecord)
+	})
+}
+
 func TestSaveUploadMetadata_ReturnsErrorWhenObjectKeyAlreadyExists(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		ctx := context.Background()

@@ -6,6 +6,7 @@ import (
 	"foodplanner/internal/db"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -88,7 +89,52 @@ func (s *UploadService) CreateImageUploadURL(ctx context.Context, req CreateImag
 }
 
 func (s *UploadService) ValidateAndGetFileURL(ctx context.Context, req ValidateAndGetFileURLRequest) (*string, error) {
-	return nil, nil
+	if err := s.validateValidateAndGetFileURLRequest(req); err != nil {
+		return nil, err
+	}
+
+	if s.provider == nil {
+		return nil, ErrProviderNotConfigured
+	}
+
+	uploadRecord, err := s.repo.getUploadByID(ctx, s.db, req.UploadID)
+	if err != nil {
+		return nil, err
+	}
+	if uploadRecord == nil {
+		return nil, ErrUploadNotFound
+	}
+	if uploadRecord.OwnerUserID != req.OwnerUserID {
+		return nil, ErrUploadOwnershipMismatch
+	}
+	if uploadRecord.Purpose != req.Purpose {
+		return nil, ErrUploadPurposeMismatch
+	}
+	if uploadRecord.Used {
+		return nil, ErrUploadAlreadyUsed
+	}
+	if !uploadRecord.ExpiresAt.After(time.Now().UTC()) {
+		return nil, ErrUploadExpired
+	}
+
+	fileURL := s.provider.FileURLForObjectKey(uploadRecord.ObjectKey)
+	return &fileURL, nil
+}
+
+func (s *UploadService) validateValidateAndGetFileURLRequest(req ValidateAndGetFileURLRequest) error {
+	if req.UploadID == uuid.Nil {
+		return ErrInvalidUploadID
+	}
+
+	if req.OwnerUserID == uuid.Nil {
+		return ErrInvalidOwnerUserID
+	}
+
+	if !req.Purpose.IsValid() {
+		return fmt.Errorf("%w: %s", ErrInvalidPurpose, req.Purpose)
+	}
+
+	return nil
 }
 
 func (s *UploadService) validateCreateImageUploadURLRequest(req CreateImageUploadURLRequest) error {

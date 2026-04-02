@@ -128,9 +128,17 @@ func (p *R2UploadProvider) CreateSignedUploadURL(ctx context.Context, req Create
 
 	return &CreateSignedUploadURLResponse{
 		UploadURL: presignedRequest.URL,
-		FileURL:   joinURL(p.publicBaseURL, objectKey),
+		FileURL:   p.FileURLForObjectKey(objectKey),
 		ExpiresAt: now.Add(p.presignExpiry),
 	}, nil
+}
+
+func (p *R2UploadProvider) FileURLForObjectKey(objectKey string) string {
+	if p == nil {
+		return ""
+	}
+
+	return joinURL(p.publicBaseURL, objectKey)
 }
 
 func resolveR2EndpointURL(cfg R2UploadProviderConfig) (string, error) {

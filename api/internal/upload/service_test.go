@@ -7,6 +7,7 @@ import (
 	"foodplanner/internal/testutil"
 	"foodplanner/internal/testutil/seeds"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -190,5 +191,234 @@ func TestNewUploadServiceWithProviderUsesDefaultMaxSize(t *testing.T) {
 		require.Error(t, err)
 		require.ErrorIs(t, err, ErrFileTooLarge)
 		require.Nil(t, res)
+	})
+}
+
+func TestUploadServiceValidateAndGetFileURLSuccess(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		provider := NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com")
+		repo := NewUploadRepo()
+		service := NewUploadServiceWithProvider(tx, provider, 10*1024*1024, repo)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err, "Failed to seed test user")
+
+		uploadRecord := &Upload{
+			ID:            uuid.New(),
+			OwnerUserID:   testUser.ID,
+			ObjectKey:     fmt.Sprintf("%s/%s/%s.png", UploadPurposeRecipeImage, testUser.ID.String(), uuid.New().String()),
+			FileName:      "dish.png",
+			FileType:      "image/png",
+			FileSizeBytes: 1024,
+			Purpose:       UploadPurposeRecipeImage,
+			ExpiresAt:     time.Now().UTC().Add(10 * time.Minute),
+		}
+
+		err = repo.saveUploadMetadata(ctx, tx, uploadRecord)
+		require.NoError(t, err)
+
+		fileURL, err := service.ValidateAndGetFileURL(ctx, ValidateAndGetFileURLRequest{
+			UploadID:    uploadRecord.ID,
+			OwnerUserID: testUser.ID,
+			Purpose:     UploadPurposeRecipeImage,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, fileURL)
+		require.Equal(t, "https://cdn.example.com/"+uploadRecord.ObjectKey, *fileURL)
+	})
+}
+
+func TestUploadServiceValidateAndGetFileURLValidationErrors(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		provider := NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com")
+		service := NewUploadServiceWithProvider(tx, provider, 10*1024*1024, NewUploadRepo())
+
+		validUserID := uuid.New()
+		validUploadID := uuid.New()
+
+		tests := []struct {
+			name    string
+			request ValidateAndGetFileURLRequest
+			wantErr error
+		}{
+			{
+				name: "missing upload ID",
+				request: ValidateAndGetFileURLRequest{
+					OwnerUserID: validUserID,
+					Purpose:     UploadPurposeRecipeImage,
+				},
+				wantErr: ErrInvalidUploadID,
+			},
+			{
+				name: "missing owner user ID",
+				request: ValidateAndGetFileURLRequest{
+					UploadID: validUploadID,
+					Purpose:  UploadPurposeRecipeImage,
+				},
+				wantErr: ErrInvalidOwnerUserID,
+			},
+			{
+				name: "invalid purpose",
+				request: ValidateAndGetFileURLRequest{
+					UploadID:    validUploadID,
+					OwnerUserID: validUserID,
+					Purpose:     UploadPurpose("bad-purpose"),
+				},
+				wantErr: ErrInvalidPurpose,
+			},
+		}
+
+		for _, tc := range tests {
+			t.Run(tc.name, func(t *testing.T) {
+				fileURL, err := service.ValidateAndGetFileURL(ctx, tc.request)
+				require.Error(t, err)
+				require.ErrorIs(t, err, tc.wantErr)
+				require.Nil(t, fileURL)
+			})
+		}
+	})
+}
+
+func TestUploadServiceValidateAndGetFileURLReturnsNotFoundWhenUploadDoesNotExist(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		provider := NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com")
+		service := NewUploadServiceWithProvider(tx, provider, 10*1024*1024, NewUploadRepo())
+
+		fileURL, err := service.ValidateAndGetFileURL(ctx, ValidateAndGetFileURLRequest{
+			UploadID:    uuid.New(),
+			OwnerUserID: uuid.New(),
+			Purpose:     UploadPurposeRecipeImage,
+		})
+		require.Error(t, err)
+		require.ErrorIs(t, err, ErrUploadNotFound)
+		require.Nil(t, fileURL)
+	})
+}
+
+func TestUploadServiceValidateAndGetFileURLReturnsErrorWhenOwnershipDoesNotMatch(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		provider := NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com")
+		repo := NewUploadRepo()
+		service := NewUploadServiceWithProvider(tx, provider, 10*1024*1024, repo)
+
+		owner, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+		otherUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		uploadRecord := &Upload{
+			ID:            uuid.New(),
+			OwnerUserID:   owner.ID,
+			ObjectKey:     fmt.Sprintf("%s/%s/%s.png", UploadPurposeRecipeImage, owner.ID.String(), uuid.New().String()),
+			FileName:      "dish.png",
+			FileType:      "image/png",
+			FileSizeBytes: 1024,
+			Purpose:       UploadPurposeRecipeImage,
+			ExpiresAt:     time.Now().UTC().Add(10 * time.Minute),
+		}
+
+		err = repo.saveUploadMetadata(ctx, tx, uploadRecord)
+		require.NoError(t, err)
+
+		fileURL, err := service.ValidateAndGetFileURL(ctx, ValidateAndGetFileURLRequest{
+			UploadID:    uploadRecord.ID,
+			OwnerUserID: otherUser.ID,
+			Purpose:     UploadPurposeRecipeImage,
+		})
+		require.Error(t, err)
+		require.ErrorIs(t, err, ErrUploadOwnershipMismatch)
+		require.Nil(t, fileURL)
+	})
+}
+
+func TestUploadServiceValidateAndGetFileURLReturnsErrorWhenUploadAlreadyUsed(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		provider := NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com")
+		repo := NewUploadRepo()
+		service := NewUploadServiceWithProvider(tx, provider, 10*1024*1024, repo)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		uploadRecord := &Upload{
+			ID:            uuid.New(),
+			OwnerUserID:   testUser.ID,
+			ObjectKey:     fmt.Sprintf("%s/%s/%s.png", UploadPurposeRecipeImage, testUser.ID.String(), uuid.New().String()),
+			FileName:      "dish.png",
+			FileType:      "image/png",
+			FileSizeBytes: 1024,
+			Purpose:       UploadPurposeRecipeImage,
+			ExpiresAt:     time.Now().UTC().Add(10 * time.Minute),
+		}
+
+		err = repo.saveUploadMetadata(ctx, tx, uploadRecord)
+		require.NoError(t, err)
+
+		_, err = tx.ExecContext(ctx, `UPDATE uploads SET used_at = NOW() WHERE id = $1`, uploadRecord.ID)
+		require.NoError(t, err)
+
+		fileURL, err := service.ValidateAndGetFileURL(ctx, ValidateAndGetFileURLRequest{
+			UploadID:    uploadRecord.ID,
+			OwnerUserID: testUser.ID,
+			Purpose:     UploadPurposeRecipeImage,
+		})
+		require.Error(t, err)
+		require.ErrorIs(t, err, ErrUploadAlreadyUsed)
+		require.Nil(t, fileURL)
+	})
+}
+
+func TestUploadServiceValidateAndGetFileURLReturnsErrorWhenUploadExpired(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		provider := NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com")
+		repo := NewUploadRepo()
+		service := NewUploadServiceWithProvider(tx, provider, 10*1024*1024, repo)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		uploadRecord := &Upload{
+			ID:            uuid.New(),
+			OwnerUserID:   testUser.ID,
+			ObjectKey:     fmt.Sprintf("%s/%s/%s.png", UploadPurposeRecipeImage, testUser.ID.String(), uuid.New().String()),
+			FileName:      "dish.png",
+			FileType:      "image/png",
+			FileSizeBytes: 1024,
+			Purpose:       UploadPurposeRecipeImage,
+			ExpiresAt:     time.Now().UTC().Add(-1 * time.Minute),
+		}
+
+		err = repo.saveUploadMetadata(ctx, tx, uploadRecord)
+		require.NoError(t, err)
+
+		fileURL, err := service.ValidateAndGetFileURL(ctx, ValidateAndGetFileURLRequest{
+			UploadID:    uploadRecord.ID,
+			OwnerUserID: testUser.ID,
+			Purpose:     UploadPurposeRecipeImage,
+		})
+		require.Error(t, err)
+		require.ErrorIs(t, err, ErrUploadExpired)
+		require.Nil(t, fileURL)
+	})
+}
+
+func TestUploadServiceValidateAndGetFileURLProviderNotConfigured(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		service := NewUploadServiceWithProvider(tx, nil, defaultMaxImageSizeBytes, NewUploadRepo())
+
+		fileURL, err := service.ValidateAndGetFileURL(context.Background(), ValidateAndGetFileURLRequest{
+			UploadID:    uuid.New(),
+			OwnerUserID: uuid.New(),
+			Purpose:     UploadPurposeRecipeImage,
+		})
+		require.Error(t, err)
+		require.ErrorIs(t, err, ErrProviderNotConfigured)
+		require.Nil(t, fileURL)
 	})
 }
