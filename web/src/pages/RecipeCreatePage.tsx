@@ -9,6 +9,7 @@ import { Page } from "@/layout";
 import type { CreateImageUploadUrlMutation } from "@/lib/graphql.generated";
 import { extractErrorMessage } from "@/lib/errors";
 import { commonStrings } from "@/lib/strings";
+import imageCompression from "browser-image-compression";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -21,6 +22,7 @@ export default function RecipeCreatePage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageUploadPayload, setImageUploadPayload] = useState<CreateImageUploadUrlMutation["createImageUploadUrl"] | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isCompressingImage, setIsCompressingImage] = useState(false);
 
   const handleImageFileChange = async (file: File | null) => {
     setImageFile(file);
@@ -28,15 +30,27 @@ export default function RecipeCreatePage() {
     setUploadError(null);
 
     if (!file) {
+      setIsCompressingImage(false);
       return;
     }
 
     try {
+      setIsCompressingImage(true);
+
+      // Compress image before uploading
+      const compressedFile = await imageCompression(file, {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 2048,
+        useWebWorker: true,
+      });
+
+      setIsCompressingImage(false);
+
       const data = await createUploadUrl({
         input: {
           fileName: file.name,
-          fileType: file.type,
-          fileSize: file.size,
+          fileType: compressedFile.type,
+          fileSize: compressedFile.size,
         },
       });
 
@@ -44,12 +58,13 @@ export default function RecipeCreatePage() {
 
       await uploadFileToSignedUrl({
         uploadUrl: signedUpload.uploadUrl,
-        file,
-        fileType: file.type,
+        file: compressedFile,
+        fileType: compressedFile.type,
       });
 
       setImageUploadPayload(signedUpload);
     } catch (err) {
+      setIsCompressingImage(false);
       setUploadError(extractErrorMessage(err));
     }
   };
@@ -83,7 +98,7 @@ export default function RecipeCreatePage() {
       <RecipeForm
         onSubmit={handleSubmit}
         isSubmitting={isPending}
-        isPreparingImageUpload={isPreparingImageUpload || isUploadingImage}
+        isPreparingImageUpload={isCompressingImage || isPreparingImageUpload || isUploadingImage}
         ingredients={ingredientsData || []}
         imageFile={imageFile}
         onImageFileChange={handleImageFileChange}
