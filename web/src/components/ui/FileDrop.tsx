@@ -62,7 +62,7 @@ function Preview({ file, onRemove } : { file: File; onRemove: () => void }) {
     <Stack space="md" className="py-4 px-4 items-center">
         <ImageDisplay imageUrl={preview} 
             altText={file.name}
-            containerClassName="w-24 h-24 rounded-md overflow-hidden"
+            containerClassName="w-64 h-64 rounded-md overflow-hidden"
             imageClassName="object-contain"
         />
         <Text>{file.name}</Text>
