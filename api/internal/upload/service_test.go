@@ -391,10 +391,20 @@ func TestUploadServiceValidateAndGetFileURLReturnsErrorWhenUploadExpired(t *test
 			FileType:      "image/png",
 			FileSizeBytes: 1024,
 			Purpose:       UploadPurposeRecipeImage,
-			ExpiresAt:     time.Now().UTC().Add(-1 * time.Minute),
+			ExpiresAt:     time.Now().UTC().Add(10 * time.Minute),
 		}
 
 		err = repo.saveUploadMetadata(ctx, tx, uploadRecord)
+		require.NoError(t, err)
+
+		_, err = tx.ExecContext(
+			ctx,
+			`UPDATE uploads
+			 SET created_at = NOW() - INTERVAL '2 minutes',
+			     expires_at = NOW() - INTERVAL '1 minute'
+			 WHERE id = $1`,
+			uploadRecord.ID,
+		)
 		require.NoError(t, err)
 
 		fileURL, err := service.ValidateAndGetFileURL(ctx, ValidateAndGetFileURLRequest{

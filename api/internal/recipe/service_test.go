@@ -83,6 +83,204 @@ func TestCreateRecipe(t *testing.T) {
 	})
 }
 
+func TestCreateRecipe_WithImageUploadID_PersistsAndRetrievesImageURL(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+
+		ingredientID := uuid.New()
+		testIngredient := ingredient.Ingredient{
+			ID:            ingredientID,
+			FileKey:       "test_ingredient",
+			Name:          "Test Ingredient",
+			PreferredUnit: 1,
+		}
+		err := seeds.InsertIngredient(ctx, tx, &testIngredient)
+		require.NoError(t, err, "Failed to seed test ingredient")
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err, "Failed to seed test user")
+
+		uploadService := upload.NewUploadServiceWithProvider(
+			tx,
+			upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"),
+			0,
+			upload.NewUploadRepo(),
+		)
+
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		s := NewService(
+			txRunner,
+			repo,
+			NewRecipeVersionRepo(),
+			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
+			NewIngredientUsageRepo(),
+			nil,
+			uploadService,
+		)
+
+		uploadRes, err := uploadService.CreateImageUploadURL(ctx, upload.CreateImageUploadURLRequest{
+			OwnerUserID:   testUser.ID,
+			FileName:      "dish.png",
+			FileType:      "image/png",
+			FileSizeBytes: 1024,
+			Purpose:       upload.UploadPurposeRecipeImage,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, uploadRes)
+
+		uploadID := uploadRes.UploadID.String()
+		request := CreateRecipeRequest{
+			Name: "Vanilla Ice Cream",
+			Ingredients: []CreateIngredientUsageRequest{
+				{
+					IngredientID: ingredientID.String(),
+					Quantity:     200,
+					Unit:         1,
+				},
+			},
+			UserID:      testUser.ID.String(),
+			PrepMins:    15,
+			CookMins:    0,
+			Portions:    6,
+			ImgUploadID: &uploadID,
+		}
+
+		recipeContainer, err := s.CreateRecipe(ctx, request)
+		require.NoError(t, err)
+		require.NotNil(t, recipeContainer)
+
+		var persistedImgSrc sql.NullString
+		err = tx.QueryRowContext(ctx, `SELECT img_src FROM recipe_versions WHERE id = $1`, recipeContainer.CurrentVersionID).Scan(&persistedImgSrc)
+		require.NoError(t, err)
+		require.True(t, persistedImgSrc.Valid)
+		require.Equal(t, uploadRes.FileURL, persistedImgSrc.String)
+
+		retrievedByID, err := s.GetRecipeVersionByID(ctx, recipeContainer.CurrentVersionID)
+		require.NoError(t, err)
+		require.NotNil(t, retrievedByID)
+		require.NotNil(t, retrievedByID.ImgSrc)
+		require.Equal(t, uploadRes.FileURL, *retrievedByID.ImgSrc)
+
+		retrievedByVersion, err := s.GetRecipeVersionByRecipeIDAndVersion(ctx, recipeContainer.ID, 1)
+		require.NoError(t, err)
+		require.NotNil(t, retrievedByVersion)
+		require.NotNil(t, retrievedByVersion.ImgSrc)
+		require.Equal(t, uploadRes.FileURL, *retrievedByVersion.ImgSrc)
+	})
+}
+
+func TestUpdateRecipe_WithImageUploadID_PersistsAndRetrievesImageURL(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+
+		ingredientID := uuid.New()
+		testIngredient := ingredient.Ingredient{
+			ID:            ingredientID,
+			FileKey:       "test_ingredient",
+			Name:          "Test Ingredient",
+			PreferredUnit: 1,
+		}
+		err := seeds.InsertIngredient(ctx, tx, &testIngredient)
+		require.NoError(t, err, "Failed to seed test ingredient")
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err, "Failed to seed test user")
+
+		uploadService := upload.NewUploadServiceWithProvider(
+			tx,
+			upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"),
+			0,
+			upload.NewUploadRepo(),
+		)
+
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		s := NewService(
+			txRunner,
+			repo,
+			NewRecipeVersionRepo(),
+			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
+			NewIngredientUsageRepo(),
+			nil,
+			uploadService,
+		)
+
+		baseRequest := CreateRecipeRequest{
+			Name: "Vanilla Ice Cream",
+			Ingredients: []CreateIngredientUsageRequest{
+				{
+					IngredientID: ingredientID.String(),
+					Quantity:     200,
+					Unit:         1,
+				},
+			},
+			UserID:   testUser.ID.String(),
+			PrepMins: 15,
+			CookMins: 0,
+			Portions: 6,
+		}
+
+		recipeContainer, err := s.CreateRecipe(ctx, baseRequest)
+		require.NoError(t, err)
+		require.NotNil(t, recipeContainer)
+
+		uploadRes, err := uploadService.CreateImageUploadURL(ctx, upload.CreateImageUploadURLRequest{
+			OwnerUserID:   testUser.ID,
+			FileName:      "updated-dish.png",
+			FileType:      "image/png",
+			FileSizeBytes: 2048,
+			Purpose:       upload.UploadPurposeRecipeImage,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, uploadRes)
+
+		uploadID := uploadRes.UploadID.String()
+		updateReq := UpdateRecipeRequest{
+			RecipeId: recipeContainer.ID.String(),
+			Request: CreateRecipeRequest{
+				Name: "Vanilla Ice Cream Updated",
+				Ingredients: []CreateIngredientUsageRequest{
+					{
+						IngredientID: ingredientID.String(),
+						Quantity:     200,
+						Unit:         1,
+					},
+				},
+				UserID:      testUser.ID.String(),
+				PrepMins:    20,
+				CookMins:    0,
+				Portions:    6,
+				ImgUploadID: &uploadID,
+			},
+		}
+
+		updatedRecipe, err := s.UpdateRecipe(ctx, updateReq)
+		require.NoError(t, err)
+		require.NotNil(t, updatedRecipe)
+
+		var persistedImgSrc sql.NullString
+		err = tx.QueryRowContext(ctx, `SELECT img_src FROM recipe_versions WHERE id = $1`, updatedRecipe.CurrentVersionID).Scan(&persistedImgSrc)
+		require.NoError(t, err)
+		require.True(t, persistedImgSrc.Valid)
+		require.Equal(t, uploadRes.FileURL, persistedImgSrc.String)
+
+		retrievedByID, err := s.GetRecipeVersionByID(ctx, updatedRecipe.CurrentVersionID)
+		require.NoError(t, err)
+		require.NotNil(t, retrievedByID)
+		require.NotNil(t, retrievedByID.ImgSrc)
+		require.Equal(t, uploadRes.FileURL, *retrievedByID.ImgSrc)
+
+		retrievedByVersion, err := s.GetRecipeVersionByRecipeIDAndVersion(ctx, updatedRecipe.ID, 2)
+		require.NoError(t, err)
+		require.NotNil(t, retrievedByVersion)
+		require.NotNil(t, retrievedByVersion.ImgSrc)
+		require.Equal(t, uploadRes.FileURL, *retrievedByVersion.ImgSrc)
+	})
+}
+
 func TestCreateRecipeWithDuplicateIngredients(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		txRunner := testutil.NewTestTxRunner(tx)
