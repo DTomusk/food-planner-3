@@ -32,6 +32,7 @@ query GetRecipe($id: ID!) {
                 bookPage
                 instructions
             }
+            imgSrc
         }
     }
 }

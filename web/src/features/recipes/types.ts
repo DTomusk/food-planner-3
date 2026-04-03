@@ -10,6 +10,7 @@ export type Recipe = {
     portions: number;
     source: RecipeSource;
     version: number;
+    imageUrl: string | null;
 };
 
 // TODO: move to user feature

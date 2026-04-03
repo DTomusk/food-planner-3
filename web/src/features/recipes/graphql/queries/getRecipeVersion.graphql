@@ -32,6 +32,7 @@ query GetRecipeVersion($id: ID!, $version: Int!) {
                 bookPage
                 instructions
             }
+            imgSrc
         }
     }
 }
