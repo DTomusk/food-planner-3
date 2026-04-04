@@ -76,7 +76,11 @@ export default function RecipeCreatePage() {
     }
 
     try {
-      const data = await createRecipe({ input: mapFormValuesToCreateRecipeInput(values) });
+      const data = await createRecipe({
+        input: mapFormValuesToCreateRecipeInput(values, {
+          imgUploadId: imageUploadPayload?.uploadId,
+        }),
+      });
 
       navigate(`/recipes/${data.createRecipe.id}`, {
         state: {
