@@ -190,8 +190,8 @@ type RecipeVersionResolver interface {
 
 	IngredientUsages(ctx context.Context, obj *model.RecipeVersion) ([]*model.IngredientUsage, error)
 
-	Source(ctx context.Context, obj *model.RecipeVersion) (*model.RecipeSource, error)
 	ImgSrc(ctx context.Context, obj *model.RecipeVersion) (*string, error)
+	Source(ctx context.Context, obj *model.RecipeVersion) (*model.RecipeSource, error)
 }
 type UserResolver interface {
 	Recipes(ctx context.Context, obj *model.User, pagination *model.PaginationInput, filter *model.RecipeFilterInput) (*model.RecipeConnection, error)
@@ -2433,10 +2433,10 @@ func (ec *executionContext) fieldContext_Recipe_currentVersion(_ context.Context
 				return ec.fieldContext_RecipeVersion_cookMins(ctx, field)
 			case "portions":
 				return ec.fieldContext_RecipeVersion_portions(ctx, field)
-			case "source":
-				return ec.fieldContext_RecipeVersion_source(ctx, field)
 			case "imgSrc":
 				return ec.fieldContext_RecipeVersion_imgSrc(ctx, field)
+			case "source":
+				return ec.fieldContext_RecipeVersion_source(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_RecipeVersion_createdAt(ctx, field)
 			}
@@ -2486,10 +2486,10 @@ func (ec *executionContext) fieldContext_Recipe_versions(_ context.Context, fiel
 				return ec.fieldContext_RecipeVersion_cookMins(ctx, field)
 			case "portions":
 				return ec.fieldContext_RecipeVersion_portions(ctx, field)
-			case "source":
-				return ec.fieldContext_RecipeVersion_source(ctx, field)
 			case "imgSrc":
 				return ec.fieldContext_RecipeVersion_imgSrc(ctx, field)
+			case "source":
+				return ec.fieldContext_RecipeVersion_source(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_RecipeVersion_createdAt(ctx, field)
 			}
@@ -2540,10 +2540,10 @@ func (ec *executionContext) fieldContext_Recipe_version(ctx context.Context, fie
 				return ec.fieldContext_RecipeVersion_cookMins(ctx, field)
 			case "portions":
 				return ec.fieldContext_RecipeVersion_portions(ctx, field)
-			case "source":
-				return ec.fieldContext_RecipeVersion_source(ctx, field)
 			case "imgSrc":
 				return ec.fieldContext_RecipeVersion_imgSrc(ctx, field)
+			case "source":
+				return ec.fieldContext_RecipeVersion_source(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_RecipeVersion_createdAt(ctx, field)
 			}
@@ -3136,6 +3136,35 @@ func (ec *executionContext) fieldContext_RecipeVersion_portions(_ context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _RecipeVersion_imgSrc(ctx context.Context, field graphql.CollectedField, obj *model.RecipeVersion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RecipeVersion_imgSrc,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.RecipeVersion().ImgSrc(ctx, obj)
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RecipeVersion_imgSrc(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RecipeVersion",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _RecipeVersion_source(ctx context.Context, field graphql.CollectedField, obj *model.RecipeVersion) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -3172,35 +3201,6 @@ func (ec *executionContext) fieldContext_RecipeVersion_source(_ context.Context,
 				return ec.fieldContext_RecipeSource_instructions(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type RecipeSource", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _RecipeVersion_imgSrc(ctx context.Context, field graphql.CollectedField, obj *model.RecipeVersion) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_RecipeVersion_imgSrc,
-		func(ctx context.Context) (any, error) {
-			return ec.resolvers.RecipeVersion().ImgSrc(ctx, obj)
-		},
-		nil,
-		ec.marshalOString2ᚖstring,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_RecipeVersion_imgSrc(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "RecipeVersion",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -6238,19 +6238,16 @@ func (ec *executionContext) _RecipeVersion(ctx context.Context, sel ast.Selectio
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "source":
+		case "imgSrc":
 			field := field
 
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._RecipeVersion_source(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
+				res = ec._RecipeVersion_imgSrc(ctx, field, obj)
 				return res
 			}
 
@@ -6274,16 +6271,19 @@ func (ec *executionContext) _RecipeVersion(ctx context.Context, sel ast.Selectio
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "imgSrc":
+		case "source":
 			field := field
 
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._RecipeVersion_imgSrc(ctx, field, obj)
+				res = ec._RecipeVersion_source(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
 				return res
 			}
 

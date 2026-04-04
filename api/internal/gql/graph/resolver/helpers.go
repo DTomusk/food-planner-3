@@ -69,6 +69,7 @@ func mapRecipeVersion(recipeVersion *recipe.RecipeVersion) *model.RecipeVersion 
 		Portions:  int32(recipeVersion.Portions),
 		CreatedAt: recipeVersion.CreatedAt,
 		Version:   int32(recipeVersion.Version),
+		ImgSrc:    recipeVersion.ImgSrc,
 	}
 }
 

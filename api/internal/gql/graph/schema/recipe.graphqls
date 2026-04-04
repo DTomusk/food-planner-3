@@ -19,8 +19,8 @@ type RecipeVersion {
   prepMins: Int!
   cookMins: Int!
   portions: Int!
-  source: RecipeSource! @goField(forceResolver: true)
   imgSrc: String
+  source: RecipeSource! @goField(forceResolver: true)
 
   createdAt: Time!
 }
