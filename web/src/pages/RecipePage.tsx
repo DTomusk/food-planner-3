@@ -81,7 +81,7 @@ export default function RecipePage() {
                     <>
                     <RecipeDetailsCard
                         recipeTitle={recipe.name}
-                        imageUrl={null}
+                        imageUrl={recipe.imageUrl}
                         description="blah blah blah"
                         prepTimeMinutes={recipe.prepMins}
                         cookTimeMinutes={recipe.cookMins}
