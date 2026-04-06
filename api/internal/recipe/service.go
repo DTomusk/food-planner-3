@@ -102,6 +102,8 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 			return err
 		}
 
+		// TODO: claim upload
+
 		_, err = s.recipeVersionRepo.createRecipeVersion(ctx, tx, recipeContainer.CurrentVersion)
 		if err != nil {
 			return err
@@ -184,6 +186,10 @@ func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest)
 	// Validate that the img upload ID is valid and belongs to the user, if provided
 	var imgSrc *string
 
+	// No upload id, no remove image flag (or remove image flag false), set imgSrc to previous version
+	// No upload id, remove image flag true, set imgSrc to nil
+	// Upload id provided, validate and set imgSrc to new value regardless of remove image flag
+
 	if request.Request.ImgUploadID != nil {
 		uploadId, err := uuid.Parse(*request.Request.ImgUploadID)
 		if err != nil {
@@ -199,6 +205,10 @@ func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest)
 			logger.Error("Error validating image upload", "error", err)
 			return nil, err
 		}
+	} else if request.RemoveImage != nil && *request.RemoveImage {
+		imgSrc = nil
+	} else {
+		imgSrc = existingRecipe.CurrentVersion.ImgSrc
 	}
 
 	// Instantiate entity
