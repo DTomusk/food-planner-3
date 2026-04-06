@@ -124,8 +124,9 @@ type Unit struct {
 }
 
 type UpdateRecipeInput struct {
-	ID      string             `json:"id"`
-	Details *CreateRecipeInput `json:"details"`
+	ID          string             `json:"id"`
+	Details     *CreateRecipeInput `json:"details"`
+	RemoveImage *bool              `json:"removeImage,omitempty"`
 }
 
 type User struct {

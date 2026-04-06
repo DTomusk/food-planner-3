@@ -53,8 +53,9 @@ func (r *mutationResolver) UpdateRecipe(ctx context.Context, input model.UpdateR
 	}
 
 	request := recipe.UpdateRecipeRequest{
-		RecipeId: input.ID,
-		Request:  createRequest,
+		RecipeId:    input.ID,
+		Request:     createRequest,
+		RemoveImage: input.RemoveImage,
 	}
 
 	recipeContainer, err := r.RecipeService.UpdateRecipe(ctx, request)
@@ -213,11 +214,6 @@ func (r *recipeVersionResolver) IngredientUsages(ctx context.Context, obj *model
 		ingredientUsageModels = append(ingredientUsageModels, usageModel)
 	}
 	return ingredientUsageModels, nil
-}
-
-// ImgSrc is the resolver for the imgSrc field.
-func (r *recipeVersionResolver) ImgSrc(ctx context.Context, obj *model.RecipeVersion) (*string, error) {
-	return obj.ImgSrc, nil
 }
 
 // Source is the resolver for the source field.

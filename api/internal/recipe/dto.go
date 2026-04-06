@@ -26,8 +26,9 @@ type CreateRecipeSourceRequest struct {
 }
 
 type UpdateRecipeRequest struct {
-	RecipeId string              `json:"recipe_id" validate:"required,uuid4"`
-	Request  CreateRecipeRequest `json:"request" validate:"required,dive"`
+	RecipeId    string              `json:"recipe_id" validate:"required,uuid4"`
+	Request     CreateRecipeRequest `json:"request" validate:"required,dive"`
+	RemoveImage *bool               `json:"remove_image,omitempty"`
 }
 
 type RecipeListParams struct {

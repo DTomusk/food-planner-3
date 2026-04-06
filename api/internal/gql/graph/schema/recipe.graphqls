@@ -97,6 +97,7 @@ input CreateRecipeSourceInput {
 input UpdateRecipeInput {
   id: ID!
   details: CreateRecipeInput!
+  removeImage: Boolean
 }
 
 extend type Mutation {
