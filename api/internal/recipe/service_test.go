@@ -281,6 +281,339 @@ func TestUpdateRecipe_WithImageUploadID_PersistsAndRetrievesImageURL(t *testing.
 	})
 }
 
+func TestUpdateRecipe_WithoutImageChanges_PreservesImageFromPreviousVersion(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+
+		ingredientID := uuid.New()
+		testIngredient := ingredient.Ingredient{
+			ID:            ingredientID,
+			FileKey:       "test_ingredient",
+			Name:          "Test Ingredient",
+			PreferredUnit: 1,
+		}
+		err := seeds.InsertIngredient(ctx, tx, &testIngredient)
+		require.NoError(t, err, "Failed to seed test ingredient")
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err, "Failed to seed test user")
+
+		uploadService := upload.NewUploadServiceWithProvider(
+			tx,
+			upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"),
+			0,
+			upload.NewUploadRepo(),
+		)
+
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		s := NewService(
+			txRunner,
+			repo,
+			NewRecipeVersionRepo(),
+			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
+			NewIngredientUsageRepo(),
+			nil,
+			uploadService,
+		)
+
+		// Create recipe with initial image
+		initialUploadRes, err := uploadService.CreateImageUploadURL(ctx, upload.CreateImageUploadURLRequest{
+			OwnerUserID:   testUser.ID,
+			FileName:      "initial-dish.png",
+			FileType:      "image/png",
+			FileSizeBytes: 1024,
+			Purpose:       upload.UploadPurposeRecipeImage,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, initialUploadRes)
+
+		initialUploadID := initialUploadRes.UploadID.String()
+		createReq := CreateRecipeRequest{
+			Name: "Chocolate Cake",
+			Ingredients: []CreateIngredientUsageRequest{
+				{
+					IngredientID: ingredientID.String(),
+					Quantity:     200,
+					Unit:         1,
+				},
+			},
+			UserID:      testUser.ID.String(),
+			PrepMins:    30,
+			CookMins:    45,
+			Portions:    8,
+			ImgUploadID: &initialUploadID,
+		}
+
+		recipeContainer, err := s.CreateRecipe(ctx, createReq)
+		require.NoError(t, err)
+		require.NotNil(t, recipeContainer)
+		require.NotNil(t, recipeContainer.CurrentVersion.ImgSrc)
+		require.Equal(t, initialUploadRes.FileURL, *recipeContainer.CurrentVersion.ImgSrc)
+
+		// Update recipe without providing new image ID and without removeImage flag
+		// Expected: image should be preserved from previous version
+		updateReq := UpdateRecipeRequest{
+			RecipeId: recipeContainer.ID.String(),
+			Request: CreateRecipeRequest{
+				Name: "Chocolate Cake Updated",
+				Ingredients: []CreateIngredientUsageRequest{
+					{
+						IngredientID: ingredientID.String(),
+						Quantity:     250,
+						Unit:         1,
+					},
+				},
+				UserID:      testUser.ID.String(),
+				PrepMins:    35,
+				CookMins:    45,
+				Portions:    10,
+				ImgUploadID: nil,
+			},
+			RemoveImage: nil,
+		}
+
+		updatedRecipe, err := s.UpdateRecipe(ctx, updateReq)
+		require.NoError(t, err)
+		require.NotNil(t, updatedRecipe)
+
+		// Verify image is preserved in new version
+		require.NotNil(t, updatedRecipe.CurrentVersion.ImgSrc)
+		require.Equal(t, initialUploadRes.FileURL, *updatedRecipe.CurrentVersion.ImgSrc)
+
+		// Verify in database
+		var persistedImgSrc sql.NullString
+		err = tx.QueryRowContext(ctx, `SELECT img_src FROM recipe_versions WHERE id = $1`, updatedRecipe.CurrentVersionID).Scan(&persistedImgSrc)
+		require.NoError(t, err)
+		require.True(t, persistedImgSrc.Valid)
+		require.Equal(t, initialUploadRes.FileURL, persistedImgSrc.String)
+
+		// Verify via service retrieval
+		retrievedVersion, err := s.GetRecipeVersionByRecipeIDAndVersion(ctx, updatedRecipe.ID, 2)
+		require.NoError(t, err)
+		require.NotNil(t, retrievedVersion)
+		require.NotNil(t, retrievedVersion.ImgSrc)
+		require.Equal(t, initialUploadRes.FileURL, *retrievedVersion.ImgSrc)
+	})
+}
+
+func TestUpdateRecipe_WithRemoveImageFlag_RemovesImage(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+
+		ingredientID := uuid.New()
+		testIngredient := ingredient.Ingredient{
+			ID:            ingredientID,
+			FileKey:       "test_ingredient",
+			Name:          "Test Ingredient",
+			PreferredUnit: 1,
+		}
+		err := seeds.InsertIngredient(ctx, tx, &testIngredient)
+		require.NoError(t, err, "Failed to seed test ingredient")
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err, "Failed to seed test user")
+
+		uploadService := upload.NewUploadServiceWithProvider(
+			tx,
+			upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"),
+			0,
+			upload.NewUploadRepo(),
+		)
+
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		s := NewService(
+			txRunner,
+			repo,
+			NewRecipeVersionRepo(),
+			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
+			NewIngredientUsageRepo(),
+			nil,
+			uploadService,
+		)
+
+		// Create recipe with initial image
+		initialUploadRes, err := uploadService.CreateImageUploadURL(ctx, upload.CreateImageUploadURLRequest{
+			OwnerUserID:   testUser.ID,
+			FileName:      "initial-dish.png",
+			FileType:      "image/png",
+			FileSizeBytes: 1024,
+			Purpose:       upload.UploadPurposeRecipeImage,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, initialUploadRes)
+
+		initialUploadID := initialUploadRes.UploadID.String()
+		createReq := CreateRecipeRequest{
+			Name: "Pancakes",
+			Ingredients: []CreateIngredientUsageRequest{
+				{
+					IngredientID: ingredientID.String(),
+					Quantity:     100,
+					Unit:         1,
+				},
+			},
+			UserID:      testUser.ID.String(),
+			PrepMins:    10,
+			CookMins:    15,
+			Portions:    4,
+			ImgUploadID: &initialUploadID,
+		}
+
+		recipeContainer, err := s.CreateRecipe(ctx, createReq)
+		require.NoError(t, err)
+		require.NotNil(t, recipeContainer)
+		require.NotNil(t, recipeContainer.CurrentVersion.ImgSrc)
+
+		// Update recipe with removeImage flag set to true
+		// Expected: image should be removed (imgSrc = nil)
+		trueFlag := true
+		updateReq := UpdateRecipeRequest{
+			RecipeId: recipeContainer.ID.String(),
+			Request: CreateRecipeRequest{
+				Name: "Pancakes Updated",
+				Ingredients: []CreateIngredientUsageRequest{
+					{
+						IngredientID: ingredientID.String(),
+						Quantity:     100,
+						Unit:         1,
+					},
+				},
+				UserID:      testUser.ID.String(),
+				PrepMins:    10,
+				CookMins:    20,
+				Portions:    4,
+				ImgUploadID: nil,
+			},
+			RemoveImage: &trueFlag,
+		}
+
+		updatedRecipe, err := s.UpdateRecipe(ctx, updateReq)
+		require.NoError(t, err)
+		require.NotNil(t, updatedRecipe)
+
+		// Verify image is removed in new version
+		require.Nil(t, updatedRecipe.CurrentVersion.ImgSrc)
+
+		// Verify in database
+		var persistedImgSrc sql.NullString
+		err = tx.QueryRowContext(ctx, `SELECT img_src FROM recipe_versions WHERE id = $1`, updatedRecipe.CurrentVersionID).Scan(&persistedImgSrc)
+		require.NoError(t, err)
+		require.False(t, persistedImgSrc.Valid, "Expected img_src to be NULL in database")
+
+		// Verify via service retrieval
+		retrievedVersion, err := s.GetRecipeVersionByRecipeIDAndVersion(ctx, updatedRecipe.ID, 2)
+		require.NoError(t, err)
+		require.NotNil(t, retrievedVersion)
+		require.Nil(t, retrievedVersion.ImgSrc)
+	})
+}
+
+func TestUpdateRecipe_RecipeWithoutImage_RemainsWithoutImage(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+
+		ingredientID := uuid.New()
+		testIngredient := ingredient.Ingredient{
+			ID:            ingredientID,
+			FileKey:       "test_ingredient",
+			Name:          "Test Ingredient",
+			PreferredUnit: 1,
+		}
+		err := seeds.InsertIngredient(ctx, tx, &testIngredient)
+		require.NoError(t, err, "Failed to seed test ingredient")
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err, "Failed to seed test user")
+
+		uploadService := upload.NewUploadServiceWithProvider(
+			tx,
+			upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"),
+			0,
+			upload.NewUploadRepo(),
+		)
+
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		s := NewService(
+			txRunner,
+			repo,
+			NewRecipeVersionRepo(),
+			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
+			NewIngredientUsageRepo(),
+			nil,
+			uploadService,
+		)
+
+		// Create recipe without image
+		createReq := CreateRecipeRequest{
+			Name: "Simple Salad",
+			Ingredients: []CreateIngredientUsageRequest{
+				{
+					IngredientID: ingredientID.String(),
+					Quantity:     150,
+					Unit:         1,
+				},
+			},
+			UserID:      testUser.ID.String(),
+			PrepMins:    5,
+			CookMins:    0,
+			Portions:    2,
+			ImgUploadID: nil,
+		}
+
+		recipeContainer, err := s.CreateRecipe(ctx, createReq)
+		require.NoError(t, err)
+		require.NotNil(t, recipeContainer)
+		require.Nil(t, recipeContainer.CurrentVersion.ImgSrc)
+
+		// Update recipe without providing image ID and without removeImage flag
+		// Expected: should remain without image
+		updateReq := UpdateRecipeRequest{
+			RecipeId: recipeContainer.ID.String(),
+			Request: CreateRecipeRequest{
+				Name: "Simple Salad Updated",
+				Ingredients: []CreateIngredientUsageRequest{
+					{
+						IngredientID: ingredientID.String(),
+						Quantity:     200,
+						Unit:         1,
+					},
+				},
+				UserID:      testUser.ID.String(),
+				PrepMins:    5,
+				CookMins:    0,
+				Portions:    3,
+				ImgUploadID: nil,
+			},
+			RemoveImage: nil,
+		}
+
+		updatedRecipe, err := s.UpdateRecipe(ctx, updateReq)
+		require.NoError(t, err)
+		require.NotNil(t, updatedRecipe)
+
+		// Verify image is still nil
+		require.Nil(t, updatedRecipe.CurrentVersion.ImgSrc)
+
+		// Verify in database
+		var persistedImgSrc sql.NullString
+		err = tx.QueryRowContext(ctx, `SELECT img_src FROM recipe_versions WHERE id = $1`, updatedRecipe.CurrentVersionID).Scan(&persistedImgSrc)
+		require.NoError(t, err)
+		require.False(t, persistedImgSrc.Valid, "Expected img_src to be NULL in database")
+
+		// Verify via service retrieval
+		retrievedVersion, err := s.GetRecipeVersionByRecipeIDAndVersion(ctx, updatedRecipe.ID, 2)
+		require.NoError(t, err)
+		require.NotNil(t, retrievedVersion)
+		require.Nil(t, retrievedVersion.ImgSrc)
+	})
+}
+
 func TestCreateRecipeWithDuplicateIngredients(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		txRunner := testutil.NewTestTxRunner(tx)
