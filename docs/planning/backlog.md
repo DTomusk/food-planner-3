@@ -1,18 +1,20 @@
 # Backlog
 
-## Ready 
+## Ready  
 
-- [ ] Add images to recipes
+- [x] Add images to recipes
     - Priority: high
     - Area: recipes, fullstack
     - Type: feature
     - Why: it's important to know what a dish looks like
     - DoD:
-        - recipe version stores image 
-        - image appears on listing and detail screens 
-        - image infrastructure figured out, provider (at least current) chosen 
-        - recipes default to a standard empty image when image not populated 
-        - file drop component built and added to recipe form 
+        - [x] recipe version stores image 
+        - [x] image appears on listing and detail screens 
+        - [x] image infrastructure figured out, provider (at least current) chosen 
+        - [x] recipes default to a standard empty image when image not populated 
+        - [x] file drop component built and added to recipe form
+        - [ ] a process to remove unused images 
+        - [ ] a process to claim images for entities
 
 ## Planning
 
@@ -92,6 +94,16 @@
             - clicking back 
             - back (mouse)
             - closing tab/window 
+
+- [ ] Proper breadcrumbs
+    - Priority: high
+    - Area: frontend navigation
+    - Type: tech debt
+    - Why: navgiation is really bad at the moment. Some pages have a back button that isn't clear about what it does, and some don't have one at all. You can go back to a form for example by clicking back. The back button isn't as useful as breadcrumbs would be
+    - DoD: 
+        - [ ] breadcrumb component implemented
+        - [ ] hierarchy decided 
+        - [ ] back button removed
 
 ## Item template 
 
