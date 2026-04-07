@@ -14,7 +14,7 @@
         - [x] recipes default to a standard empty image when image not populated 
         - [x] file drop component built and added to recipe form
         - [ ] a process to remove unused images 
-        - [ ] a process to claim images for entities
+        - [x] a process to claim images for entities
 
 ## Planning
 
@@ -104,6 +104,15 @@
         - [ ] breadcrumb component implemented
         - [ ] hierarchy decided 
         - [ ] back button removed
+
+- [ ] Profile images
+    - Priority: medium 
+    - Area: users, fullstack
+    - Type: feature 
+    - Why: users can make their profiles more their own if they can associate a profile image with themselves 
+    - DoD:
+        - [ ] users can upload profile images using the existing upload infrastructure 
+        - [ ] users can change propfile picture 
 
 ## Item template 
 
