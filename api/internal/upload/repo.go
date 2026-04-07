@@ -89,3 +89,23 @@ func (r *uploadRepo) getUploadByID(ctx context.Context, database db.DBTX, upload
 	upload.Purpose = UploadPurpose(purpose)
 	return &upload, nil
 }
+
+func (r *uploadRepo) markUploadAsUsed(ctx context.Context, database db.DBTX, uploadID uuid.UUID, entityID uuid.UUID, entityType string) error {
+	query := `UPDATE uploads
+SET used_at = NOW(), linked_entity_id = $2, linked_entity_type = $3
+WHERE id = $1 AND (used_at IS NULL)`
+	result, err := database.ExecContext(ctx, query, uploadID, entityID, entityType)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return ErrUploadAlreadyUsed
+	}
+
+	return nil
+}

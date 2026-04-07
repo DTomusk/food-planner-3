@@ -37,3 +37,10 @@ type ValidateAndGetFileURLRequest struct {
 	OwnerUserID uuid.UUID
 	Purpose     UploadPurpose
 }
+
+type ClaimUploadRequest struct {
+	UploadID    uuid.UUID
+	OwnerUserID uuid.UUID
+	EntityID    uuid.UUID
+	EntityType  string
+}

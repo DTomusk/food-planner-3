@@ -183,12 +183,11 @@ func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest)
 		return nil, err
 	}
 
-	// Validate that the img upload ID is valid and belongs to the user, if provided
-	var imgSrc *string
-
 	// No upload id, no remove image flag (or remove image flag false), set imgSrc to previous version
 	// No upload id, remove image flag true, set imgSrc to nil
 	// Upload id provided, validate and set imgSrc to new value regardless of remove image flag
+
+	var imgSrc *string
 
 	if request.Request.ImgUploadID != nil {
 		uploadId, err := uuid.Parse(*request.Request.ImgUploadID)

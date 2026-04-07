@@ -121,6 +121,40 @@ func (s *UploadService) ValidateAndGetFileURL(ctx context.Context, req ValidateA
 	return &fileURL, nil
 }
 
+func (s *UploadService) MarkUploadAsUsed(ctx context.Context, req ClaimUploadRequest) error {
+	if req.UploadID == uuid.Nil {
+		return ErrInvalidUploadID
+	}
+
+	if req.OwnerUserID == uuid.Nil {
+		return ErrInvalidOwnerUserID
+	}
+
+	if req.EntityID == uuid.Nil {
+		return ErrInvalidEntityID
+	}
+
+	if strings.TrimSpace(req.EntityType) == "" {
+		return ErrInvalidEntityType
+	}
+
+	uploadRecord, err := s.repo.getUploadByID(ctx, s.db, req.UploadID)
+	if err != nil {
+		return err
+	}
+	if uploadRecord == nil {
+		return ErrUploadNotFound
+	}
+	if uploadRecord.OwnerUserID != req.OwnerUserID {
+		return ErrUploadOwnershipMismatch
+	}
+	if uploadRecord.Used {
+		return ErrUploadAlreadyUsed
+	}
+
+	return s.repo.markUploadAsUsed(ctx, s.db, req.UploadID, req.EntityID, req.EntityType)
+}
+
 func (s *UploadService) validateValidateAndGetFileURLRequest(req ValidateAndGetFileURLRequest) error {
 	if req.UploadID == uuid.Nil {
 		return ErrInvalidUploadID
