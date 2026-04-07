@@ -465,7 +465,7 @@ func TestUploadServiceMarkUploadAsUsedSuccess(t *testing.T) {
 			EntityType:  "recipe-version",
 		}
 
-		err = service.MarkUploadAsUsed(ctx, claimReq)
+		err = service.MarkUploadAsUsed(ctx, tx, claimReq)
 		require.NoError(t, err)
 
 		// Verify upload is marked as used with entity linkage
@@ -554,7 +554,7 @@ func TestUploadServiceMarkUploadAsUsedValidationErrors(t *testing.T) {
 
 		for _, tc := range tests {
 			t.Run(tc.name, func(t *testing.T) {
-				err := service.MarkUploadAsUsed(ctx, tc.request)
+				err := service.MarkUploadAsUsed(ctx, tx, tc.request)
 				require.Error(t, err)
 				require.ErrorIs(t, err, tc.wantErr)
 			})
@@ -571,7 +571,7 @@ func TestUploadServiceMarkUploadAsUsedReturnsNotFoundWhenUploadDoesNotExist(t *t
 		testUser, err := seeds.SeedTestUser(ctx, tx)
 		require.NoError(t, err)
 
-		err = service.MarkUploadAsUsed(ctx, ClaimUploadRequest{
+		err = service.MarkUploadAsUsed(ctx, tx, ClaimUploadRequest{
 			UploadID:    uuid.New(),
 			OwnerUserID: testUser.ID,
 			EntityID:    uuid.New(),
@@ -608,7 +608,7 @@ func TestUploadServiceMarkUploadAsUsedReturnsErrorWhenOwnershipDoesNotMatch(t *t
 		err = repo.saveUploadMetadata(ctx, tx, uploadRecord)
 		require.NoError(t, err)
 
-		err = service.MarkUploadAsUsed(ctx, ClaimUploadRequest{
+		err = service.MarkUploadAsUsed(ctx, tx, ClaimUploadRequest{
 			UploadID:    uploadRecord.ID,
 			OwnerUserID: otherUser.ID,
 			EntityID:    uuid.New(),
@@ -645,7 +645,7 @@ func TestUploadServiceMarkUploadAsUsedReturnsErrorWhenUploadAlreadyUsed(t *testi
 
 		// Mark as used by another entity first
 		firstEntityID := uuid.New()
-		err = service.MarkUploadAsUsed(ctx, ClaimUploadRequest{
+		err = service.MarkUploadAsUsed(ctx, tx, ClaimUploadRequest{
 			UploadID:    uploadRecord.ID,
 			OwnerUserID: testUser.ID,
 			EntityID:    firstEntityID,
@@ -654,7 +654,7 @@ func TestUploadServiceMarkUploadAsUsedReturnsErrorWhenUploadAlreadyUsed(t *testi
 		require.NoError(t, err)
 
 		// Try to claim again with different entity
-		err = service.MarkUploadAsUsed(ctx, ClaimUploadRequest{
+		err = service.MarkUploadAsUsed(ctx, tx, ClaimUploadRequest{
 			UploadID:    uploadRecord.ID,
 			OwnerUserID: testUser.ID,
 			EntityID:    uuid.New(),

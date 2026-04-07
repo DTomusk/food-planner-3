@@ -168,6 +168,104 @@ func TestCreateRecipe_WithImageUploadID_PersistsAndRetrievesImageURL(t *testing.
 		require.NotNil(t, retrievedByVersion)
 		require.NotNil(t, retrievedByVersion.ImgSrc)
 		require.Equal(t, uploadRes.FileURL, *retrievedByVersion.ImgSrc)
+
+		var usedAt sql.NullTime
+		var linkedEntityID sql.NullString
+		var linkedEntityType sql.NullString
+		err = tx.QueryRowContext(
+			ctx,
+			`SELECT used_at, linked_entity_id, linked_entity_type FROM uploads WHERE id = $1`,
+			uploadRes.UploadID,
+		).Scan(&usedAt, &linkedEntityID, &linkedEntityType)
+		require.NoError(t, err)
+		require.True(t, usedAt.Valid)
+		require.True(t, linkedEntityID.Valid)
+		require.Equal(t, recipeContainer.CurrentVersionID.String(), linkedEntityID.String)
+		require.True(t, linkedEntityType.Valid)
+		require.Equal(t, "recipe-version", linkedEntityType.String)
+	})
+}
+
+func TestCreateRecipe_WithUsedImageUploadID_ReturnsErrorAndDoesNotCreateRecipe(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+
+		ingredientID := uuid.New()
+		testIngredient := ingredient.Ingredient{
+			ID:            ingredientID,
+			FileKey:       "test_ingredient",
+			Name:          "Test Ingredient",
+			PreferredUnit: 1,
+		}
+		err := seeds.InsertIngredient(ctx, tx, &testIngredient)
+		require.NoError(t, err, "Failed to seed test ingredient")
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err, "Failed to seed test user")
+
+		uploadService := upload.NewUploadServiceWithProvider(
+			tx,
+			upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"),
+			0,
+			upload.NewUploadRepo(),
+		)
+
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		s := NewService(
+			txRunner,
+			repo,
+			NewRecipeVersionRepo(),
+			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
+			NewIngredientUsageRepo(),
+			nil,
+			uploadService,
+		)
+
+		uploadRes, err := uploadService.CreateImageUploadURL(ctx, upload.CreateImageUploadURLRequest{
+			OwnerUserID:   testUser.ID,
+			FileName:      "dish.png",
+			FileType:      "image/png",
+			FileSizeBytes: 1024,
+			Purpose:       upload.UploadPurposeRecipeImage,
+		})
+		require.NoError(t, err)
+
+		err = uploadService.MarkUploadAsUsed(ctx, tx, upload.ClaimUploadRequest{
+			UploadID:    uploadRes.UploadID,
+			OwnerUserID: testUser.ID,
+			EntityID:    uuid.New(),
+			EntityType:  "recipe-version",
+		})
+		require.NoError(t, err)
+
+		uploadID := uploadRes.UploadID.String()
+		request := CreateRecipeRequest{
+			Name: "Vanilla Ice Cream",
+			Ingredients: []CreateIngredientUsageRequest{
+				{
+					IngredientID: ingredientID.String(),
+					Quantity:     200,
+					Unit:         1,
+				},
+			},
+			UserID:      testUser.ID.String(),
+			PrepMins:    15,
+			CookMins:    0,
+			Portions:    6,
+			ImgUploadID: &uploadID,
+		}
+
+		recipeContainer, err := s.CreateRecipe(ctx, request)
+		require.Error(t, err)
+		require.ErrorIs(t, err, upload.ErrUploadAlreadyUsed)
+		require.Nil(t, recipeContainer)
+
+		var recipeCount int
+		err = tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM recipe_containers WHERE user_id = $1`, testUser.ID).Scan(&recipeCount)
+		require.NoError(t, err)
+		require.Equal(t, 0, recipeCount)
 	})
 }
 

@@ -121,7 +121,7 @@ func (s *UploadService) ValidateAndGetFileURL(ctx context.Context, req ValidateA
 	return &fileURL, nil
 }
 
-func (s *UploadService) MarkUploadAsUsed(ctx context.Context, req ClaimUploadRequest) error {
+func (s *UploadService) MarkUploadAsUsed(ctx context.Context, tx db.DBTX, req ClaimUploadRequest) error {
 	if req.UploadID == uuid.Nil {
 		return ErrInvalidUploadID
 	}
@@ -138,7 +138,7 @@ func (s *UploadService) MarkUploadAsUsed(ctx context.Context, req ClaimUploadReq
 		return ErrInvalidEntityType
 	}
 
-	uploadRecord, err := s.repo.getUploadByID(ctx, s.db, req.UploadID)
+	uploadRecord, err := s.repo.getUploadByID(ctx, tx, req.UploadID)
 	if err != nil {
 		return err
 	}
@@ -152,7 +152,7 @@ func (s *UploadService) MarkUploadAsUsed(ctx context.Context, req ClaimUploadReq
 		return ErrUploadAlreadyUsed
 	}
 
-	return s.repo.markUploadAsUsed(ctx, s.db, req.UploadID, req.EntityID, req.EntityType)
+	return s.repo.markUploadAsUsed(ctx, tx, req.UploadID, req.EntityID, req.EntityType)
 }
 
 func (s *UploadService) validateValidateAndGetFileURLRequest(req ValidateAndGetFileURLRequest) error {

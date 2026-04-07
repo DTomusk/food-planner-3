@@ -103,6 +103,23 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 		}
 
 		// TODO: claim upload
+		if request.ImgUploadID != nil {
+			uploadId, err := uuid.Parse(*request.ImgUploadID)
+			if err != nil {
+				logger.Error("Error parsing image upload ID for claiming", "error", err)
+				return err
+			}
+			err = s.uploadService.MarkUploadAsUsed(ctx, tx, upload.ClaimUploadRequest{
+				UploadID:    uploadId,
+				OwnerUserID: userID,
+				EntityID:    recipeContainer.CurrentVersion.ID,
+				EntityType:  "recipe-version",
+			})
+			if err != nil {
+				logger.Error("Error claiming image upload", "error", err)
+				return err
+			}
+		}
 
 		_, err = s.recipeVersionRepo.createRecipeVersion(ctx, tx, recipeContainer.CurrentVersion)
 		if err != nil {
