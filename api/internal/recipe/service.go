@@ -102,7 +102,6 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 			return err
 		}
 
-		// TODO: claim upload
 		if request.ImgUploadID != nil {
 			uploadId, err := uuid.Parse(*request.ImgUploadID)
 			if err != nil {
@@ -249,6 +248,25 @@ func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest)
 		if err != nil {
 			return err
 		}
+
+		if request.Request.ImgUploadID != nil {
+			uploadId, err := uuid.Parse(*request.Request.ImgUploadID)
+			if err != nil {
+				logger.Error("Error parsing image upload ID for claiming", "error", err)
+				return err
+			}
+			err = s.uploadService.MarkUploadAsUsed(ctx, tx, upload.ClaimUploadRequest{
+				UploadID:    uploadId,
+				OwnerUserID: uuid.MustParse(request.Request.UserID),
+				EntityID:    recipeVersion.ID,
+				EntityType:  "recipe-version",
+			})
+			if err != nil {
+				logger.Error("Error claiming image upload", "error", err)
+				return err
+			}
+		}
+
 		// Insert ingredients
 		err = s.ingredientUsageRepo.insertIngredientUsages(ctx, tx, ingredientUsages, recipeVersion.ID)
 		if err != nil {

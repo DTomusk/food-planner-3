@@ -376,6 +376,132 @@ func TestUpdateRecipe_WithImageUploadID_PersistsAndRetrievesImageURL(t *testing.
 		require.NotNil(t, retrievedByVersion)
 		require.NotNil(t, retrievedByVersion.ImgSrc)
 		require.Equal(t, uploadRes.FileURL, *retrievedByVersion.ImgSrc)
+
+		var usedAt sql.NullTime
+		var linkedEntityID sql.NullString
+		var linkedEntityType sql.NullString
+		err = tx.QueryRowContext(
+			ctx,
+			`SELECT used_at, linked_entity_id, linked_entity_type FROM uploads WHERE id = $1`,
+			uploadRes.UploadID,
+		).Scan(&usedAt, &linkedEntityID, &linkedEntityType)
+		require.NoError(t, err)
+		require.True(t, usedAt.Valid)
+		require.True(t, linkedEntityID.Valid)
+		require.Equal(t, updatedRecipe.CurrentVersionID.String(), linkedEntityID.String)
+		require.True(t, linkedEntityType.Valid)
+		require.Equal(t, "recipe-version", linkedEntityType.String)
+	})
+}
+
+func TestUpdateRecipe_WithUsedImageUploadID_ReturnsErrorAndDoesNotCreateNewVersion(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+
+		ingredientID := uuid.New()
+		testIngredient := ingredient.Ingredient{
+			ID:            ingredientID,
+			FileKey:       "test_ingredient",
+			Name:          "Test Ingredient",
+			PreferredUnit: 1,
+		}
+		err := seeds.InsertIngredient(ctx, tx, &testIngredient)
+		require.NoError(t, err, "Failed to seed test ingredient")
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err, "Failed to seed test user")
+
+		uploadService := upload.NewUploadServiceWithProvider(
+			tx,
+			upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"),
+			0,
+			upload.NewUploadRepo(),
+		)
+
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		s := NewService(
+			txRunner,
+			repo,
+			NewRecipeVersionRepo(),
+			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
+			NewIngredientUsageRepo(),
+			nil,
+			uploadService,
+		)
+
+		baseRequest := CreateRecipeRequest{
+			Name: "Vanilla Ice Cream",
+			Ingredients: []CreateIngredientUsageRequest{
+				{
+					IngredientID: ingredientID.String(),
+					Quantity:     200,
+					Unit:         1,
+				},
+			},
+			UserID:   testUser.ID.String(),
+			PrepMins: 15,
+			CookMins: 0,
+			Portions: 6,
+		}
+
+		recipeContainer, err := s.CreateRecipe(ctx, baseRequest)
+		require.NoError(t, err)
+		require.NotNil(t, recipeContainer)
+		originalCurrentVersionID := recipeContainer.CurrentVersionID
+
+		uploadRes, err := uploadService.CreateImageUploadURL(ctx, upload.CreateImageUploadURLRequest{
+			OwnerUserID:   testUser.ID,
+			FileName:      "already-used.png",
+			FileType:      "image/png",
+			FileSizeBytes: 2048,
+			Purpose:       upload.UploadPurposeRecipeImage,
+		})
+		require.NoError(t, err)
+
+		err = uploadService.MarkUploadAsUsed(ctx, tx, upload.ClaimUploadRequest{
+			UploadID:    uploadRes.UploadID,
+			OwnerUserID: testUser.ID,
+			EntityID:    uuid.New(),
+			EntityType:  "recipe-version",
+		})
+		require.NoError(t, err)
+
+		uploadID := uploadRes.UploadID.String()
+		updateReq := UpdateRecipeRequest{
+			RecipeId: recipeContainer.ID.String(),
+			Request: CreateRecipeRequest{
+				Name: "Vanilla Ice Cream Updated",
+				Ingredients: []CreateIngredientUsageRequest{
+					{
+						IngredientID: ingredientID.String(),
+						Quantity:     220,
+						Unit:         1,
+					},
+				},
+				UserID:      testUser.ID.String(),
+				PrepMins:    20,
+				CookMins:    0,
+				Portions:    6,
+				ImgUploadID: &uploadID,
+			},
+		}
+
+		updatedRecipe, err := s.UpdateRecipe(ctx, updateReq)
+		require.Error(t, err)
+		require.ErrorIs(t, err, upload.ErrUploadAlreadyUsed)
+		require.Nil(t, updatedRecipe)
+
+		var currentVersionID uuid.UUID
+		err = tx.QueryRowContext(ctx, `SELECT current_version_id FROM recipe_containers WHERE id = $1`, recipeContainer.ID).Scan(&currentVersionID)
+		require.NoError(t, err)
+		require.Equal(t, originalCurrentVersionID, currentVersionID)
+
+		var versionCount int
+		err = tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM recipe_versions WHERE recipe_id = $1`, recipeContainer.ID).Scan(&versionCount)
+		require.NoError(t, err)
+		require.Equal(t, 1, versionCount)
 	})
 }
 
