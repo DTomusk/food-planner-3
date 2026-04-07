@@ -34,6 +34,9 @@ export default function RecipePage() {
 
     const versionsQuery = useRecipeVersions(recipeId);
     const versions = versionsQuery.data;
+    const currentVersionNumber = versions?.length
+        ? Math.max(...versions.map((version) => version.version))
+        : undefined;
 
     useEffect(() => {
         if (!successMessage) {
@@ -55,10 +58,15 @@ export default function RecipePage() {
                     sections={[
                         {
                             title: "Recipe versions",
-                            items: versions.map((version) => ({
-                                label: `Version ${version.version} - ${new Date(version.createdAt).toLocaleString()}`,
-                                onClick: () => navigate(`/recipes/${recipeId}/versions/${version.version}`),
-                            })),
+                            items: versions.map((version) => {
+                                const isCurrentVersion = version.version === currentVersionNumber;
+
+                                return {
+                                    label: `Version ${version.version} - ${new Date(version.createdAt).toLocaleString()}${isCurrentVersion ? " (current)" : ""}`,
+                                    onClick: () => navigate(`/recipes/${recipeId}/versions/${version.version}`),
+                                    disabled: isCurrentVersion,
+                                };
+                            }),
                         },
                     ]}
                 />
