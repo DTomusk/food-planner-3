@@ -13,6 +13,7 @@ export function useUpdateRecipe() {
             await Promise.all([
                 queryClient.invalidateQueries({ queryKey: ["recipes"] }),
                 queryClient.invalidateQueries({ queryKey: ["recipe", updatedRecipeID] }),
+                queryClient.invalidateQueries({ queryKey: ["me", "recipes"] }),
             ]);
 
             console.log("Recipe updated:", data.updateRecipe);
