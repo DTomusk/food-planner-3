@@ -138,6 +138,7 @@ export default function RecipeUpdatePage() {
                     onImageFileChange={handleImageFileChange}
                     existingImageUrl={hasRemovedExistingImage ? null : existingImageUrl}
                     onRemoveExistingImage={handleRemoveExistingImage}
+                    isCreateForm={false}
                 />
             )}
         </Page>

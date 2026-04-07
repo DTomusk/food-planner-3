@@ -1,6 +1,7 @@
 export const commonStrings = {
     forms: {
         create: "Create",
+        update: "Update",
     },
     auth: {
         signIn: "Sign in",

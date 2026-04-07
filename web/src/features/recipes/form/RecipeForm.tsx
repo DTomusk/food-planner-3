@@ -22,6 +22,7 @@ type RecipeFormProps = {
   onImageFileChange?: (file: File | null) => void;
   existingImageUrl?: string | null;
   onRemoveExistingImage?: () => void;
+  isCreateForm?: boolean;
 };
 
 export default function RecipeForm({
@@ -34,6 +35,7 @@ export default function RecipeForm({
   onImageFileChange = () => {},
   existingImageUrl = null,
   onRemoveExistingImage = () => {},
+  isCreateForm = true,
 }: RecipeFormProps) {
   const methods = useForm<RecipeFormValues>({
     resolver: zodResolver(recipeFormSchema),
@@ -61,7 +63,7 @@ export default function RecipeForm({
             <RecipeSourceSection />
             <Inline justify="start">
             <Button disabled={isSubmitting || isPreparingImageUpload || (isSubmitted && !isValid)} type="submit" loading={isSubmitting || isPreparingImageUpload}>
-              {commonStrings.forms.create}
+              {isCreateForm ? commonStrings.forms.create : commonStrings.forms.update}
             </Button>
             </Inline>
           </Stack>
