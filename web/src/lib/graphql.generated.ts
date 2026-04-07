@@ -234,6 +234,7 @@ export type Unit = {
 export type UpdateRecipeInput = {
   details: CreateRecipeInput;
   id: Scalars['ID']['input'];
+  removeImage?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 export type User = {

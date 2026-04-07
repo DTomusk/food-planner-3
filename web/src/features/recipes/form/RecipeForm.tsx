@@ -20,6 +20,8 @@ type RecipeFormProps = {
   defaultValues?: RecipeFormValues;
   imageFile?: File | null;
   onImageFileChange?: (file: File | null) => void;
+  existingImageUrl?: string | null;
+  onRemoveExistingImage?: () => void;
 };
 
 export default function RecipeForm({
@@ -30,6 +32,8 @@ export default function RecipeForm({
   defaultValues,
   imageFile = null,
   onImageFileChange = () => {},
+  existingImageUrl = null,
+  onRemoveExistingImage = () => {},
 }: RecipeFormProps) {
   const methods = useForm<RecipeFormValues>({
     resolver: zodResolver(recipeFormSchema),
@@ -47,7 +51,12 @@ export default function RecipeForm({
       <FormProvider {...methods}>
         <Form onSubmit={handleSubmit(onSubmit)}>
           <Stack space="lg">
-            <RecipeDetailSection imageFile={imageFile} onImageFileChange={onImageFileChange} />
+            <RecipeDetailSection
+              imageFile={imageFile}
+              onImageFileChange={onImageFileChange}
+              existingImageUrl={existingImageUrl}
+              onRemoveExistingImage={onRemoveExistingImage}
+            />
             <IngredientSection ingredients={ingredients} />
             <RecipeSourceSection />
             <Inline justify="start">
