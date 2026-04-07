@@ -432,3 +432,235 @@ func TestUploadServiceValidateAndGetFileURLProviderNotConfigured(t *testing.T) {
 		require.Nil(t, fileURL)
 	})
 }
+
+func TestUploadServiceMarkUploadAsUsedSuccess(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		provider := NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com")
+		repo := NewUploadRepo()
+		service := NewUploadServiceWithProvider(tx, provider, 10*1024*1024, repo)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err, "Failed to seed test user")
+
+		uploadRecord := &Upload{
+			ID:            uuid.New(),
+			OwnerUserID:   testUser.ID,
+			ObjectKey:     fmt.Sprintf("%s/%s/%s.png", UploadPurposeRecipeImage, testUser.ID.String(), uuid.New().String()),
+			FileName:      "dish.png",
+			FileType:      "image/png",
+			FileSizeBytes: 1024,
+			Purpose:       UploadPurposeRecipeImage,
+			ExpiresAt:     time.Now().UTC().Add(10 * time.Minute),
+		}
+
+		err = repo.saveUploadMetadata(ctx, tx, uploadRecord)
+		require.NoError(t, err)
+
+		entityID := uuid.New()
+		claimReq := ClaimUploadRequest{
+			UploadID:    uploadRecord.ID,
+			OwnerUserID: testUser.ID,
+			EntityID:    entityID,
+			EntityType:  "recipe-version",
+		}
+
+		err = service.MarkUploadAsUsed(ctx, claimReq)
+		require.NoError(t, err)
+
+		// Verify upload is marked as used with entity linkage
+		var usedAt sql.NullTime
+		var linkedEntityID sql.NullString
+		var linkedEntityType sql.NullString
+
+		err = tx.QueryRowContext(
+			ctx,
+			`SELECT used_at, linked_entity_id, linked_entity_type FROM uploads WHERE id = $1`,
+			uploadRecord.ID,
+		).Scan(&usedAt, &linkedEntityID, &linkedEntityType)
+		require.NoError(t, err)
+		require.True(t, usedAt.Valid, "used_at should be set")
+		require.True(t, linkedEntityID.Valid, "linked_entity_id should be set")
+		require.Equal(t, entityID.String(), linkedEntityID.String)
+		require.True(t, linkedEntityType.Valid, "linked_entity_type should be set")
+		require.Equal(t, "recipe-version", linkedEntityType.String)
+	})
+}
+
+func TestUploadServiceMarkUploadAsUsedValidationErrors(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		provider := NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com")
+		service := NewUploadServiceWithProvider(tx, provider, 10*1024*1024, NewUploadRepo())
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		validEntityID := uuid.New()
+		validUploadID := uuid.New()
+
+		tests := []struct {
+			name    string
+			request ClaimUploadRequest
+			wantErr error
+		}{
+			{
+				name: "missing upload ID",
+				request: ClaimUploadRequest{
+					OwnerUserID: testUser.ID,
+					EntityID:    validEntityID,
+					EntityType:  "recipe-version",
+				},
+				wantErr: ErrInvalidUploadID,
+			},
+			{
+				name: "missing owner user ID",
+				request: ClaimUploadRequest{
+					UploadID:   validUploadID,
+					EntityID:   validEntityID,
+					EntityType: "recipe-version",
+				},
+				wantErr: ErrInvalidOwnerUserID,
+			},
+			{
+				name: "missing entity ID",
+				request: ClaimUploadRequest{
+					UploadID:    validUploadID,
+					OwnerUserID: testUser.ID,
+					EntityType:  "recipe-version",
+				},
+				wantErr: ErrInvalidEntityID,
+			},
+			{
+				name: "missing entity type",
+				request: ClaimUploadRequest{
+					UploadID:    validUploadID,
+					OwnerUserID: testUser.ID,
+					EntityID:    validEntityID,
+				},
+				wantErr: ErrInvalidEntityType,
+			},
+			{
+				name: "empty entity type",
+				request: ClaimUploadRequest{
+					UploadID:    validUploadID,
+					OwnerUserID: testUser.ID,
+					EntityID:    validEntityID,
+					EntityType:  "  ",
+				},
+				wantErr: ErrInvalidEntityType,
+			},
+		}
+
+		for _, tc := range tests {
+			t.Run(tc.name, func(t *testing.T) {
+				err := service.MarkUploadAsUsed(ctx, tc.request)
+				require.Error(t, err)
+				require.ErrorIs(t, err, tc.wantErr)
+			})
+		}
+	})
+}
+
+func TestUploadServiceMarkUploadAsUsedReturnsNotFoundWhenUploadDoesNotExist(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		provider := NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com")
+		service := NewUploadServiceWithProvider(tx, provider, 10*1024*1024, NewUploadRepo())
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		err = service.MarkUploadAsUsed(ctx, ClaimUploadRequest{
+			UploadID:    uuid.New(),
+			OwnerUserID: testUser.ID,
+			EntityID:    uuid.New(),
+			EntityType:  "recipe-version",
+		})
+		require.Error(t, err)
+		require.ErrorIs(t, err, ErrUploadNotFound)
+	})
+}
+
+func TestUploadServiceMarkUploadAsUsedReturnsErrorWhenOwnershipDoesNotMatch(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		provider := NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com")
+		repo := NewUploadRepo()
+		service := NewUploadServiceWithProvider(tx, provider, 10*1024*1024, repo)
+
+		owner, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+		otherUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		uploadRecord := &Upload{
+			ID:            uuid.New(),
+			OwnerUserID:   owner.ID,
+			ObjectKey:     fmt.Sprintf("%s/%s/%s.png", UploadPurposeRecipeImage, owner.ID.String(), uuid.New().String()),
+			FileName:      "dish.png",
+			FileType:      "image/png",
+			FileSizeBytes: 1024,
+			Purpose:       UploadPurposeRecipeImage,
+			ExpiresAt:     time.Now().UTC().Add(10 * time.Minute),
+		}
+
+		err = repo.saveUploadMetadata(ctx, tx, uploadRecord)
+		require.NoError(t, err)
+
+		err = service.MarkUploadAsUsed(ctx, ClaimUploadRequest{
+			UploadID:    uploadRecord.ID,
+			OwnerUserID: otherUser.ID,
+			EntityID:    uuid.New(),
+			EntityType:  "recipe-version",
+		})
+		require.Error(t, err)
+		require.ErrorIs(t, err, ErrUploadOwnershipMismatch)
+	})
+}
+
+func TestUploadServiceMarkUploadAsUsedReturnsErrorWhenUploadAlreadyUsed(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		provider := NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com")
+		repo := NewUploadRepo()
+		service := NewUploadServiceWithProvider(tx, provider, 10*1024*1024, repo)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		uploadRecord := &Upload{
+			ID:            uuid.New(),
+			OwnerUserID:   testUser.ID,
+			ObjectKey:     fmt.Sprintf("%s/%s/%s.png", UploadPurposeRecipeImage, testUser.ID.String(), uuid.New().String()),
+			FileName:      "dish.png",
+			FileType:      "image/png",
+			FileSizeBytes: 1024,
+			Purpose:       UploadPurposeRecipeImage,
+			ExpiresAt:     time.Now().UTC().Add(10 * time.Minute),
+		}
+
+		err = repo.saveUploadMetadata(ctx, tx, uploadRecord)
+		require.NoError(t, err)
+
+		// Mark as used by another entity first
+		firstEntityID := uuid.New()
+		err = service.MarkUploadAsUsed(ctx, ClaimUploadRequest{
+			UploadID:    uploadRecord.ID,
+			OwnerUserID: testUser.ID,
+			EntityID:    firstEntityID,
+			EntityType:  "recipe-version",
+		})
+		require.NoError(t, err)
+
+		// Try to claim again with different entity
+		err = service.MarkUploadAsUsed(ctx, ClaimUploadRequest{
+			UploadID:    uploadRecord.ID,
+			OwnerUserID: testUser.ID,
+			EntityID:    uuid.New(),
+			EntityType:  "recipe-version",
+		})
+		require.Error(t, err)
+		require.ErrorIs(t, err, ErrUploadAlreadyUsed)
+	})
+}

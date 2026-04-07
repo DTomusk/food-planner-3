@@ -200,3 +200,84 @@ func TestSaveUploadMetadata_ReturnsErrorWhenPurposeIsInvalid(t *testing.T) {
 		require.Error(t, err)
 	})
 }
+
+func TestMarkUploadAsUsedSuccess(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		repo := NewUploadRepo()
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err, "Failed to seed test user")
+
+		uploadRecord := &Upload{
+			ID:            uuid.New(),
+			OwnerUserID:   testUser.ID,
+			ObjectKey:     fmt.Sprintf("%s/%s/%s.png", UploadPurposeRecipeImage, testUser.ID.String(), uuid.New().String()),
+			FileName:      "dish.png",
+			FileType:      "image/png",
+			FileSizeBytes: 1024,
+			Purpose:       UploadPurposeRecipeImage,
+			ExpiresAt:     time.Now().UTC().Add(10 * time.Minute),
+		}
+
+		err = repo.saveUploadMetadata(ctx, tx, uploadRecord)
+		require.NoError(t, err)
+
+		entityID := uuid.New()
+		entityType := "recipe-version"
+		err = repo.markUploadAsUsed(ctx, tx, uploadRecord.ID, entityID, entityType)
+		require.NoError(t, err)
+
+		// Verify upload is marked as used with entity linkage
+		var usedAt sql.NullTime
+		var linkedEntityID sql.NullString
+		var linkedEntityType sql.NullString
+
+		err = tx.QueryRowContext(
+			ctx,
+			`SELECT used_at, linked_entity_id, linked_entity_type FROM uploads WHERE id = $1`,
+			uploadRecord.ID,
+		).Scan(&usedAt, &linkedEntityID, &linkedEntityType)
+		require.NoError(t, err)
+		require.True(t, usedAt.Valid, "used_at should be set")
+		require.True(t, linkedEntityID.Valid, "linked_entity_id should be set")
+		require.Equal(t, entityID.String(), linkedEntityID.String)
+		require.True(t, linkedEntityType.Valid, "linked_entity_type should be set")
+		require.Equal(t, entityType, linkedEntityType.String)
+	})
+}
+
+func TestMarkUploadAsUsedDetectsRaceCondition(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		repo := NewUploadRepo()
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err, "Failed to seed test user")
+
+		uploadRecord := &Upload{
+			ID:            uuid.New(),
+			OwnerUserID:   testUser.ID,
+			ObjectKey:     fmt.Sprintf("%s/%s/%s.png", UploadPurposeRecipeImage, testUser.ID.String(), uuid.New().String()),
+			FileName:      "dish.png",
+			FileType:      "image/png",
+			FileSizeBytes: 1024,
+			Purpose:       UploadPurposeRecipeImage,
+			ExpiresAt:     time.Now().UTC().Add(10 * time.Minute),
+		}
+
+		err = repo.saveUploadMetadata(ctx, tx, uploadRecord)
+		require.NoError(t, err)
+
+		// Mark as used first time
+		firstEntityID := uuid.New()
+		err = repo.markUploadAsUsed(ctx, tx, uploadRecord.ID, firstEntityID, "recipe-version")
+		require.NoError(t, err)
+
+		// Try to mark as used again - should fail due to RowsAffected check
+		secondEntityID := uuid.New()
+		err = repo.markUploadAsUsed(ctx, tx, uploadRecord.ID, secondEntityID, "recipe-version")
+		require.Error(t, err)
+		require.ErrorIs(t, err, ErrUploadAlreadyUsed)
+	})
+}
