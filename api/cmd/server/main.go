@@ -80,8 +80,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create R2 upload provider: %v", err)
 	}
-	uploadRepo := upload.NewUploadRepo()
-	uploadService := upload.NewUploadServiceWithProvider(txRunner.DB(), uploadProvider, cfg.UploadMaxImageSizeBytes, uploadRepo)
+	uploadService := upload.NewUploadServiceWithProvider(txRunner.DB(), uploadProvider, cfg.UploadMaxImageSizeBytes, upload.NewUploadRepo())
 
 	recipeService := recipe.NewService(
 		txRunner,

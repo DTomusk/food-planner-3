@@ -211,3 +211,7 @@ func buildObjectKey(userID, uploadID uuid.UUID, fileName string, purpose UploadP
 
 	return fmt.Sprintf("%s/%s/%s%s", purpose, userID.String(), uploadID.String(), ext)
 }
+
+func (s *UploadService) DeleteExpiredUploads(ctx context.Context) error {
+	return nil
+}
