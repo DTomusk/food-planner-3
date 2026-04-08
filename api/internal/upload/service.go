@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"foodplanner/internal/db"
+	"foodplanner/internal/logging"
 	"path/filepath"
 	"strings"
 	"time"
@@ -214,6 +215,8 @@ func buildObjectKey(userID, uploadID uuid.UUID, fileName string, purpose UploadP
 }
 
 func (s *UploadService) DeleteExpiredUploads(ctx context.Context) error {
+	logger := logging.FromContext(ctx)
+	logger.Info("Starting deletion of expired uploads")
 	if s.provider == nil {
 		return ErrProviderNotConfigured
 	}
@@ -225,6 +228,7 @@ func (s *UploadService) DeleteExpiredUploads(ctx context.Context) error {
 			return fmt.Errorf("query expired uploads: %w", err)
 		}
 		if len(keys) == 0 {
+			logger.Info("No expired uploads found for deletion, exiting")
 			break
 		}
 
@@ -269,6 +273,7 @@ func (s *UploadService) DeleteExpiredUploads(ctx context.Context) error {
 			if err := s.repo.deleteUploadsByObjectKeys(ctx, s.db, successfullyDeleted); err != nil {
 				return fmt.Errorf("delete upload records from DB: %w", err)
 			}
+			logger.Info("successfully deleted objects", "deleted", len(successfullyDeleted))
 		}
 
 		if deleteErr != nil {

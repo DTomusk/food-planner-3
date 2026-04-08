@@ -75,5 +75,17 @@ services:
       migrate:
         condition: service_completed_successfully
 
+  delete-uploads:
+    build:
+      context: .
+      dockerfile: ./cmd/delete-uploads/Dockerfile
+    env_file:
+      - ./.env
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
 volumes:
   food_planner_db_data:
