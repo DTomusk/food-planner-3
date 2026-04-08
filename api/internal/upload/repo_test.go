@@ -281,3 +281,184 @@ func TestMarkUploadAsUsedDetectsRaceCondition(t *testing.T) {
 		require.ErrorIs(t, err, ErrUploadAlreadyUsed)
 	})
 }
+
+func TestGetUploadByID_ReturnsNilWhenUploadSoftDeleted(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		repo := NewUploadRepo()
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		uploadRecord := &Upload{
+			ID:            uuid.New(),
+			OwnerUserID:   testUser.ID,
+			ObjectKey:     fmt.Sprintf("%s/%s/%s.png", UploadPurposeRecipeImage, testUser.ID.String(), uuid.New().String()),
+			FileName:      "dish.png",
+			FileType:      "image/png",
+			FileSizeBytes: 1024,
+			Purpose:       UploadPurposeRecipeImage,
+			ExpiresAt:     time.Now().UTC().Add(10 * time.Minute),
+		}
+
+		err = repo.saveUploadMetadata(ctx, tx, uploadRecord)
+		require.NoError(t, err)
+
+		_, err = tx.ExecContext(ctx, `UPDATE uploads SET deleted_at = NOW() WHERE id = $1`, uploadRecord.ID)
+		require.NoError(t, err)
+
+		found, err := repo.getUploadByID(ctx, tx, uploadRecord.ID)
+		require.NoError(t, err)
+		require.Nil(t, found)
+	})
+}
+
+func TestGetExpiredUnusedUploadObjectKeys_ReturnsExpiredUnusedWithLimit(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		repo := NewUploadRepo()
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		expiredOlder := &Upload{
+			ID:            uuid.New(),
+			OwnerUserID:   testUser.ID,
+			ObjectKey:     fmt.Sprintf("%s/%s/%s.png", UploadPurposeRecipeImage, testUser.ID.String(), uuid.New().String()),
+			FileName:      "expired-older.png",
+			FileType:      "image/png",
+			FileSizeBytes: 1024,
+			Purpose:       UploadPurposeRecipeImage,
+			ExpiresAt:     time.Now().UTC().Add(10 * time.Minute),
+		}
+		expiredNewer := &Upload{
+			ID:            uuid.New(),
+			OwnerUserID:   testUser.ID,
+			ObjectKey:     fmt.Sprintf("%s/%s/%s.png", UploadPurposeRecipeImage, testUser.ID.String(), uuid.New().String()),
+			FileName:      "expired-newer.png",
+			FileType:      "image/png",
+			FileSizeBytes: 1024,
+			Purpose:       UploadPurposeRecipeImage,
+			ExpiresAt:     time.Now().UTC().Add(10 * time.Minute),
+		}
+		usedExpired := &Upload{
+			ID:            uuid.New(),
+			OwnerUserID:   testUser.ID,
+			ObjectKey:     fmt.Sprintf("%s/%s/%s.png", UploadPurposeRecipeImage, testUser.ID.String(), uuid.New().String()),
+			FileName:      "used-expired.png",
+			FileType:      "image/png",
+			FileSizeBytes: 1024,
+			Purpose:       UploadPurposeRecipeImage,
+			ExpiresAt:     time.Now().UTC().Add(10 * time.Minute),
+		}
+		deletedExpired := &Upload{
+			ID:            uuid.New(),
+			OwnerUserID:   testUser.ID,
+			ObjectKey:     fmt.Sprintf("%s/%s/%s.png", UploadPurposeRecipeImage, testUser.ID.String(), uuid.New().String()),
+			FileName:      "deleted-expired.png",
+			FileType:      "image/png",
+			FileSizeBytes: 1024,
+			Purpose:       UploadPurposeRecipeImage,
+			ExpiresAt:     time.Now().UTC().Add(10 * time.Minute),
+		}
+		active := &Upload{
+			ID:            uuid.New(),
+			OwnerUserID:   testUser.ID,
+			ObjectKey:     fmt.Sprintf("%s/%s/%s.png", UploadPurposeRecipeImage, testUser.ID.String(), uuid.New().String()),
+			FileName:      "active.png",
+			FileType:      "image/png",
+			FileSizeBytes: 1024,
+			Purpose:       UploadPurposeRecipeImage,
+			ExpiresAt:     time.Now().UTC().Add(2 * time.Hour),
+		}
+
+		uploads := []*Upload{expiredOlder, expiredNewer, usedExpired, deletedExpired, active}
+		for _, u := range uploads {
+			err = repo.saveUploadMetadata(ctx, tx, u)
+			require.NoError(t, err)
+		}
+
+		_, err = tx.ExecContext(ctx, `UPDATE uploads SET created_at = NOW() - INTERVAL '6 hours', expires_at = NOW() - INTERVAL '5 hours' WHERE id = $1`, expiredOlder.ID)
+		require.NoError(t, err)
+		_, err = tx.ExecContext(ctx, `UPDATE uploads SET created_at = NOW() - INTERVAL '4 hours', expires_at = NOW() - INTERVAL '3 hours' WHERE id = $1`, expiredNewer.ID)
+		require.NoError(t, err)
+		_, err = tx.ExecContext(ctx, `UPDATE uploads SET created_at = NOW() - INTERVAL '4 hours', expires_at = NOW() - INTERVAL '3 hours', used_at = NOW() WHERE id = $1`, usedExpired.ID)
+		require.NoError(t, err)
+		_, err = tx.ExecContext(ctx, `UPDATE uploads SET created_at = NOW() - INTERVAL '4 hours', expires_at = NOW() - INTERVAL '3 hours', deleted_at = NOW() WHERE id = $1`, deletedExpired.ID)
+		require.NoError(t, err)
+
+		keys, err := repo.getExpiredUnusedUploadObjectKeys(ctx, tx, 1)
+		require.NoError(t, err)
+		require.Len(t, keys, 1)
+		require.Equal(t, expiredOlder.ObjectKey, keys[0])
+
+		keys, err = repo.getExpiredUnusedUploadObjectKeys(ctx, tx, 10)
+		require.NoError(t, err)
+		require.Equal(t, []string{expiredOlder.ObjectKey, expiredNewer.ObjectKey}, keys)
+	})
+}
+
+func TestDeleteUploadsByObjectKeys_SoftDeletesMatchingRows(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		repo := NewUploadRepo()
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		uploadA := &Upload{
+			ID:            uuid.New(),
+			OwnerUserID:   testUser.ID,
+			ObjectKey:     fmt.Sprintf("%s/%s/%s.png", UploadPurposeRecipeImage, testUser.ID.String(), uuid.New().String()),
+			FileName:      "a.png",
+			FileType:      "image/png",
+			FileSizeBytes: 1024,
+			Purpose:       UploadPurposeRecipeImage,
+			ExpiresAt:     time.Now().UTC().Add(10 * time.Minute),
+		}
+		uploadB := &Upload{
+			ID:            uuid.New(),
+			OwnerUserID:   testUser.ID,
+			ObjectKey:     fmt.Sprintf("%s/%s/%s.png", UploadPurposeRecipeImage, testUser.ID.String(), uuid.New().String()),
+			FileName:      "b.png",
+			FileType:      "image/png",
+			FileSizeBytes: 1024,
+			Purpose:       UploadPurposeRecipeImage,
+			ExpiresAt:     time.Now().UTC().Add(10 * time.Minute),
+		}
+		uploadC := &Upload{
+			ID:            uuid.New(),
+			OwnerUserID:   testUser.ID,
+			ObjectKey:     fmt.Sprintf("%s/%s/%s.png", UploadPurposeRecipeImage, testUser.ID.String(), uuid.New().String()),
+			FileName:      "c.png",
+			FileType:      "image/png",
+			FileSizeBytes: 1024,
+			Purpose:       UploadPurposeRecipeImage,
+			ExpiresAt:     time.Now().UTC().Add(10 * time.Minute),
+		}
+
+		uploads := []*Upload{uploadA, uploadB, uploadC}
+		for _, u := range uploads {
+			err = repo.saveUploadMetadata(ctx, tx, u)
+			require.NoError(t, err)
+		}
+
+		err = repo.deleteUploadsByObjectKeys(ctx, tx, []string{uploadA.ObjectKey, uploadB.ObjectKey})
+		require.NoError(t, err)
+
+		var deletedA sql.NullTime
+		var deletedB sql.NullTime
+		var deletedC sql.NullTime
+
+		err = tx.QueryRowContext(ctx, `SELECT deleted_at FROM uploads WHERE id = $1`, uploadA.ID).Scan(&deletedA)
+		require.NoError(t, err)
+		err = tx.QueryRowContext(ctx, `SELECT deleted_at FROM uploads WHERE id = $1`, uploadB.ID).Scan(&deletedB)
+		require.NoError(t, err)
+		err = tx.QueryRowContext(ctx, `SELECT deleted_at FROM uploads WHERE id = $1`, uploadC.ID).Scan(&deletedC)
+		require.NoError(t, err)
+
+		require.True(t, deletedA.Valid)
+		require.True(t, deletedB.Valid)
+		require.False(t, deletedC.Valid)
+	})
+}

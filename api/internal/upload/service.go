@@ -13,7 +13,8 @@ import (
 
 // TODO: move to config
 const (
-	defaultMaxImageSizeBytes = 5 * 1024 * 1024
+	defaultMaxImageSizeBytes             = 5 * 1024 * 1024
+	defaultDeleteExpiredUploadsBatchSize = 500
 )
 
 type UploadService struct {
@@ -213,10 +214,66 @@ func buildObjectKey(userID, uploadID uuid.UUID, fileName string, purpose UploadP
 }
 
 func (s *UploadService) DeleteExpiredUploads(ctx context.Context) error {
-	// Get expired uploads that aren't used
+	if s.provider == nil {
+		return ErrProviderNotConfigured
+	}
 
-	// Send keys to R2 (or other provider) for deletion
+	for {
+		// Get expired uploads that aren't used
+		keys, err := s.repo.getExpiredUnusedUploadObjectKeys(ctx, s.db, defaultDeleteExpiredUploadsBatchSize)
+		if err != nil {
+			return fmt.Errorf("query expired uploads: %w", err)
+		}
+		if len(keys) == 0 {
+			break
+		}
 
-	// Delete records from DB
+		// Send keys to R2 (or other provider) for deletion
+		failed, deleteErr := s.provider.DeleteObjects(ctx, keys)
+		if failed == nil {
+			failed = map[string]error{}
+		}
+
+		failedCount := 0
+		for _, keyErr := range failed {
+			if keyErr != nil {
+				failedCount++
+			}
+		}
+
+		// If provider returned a top-level error and no per-key failures,
+		// treat the whole batch as failed.
+		if deleteErr != nil && failedCount == 0 {
+			for _, key := range keys {
+				if _, exists := failed[key]; !exists {
+					failed[key] = deleteErr
+				}
+			}
+			failedCount = len(keys)
+		}
+
+		if failedCount > 0 && deleteErr == nil {
+			deleteErr = fmt.Errorf("provider reported %d failed deletions", failedCount)
+		}
+
+		// Delete records from DB for successfully deleted objects
+		var successfullyDeleted []string
+		for _, key := range keys {
+			if keyErr, exists := failed[key]; !exists || keyErr == nil {
+				successfullyDeleted = append(successfullyDeleted, key)
+			}
+		}
+
+		// Set deleted at for successfully deleted uploads in DB
+		if len(successfullyDeleted) > 0 {
+			if err := s.repo.deleteUploadsByObjectKeys(ctx, s.db, successfullyDeleted); err != nil {
+				return fmt.Errorf("delete upload records from DB: %w", err)
+			}
+		}
+
+		if deleteErr != nil {
+			return fmt.Errorf("delete objects from provider: %w", deleteErr)
+		}
+	}
 	return nil
 }

@@ -64,10 +64,10 @@ func joinURL(baseURL, path string) string {
 }
 
 func (p *StaticUploadProvider) DeleteObjects(ctx context.Context, objectKeys []string) (map[string]error, error) {
-	// No-op for static provider since files aren't actually stored
-	result := make(map[string]error)
-	for _, key := range objectKeys {
-		result[key] = nil
-	}
-	return result, nil
+	_ = ctx
+	_ = objectKeys
+
+	// No-op for static provider since files aren't actually stored.
+	// Return only failed-key entries, which is empty on success.
+	return map[string]error{}, nil
 }

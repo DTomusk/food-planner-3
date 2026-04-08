@@ -664,3 +664,178 @@ func TestUploadServiceMarkUploadAsUsedReturnsErrorWhenUploadAlreadyUsed(t *testi
 		require.ErrorIs(t, err, ErrUploadAlreadyUsed)
 	})
 }
+
+type cleanupProviderStub struct {
+	failed map[string]error
+	err    error
+}
+
+func (p *cleanupProviderStub) CreateSignedUploadURL(_ context.Context, _ CreateSignedUploadURLRequest) (*CreateSignedUploadURLResponse, error) {
+	return nil, ErrProviderNotConfigured
+}
+
+func (p *cleanupProviderStub) FileURLForObjectKey(objectKey string) string {
+	return "https://cdn.example.com/" + objectKey
+}
+
+func (p *cleanupProviderStub) DeleteObjects(_ context.Context, _ []string) (map[string]error, error) {
+	return p.failed, p.err
+}
+
+func TestUploadServiceDeleteExpiredUploadsProviderNotConfigured(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		service := NewUploadServiceWithProvider(tx, nil, defaultMaxImageSizeBytes, NewUploadRepo())
+
+		err := service.DeleteExpiredUploads(context.Background())
+		require.Error(t, err)
+		require.ErrorIs(t, err, ErrProviderNotConfigured)
+	})
+}
+
+func TestUploadServiceDeleteExpiredUploadsSoftDeletesExpiredUnusedUploads(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		repo := NewUploadRepo()
+		provider := NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com")
+		service := NewUploadServiceWithProvider(tx, provider, defaultMaxImageSizeBytes, repo)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		expiredA := &Upload{
+			ID:            uuid.New(),
+			OwnerUserID:   testUser.ID,
+			ObjectKey:     fmt.Sprintf("%s/%s/%s.png", UploadPurposeRecipeImage, testUser.ID.String(), uuid.New().String()),
+			FileName:      "expired-a.png",
+			FileType:      "image/png",
+			FileSizeBytes: 1024,
+			Purpose:       UploadPurposeRecipeImage,
+			ExpiresAt:     time.Now().UTC().Add(2 * time.Hour),
+		}
+		expiredB := &Upload{
+			ID:            uuid.New(),
+			OwnerUserID:   testUser.ID,
+			ObjectKey:     fmt.Sprintf("%s/%s/%s.png", UploadPurposeRecipeImage, testUser.ID.String(), uuid.New().String()),
+			FileName:      "expired-b.png",
+			FileType:      "image/png",
+			FileSizeBytes: 1024,
+			Purpose:       UploadPurposeRecipeImage,
+			ExpiresAt:     time.Now().UTC().Add(2 * time.Hour),
+		}
+		active := &Upload{
+			ID:            uuid.New(),
+			OwnerUserID:   testUser.ID,
+			ObjectKey:     fmt.Sprintf("%s/%s/%s.png", UploadPurposeRecipeImage, testUser.ID.String(), uuid.New().String()),
+			FileName:      "active.png",
+			FileType:      "image/png",
+			FileSizeBytes: 1024,
+			Purpose:       UploadPurposeRecipeImage,
+			ExpiresAt:     time.Now().UTC().Add(2 * time.Hour),
+		}
+
+		err = repo.saveUploadMetadata(ctx, tx, expiredA)
+		require.NoError(t, err)
+		err = repo.saveUploadMetadata(ctx, tx, expiredB)
+		require.NoError(t, err)
+		err = repo.saveUploadMetadata(ctx, tx, active)
+		require.NoError(t, err)
+
+		_, err = tx.ExecContext(
+			ctx,
+			`UPDATE uploads
+			 SET created_at = NOW() - INTERVAL '3 hours',
+			     expires_at = NOW() - INTERVAL '2 hours'
+			 WHERE id = $1 OR id = $2`,
+			expiredA.ID,
+			expiredB.ID,
+		)
+		require.NoError(t, err)
+
+		err = service.DeleteExpiredUploads(ctx)
+		require.NoError(t, err)
+
+		var expiredADeletedAt sql.NullTime
+		var expiredBDeletedAt sql.NullTime
+		var activeDeletedAt sql.NullTime
+
+		err = tx.QueryRowContext(ctx, `SELECT deleted_at FROM uploads WHERE id = $1`, expiredA.ID).Scan(&expiredADeletedAt)
+		require.NoError(t, err)
+		err = tx.QueryRowContext(ctx, `SELECT deleted_at FROM uploads WHERE id = $1`, expiredB.ID).Scan(&expiredBDeletedAt)
+		require.NoError(t, err)
+		err = tx.QueryRowContext(ctx, `SELECT deleted_at FROM uploads WHERE id = $1`, active.ID).Scan(&activeDeletedAt)
+		require.NoError(t, err)
+
+		require.True(t, expiredADeletedAt.Valid)
+		require.True(t, expiredBDeletedAt.Valid)
+		require.False(t, activeDeletedAt.Valid)
+	})
+}
+
+func TestUploadServiceDeleteExpiredUploadsSoftDeletesSuccessfulKeysWhenProviderPartiallyFails(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		repo := NewUploadRepo()
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		expiredA := &Upload{
+			ID:            uuid.New(),
+			OwnerUserID:   testUser.ID,
+			ObjectKey:     fmt.Sprintf("%s/%s/%s.png", UploadPurposeRecipeImage, testUser.ID.String(), uuid.New().String()),
+			FileName:      "expired-a.png",
+			FileType:      "image/png",
+			FileSizeBytes: 1024,
+			Purpose:       UploadPurposeRecipeImage,
+			ExpiresAt:     time.Now().UTC().Add(2 * time.Hour),
+		}
+		expiredB := &Upload{
+			ID:            uuid.New(),
+			OwnerUserID:   testUser.ID,
+			ObjectKey:     fmt.Sprintf("%s/%s/%s.png", UploadPurposeRecipeImage, testUser.ID.String(), uuid.New().String()),
+			FileName:      "expired-b.png",
+			FileType:      "image/png",
+			FileSizeBytes: 1024,
+			Purpose:       UploadPurposeRecipeImage,
+			ExpiresAt:     time.Now().UTC().Add(2 * time.Hour),
+		}
+
+		err = repo.saveUploadMetadata(ctx, tx, expiredA)
+		require.NoError(t, err)
+		err = repo.saveUploadMetadata(ctx, tx, expiredB)
+		require.NoError(t, err)
+
+		_, err = tx.ExecContext(
+			ctx,
+			`UPDATE uploads
+			 SET created_at = NOW() - INTERVAL '3 hours',
+			     expires_at = NOW() - INTERVAL '2 hours'
+			 WHERE id = $1 OR id = $2`,
+			expiredA.ID,
+			expiredB.ID,
+		)
+		require.NoError(t, err)
+
+		provider := &cleanupProviderStub{
+			failed: map[string]error{
+				expiredB.ObjectKey: fmt.Errorf("simulated delete failure"),
+			},
+			err: fmt.Errorf("failed to delete 1 objects from R2"),
+		}
+		service := NewUploadServiceWithProvider(tx, provider, defaultMaxImageSizeBytes, repo)
+
+		err = service.DeleteExpiredUploads(ctx)
+		require.Error(t, err)
+
+		var expiredADeletedAt sql.NullTime
+		var expiredBDeletedAt sql.NullTime
+
+		err = tx.QueryRowContext(ctx, `SELECT deleted_at FROM uploads WHERE id = $1`, expiredA.ID).Scan(&expiredADeletedAt)
+		require.NoError(t, err)
+		err = tx.QueryRowContext(ctx, `SELECT deleted_at FROM uploads WHERE id = $1`, expiredB.ID).Scan(&expiredBDeletedAt)
+		require.NoError(t, err)
+
+		require.True(t, expiredADeletedAt.Valid)
+		require.False(t, expiredBDeletedAt.Valid)
+	})
+}

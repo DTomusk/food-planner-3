@@ -6,6 +6,7 @@ import (
 	"foodplanner/internal/db"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 type uploadRepo struct{}
@@ -37,6 +38,7 @@ SELECT
 	used_at IS NOT NULL
 FROM uploads
 WHERE id = $1
+AND deleted_at IS NULL
 `
 
 func NewUploadRepo() *uploadRepo {
@@ -108,4 +110,49 @@ WHERE id = $1 AND (used_at IS NULL)`
 	}
 
 	return nil
+}
+
+func (r *uploadRepo) getExpiredUnusedUploadObjectKeys(ctx context.Context, database db.DBTX, batchSize int) ([]string, error) {
+	if batchSize <= 0 {
+		batchSize = 500
+	}
+
+	// Get expired (including grace period) and unused uploads.
+	query := `SELECT object_key FROM uploads
+	WHERE used_at IS NULL
+	AND deleted_at IS NULL
+	AND expires_at < NOW() - INTERVAL '1 hour'
+	ORDER BY expires_at ASC
+	LIMIT $1`
+	rows, err := database.QueryContext(ctx, query, batchSize)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var objectKeys []string
+	for rows.Next() {
+		var objectKey string
+		if err := rows.Scan(&objectKey); err != nil {
+			return nil, err
+		}
+		objectKeys = append(objectKeys, objectKey)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return objectKeys, nil
+}
+
+func (r *uploadRepo) deleteUploadsByObjectKeys(ctx context.Context, database db.DBTX, objectKeys []string) error {
+	if len(objectKeys) == 0 {
+		return nil
+	}
+
+	// Mark uploads as deleted by setting deleted_at (soft delete)
+	query := `UPDATE uploads SET deleted_at = NOW() WHERE object_key = ANY($1)`
+	_, err := database.ExecContext(ctx, query, pq.Array(objectKeys))
+	return err
 }
