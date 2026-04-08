@@ -37,7 +37,7 @@ export default function NavBar() {
     const title = <h1 className="cursor-pointer text-lg font-semibold tracking-tight" onClick={() => navigate("/")}>FoodSmash</h1>;
 
     return (
-        <nav className="w-full shrink-0 border-b border-black bg-white px-4 py-4 sm:sticky sm:top-0 sm:h-screen sm:w-64 sm:border-b-0 sm:border-r sm:py-6">
+        <nav className="w-full shrink-0 border-b border-black bg-white px-4 py-4 sm:sticky sm:top-0 sm:h-screen sm:w-48 md:w-64 sm:border-b-0 sm:border-r sm:py-6">
             {/* Mobile: brand + burger */}
             <div className="flex items-center justify-between sm:hidden">
                 {title}

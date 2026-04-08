@@ -69,6 +69,7 @@ func mapRecipeVersion(recipeVersion *recipe.RecipeVersion) *model.RecipeVersion 
 		Portions:  int32(recipeVersion.Portions),
 		CreatedAt: recipeVersion.CreatedAt,
 		Version:   int32(recipeVersion.Version),
+		ImgSrc:    recipeVersion.ImgSrc,
 	}
 }
 
@@ -180,6 +181,7 @@ func toCreateRecipeRequest(input *model.CreateRecipeInput, userID string) (recip
 		CookMins:    int(input.CookMins),
 		Portions:    int(input.Portions),
 		Source:      recipeSourceRequest,
+		ImgUploadID: input.ImgUploadID,
 	}, nil
 }
 

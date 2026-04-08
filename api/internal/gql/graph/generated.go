@@ -57,6 +57,12 @@ type ComplexityRoot struct {
 		User func(childComplexity int) int
 	}
 
+	ImageUploadPayload struct {
+		FileURL   func(childComplexity int) int
+		UploadID  func(childComplexity int) int
+		UploadURL func(childComplexity int) int
+	}
+
 	Ingredient struct {
 		Counter       func(childComplexity int) int
 		CounterPlural func(childComplexity int) int
@@ -74,13 +80,14 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		CreateRecipe func(childComplexity int, input model.CreateRecipeInput) int
-		Empty        func(childComplexity int) int
-		Refresh      func(childComplexity int) int
-		Signin       func(childComplexity int, input model.SignInInput) int
-		Signout      func(childComplexity int) int
-		Signup       func(childComplexity int, input model.SignUpInput) int
-		UpdateRecipe func(childComplexity int, input model.UpdateRecipeInput) int
+		CreateImageUploadURL func(childComplexity int, input model.CreateImageUploadURLInput) int
+		CreateRecipe         func(childComplexity int, input model.CreateRecipeInput) int
+		Empty                func(childComplexity int) int
+		Refresh              func(childComplexity int) int
+		Signin               func(childComplexity int, input model.SignInInput) int
+		Signout              func(childComplexity int) int
+		Signup               func(childComplexity int, input model.SignUpInput) int
+		UpdateRecipe         func(childComplexity int, input model.UpdateRecipeInput) int
 	}
 
 	PageInfo struct {
@@ -129,6 +136,7 @@ type ComplexityRoot struct {
 		CookMins         func(childComplexity int) int
 		CreatedAt        func(childComplexity int) int
 		ID               func(childComplexity int) int
+		ImgSrc           func(childComplexity int) int
 		IngredientUsages func(childComplexity int) int
 		Name             func(childComplexity int) int
 		Portions         func(childComplexity int) int
@@ -160,6 +168,7 @@ type MutationResolver interface {
 	Signout(ctx context.Context) (bool, error)
 	CreateRecipe(ctx context.Context, input model.CreateRecipeInput) (*model.Recipe, error)
 	UpdateRecipe(ctx context.Context, input model.UpdateRecipeInput) (*model.Recipe, error)
+	CreateImageUploadURL(ctx context.Context, input model.CreateImageUploadURLInput) (*model.ImageUploadPayload, error)
 }
 type QueryResolver interface {
 	Empty(ctx context.Context) (*string, error)
@@ -218,6 +227,25 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AuthPayload.User(childComplexity), true
+
+	case "ImageUploadPayload.fileUrl":
+		if e.complexity.ImageUploadPayload.FileURL == nil {
+			break
+		}
+
+		return e.complexity.ImageUploadPayload.FileURL(childComplexity), true
+	case "ImageUploadPayload.uploadId":
+		if e.complexity.ImageUploadPayload.UploadID == nil {
+			break
+		}
+
+		return e.complexity.ImageUploadPayload.UploadID(childComplexity), true
+	case "ImageUploadPayload.uploadUrl":
+		if e.complexity.ImageUploadPayload.UploadURL == nil {
+			break
+		}
+
+		return e.complexity.ImageUploadPayload.UploadURL(childComplexity), true
 
 	case "Ingredient.counter":
 		if e.complexity.Ingredient.Counter == nil {
@@ -281,6 +309,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.IngredientUsage.Unit(childComplexity), true
 
+	case "Mutation.createImageUploadUrl":
+		if e.complexity.Mutation.CreateImageUploadURL == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createImageUploadUrl_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateImageUploadURL(childComplexity, args["input"].(model.CreateImageUploadURLInput)), true
 	case "Mutation.createRecipe":
 		if e.complexity.Mutation.CreateRecipe == nil {
 			break
@@ -532,6 +571,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.RecipeVersion.ID(childComplexity), true
+	case "RecipeVersion.imgSrc":
+		if e.complexity.RecipeVersion.ImgSrc == nil {
+			break
+		}
+
+		return e.complexity.RecipeVersion.ImgSrc(childComplexity), true
 	case "RecipeVersion.ingredientUsages":
 		if e.complexity.RecipeVersion.IngredientUsages == nil {
 			break
@@ -632,6 +677,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	opCtx := graphql.GetOperationContext(ctx)
 	ec := executionContext{opCtx, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputCreateImageUploadUrlInput,
 		ec.unmarshalInputCreateIngredientUsageInput,
 		ec.unmarshalInputCreateRecipeInput,
 		ec.unmarshalInputCreateRecipeSourceInput,
@@ -736,7 +782,7 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 	return introspection.WrapTypeFromDef(ec.Schema(), ec.Schema().Types[name]), nil
 }
 
-//go:embed "schema/auth.graphqls" "schema/ingredient.graphqls" "schema/recipe.graphqls" "schema/schema.graphqls" "schema/user.graphqls"
+//go:embed "schema/auth.graphqls" "schema/ingredient.graphqls" "schema/recipe.graphqls" "schema/schema.graphqls" "schema/upload.graphqls" "schema/user.graphqls"
 var sourcesFS embed.FS
 
 func sourceData(filename string) string {
@@ -752,6 +798,7 @@ var sources = []*ast.Source{
 	{Name: "schema/ingredient.graphqls", Input: sourceData("schema/ingredient.graphqls"), BuiltIn: false},
 	{Name: "schema/recipe.graphqls", Input: sourceData("schema/recipe.graphqls"), BuiltIn: false},
 	{Name: "schema/schema.graphqls", Input: sourceData("schema/schema.graphqls"), BuiltIn: false},
+	{Name: "schema/upload.graphqls", Input: sourceData("schema/upload.graphqls"), BuiltIn: false},
 	{Name: "schema/user.graphqls", Input: sourceData("schema/user.graphqls"), BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -759,6 +806,17 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_createImageUploadUrl_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateImageUploadUrlInput2foodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐCreateImageUploadURLInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_Mutation_createRecipe_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
@@ -995,6 +1053,93 @@ func (ec *executionContext) fieldContext_AuthPayload_user(_ context.Context, fie
 				return ec.fieldContext_User_recipes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ImageUploadPayload_uploadUrl(ctx context.Context, field graphql.CollectedField, obj *model.ImageUploadPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ImageUploadPayload_uploadUrl,
+		func(ctx context.Context) (any, error) {
+			return obj.UploadURL, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ImageUploadPayload_uploadUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ImageUploadPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ImageUploadPayload_fileUrl(ctx context.Context, field graphql.CollectedField, obj *model.ImageUploadPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ImageUploadPayload_fileUrl,
+		func(ctx context.Context) (any, error) {
+			return obj.FileURL, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ImageUploadPayload_fileUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ImageUploadPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ImageUploadPayload_uploadId(ctx context.Context, field graphql.CollectedField, obj *model.ImageUploadPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ImageUploadPayload_uploadId,
+		func(ctx context.Context) (any, error) {
+			return obj.UploadID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ImageUploadPayload_uploadId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ImageUploadPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
 		},
 	}
 	return fc, nil
@@ -1643,6 +1788,68 @@ func (ec *executionContext) fieldContext_Mutation_updateRecipe(ctx context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_createImageUploadUrl(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_createImageUploadUrl,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().CreateImageUploadURL(ctx, fc.Args["input"].(model.CreateImageUploadURLInput))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				if ec.directives.Auth == nil {
+					var zeroVal *model.ImageUploadPayload
+					return zeroVal, errors.New("directive auth is not implemented")
+				}
+				return ec.directives.Auth(ctx, nil, directive0)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNImageUploadPayload2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐImageUploadPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createImageUploadUrl(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "uploadUrl":
+				return ec.fieldContext_ImageUploadPayload_uploadUrl(ctx, field)
+			case "fileUrl":
+				return ec.fieldContext_ImageUploadPayload_fileUrl(ctx, field)
+			case "uploadId":
+				return ec.fieldContext_ImageUploadPayload_uploadId(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ImageUploadPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createImageUploadUrl_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _PageInfo_hasNextPage(ctx context.Context, field graphql.CollectedField, obj *model.PageInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2225,6 +2432,8 @@ func (ec *executionContext) fieldContext_Recipe_currentVersion(_ context.Context
 				return ec.fieldContext_RecipeVersion_cookMins(ctx, field)
 			case "portions":
 				return ec.fieldContext_RecipeVersion_portions(ctx, field)
+			case "imgSrc":
+				return ec.fieldContext_RecipeVersion_imgSrc(ctx, field)
 			case "source":
 				return ec.fieldContext_RecipeVersion_source(ctx, field)
 			case "createdAt":
@@ -2276,6 +2485,8 @@ func (ec *executionContext) fieldContext_Recipe_versions(_ context.Context, fiel
 				return ec.fieldContext_RecipeVersion_cookMins(ctx, field)
 			case "portions":
 				return ec.fieldContext_RecipeVersion_portions(ctx, field)
+			case "imgSrc":
+				return ec.fieldContext_RecipeVersion_imgSrc(ctx, field)
 			case "source":
 				return ec.fieldContext_RecipeVersion_source(ctx, field)
 			case "createdAt":
@@ -2328,6 +2539,8 @@ func (ec *executionContext) fieldContext_Recipe_version(ctx context.Context, fie
 				return ec.fieldContext_RecipeVersion_cookMins(ctx, field)
 			case "portions":
 				return ec.fieldContext_RecipeVersion_portions(ctx, field)
+			case "imgSrc":
+				return ec.fieldContext_RecipeVersion_imgSrc(ctx, field)
 			case "source":
 				return ec.fieldContext_RecipeVersion_source(ctx, field)
 			case "createdAt":
@@ -2917,6 +3130,35 @@ func (ec *executionContext) fieldContext_RecipeVersion_portions(_ context.Contex
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RecipeVersion_imgSrc(ctx context.Context, field graphql.CollectedField, obj *model.RecipeVersion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RecipeVersion_imgSrc,
+		func(ctx context.Context) (any, error) {
+			return obj.ImgSrc, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RecipeVersion_imgSrc(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RecipeVersion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -4661,6 +4903,47 @@ func (ec *executionContext) fieldContext___Type_isOneOf(_ context.Context, field
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputCreateImageUploadUrlInput(ctx context.Context, obj any) (model.CreateImageUploadURLInput, error) {
+	var it model.CreateImageUploadURLInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"fileName", "fileType", "fileSize"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "fileName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("fileName"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FileName = data
+		case "fileType":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("fileType"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FileType = data
+		case "fileSize":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("fileSize"))
+			data, err := ec.unmarshalNInt2int32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FileSize = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCreateIngredientUsageInput(ctx context.Context, obj any) (model.CreateIngredientUsageInput, error) {
 	var it model.CreateIngredientUsageInput
 	asMap := map[string]any{}
@@ -4709,7 +4992,7 @@ func (ec *executionContext) unmarshalInputCreateRecipeInput(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "ingredientUsages", "prepMins", "cookMins", "portions", "recipeSource"}
+	fieldsInOrder := [...]string{"name", "ingredientUsages", "prepMins", "cookMins", "portions", "recipeSource", "imgUploadId"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -4758,6 +5041,13 @@ func (ec *executionContext) unmarshalInputCreateRecipeInput(ctx context.Context,
 				return it, err
 			}
 			it.RecipeSource = data
+		case "imgUploadId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imgUploadId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ImgUploadID = data
 		}
 	}
 
@@ -4969,7 +5259,7 @@ func (ec *executionContext) unmarshalInputUpdateRecipeInput(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"id", "details"}
+	fieldsInOrder := [...]string{"id", "details", "removeImage"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -4990,6 +5280,13 @@ func (ec *executionContext) unmarshalInputUpdateRecipeInput(ctx context.Context,
 				return it, err
 			}
 			it.Details = data
+		case "removeImage":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("removeImage"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RemoveImage = data
 		}
 	}
 
@@ -5022,6 +5319,55 @@ func (ec *executionContext) _AuthPayload(ctx context.Context, sel ast.SelectionS
 			}
 		case "user":
 			out.Values[i] = ec._AuthPayload_user(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var imageUploadPayloadImplementors = []string{"ImageUploadPayload"}
+
+func (ec *executionContext) _ImageUploadPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ImageUploadPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, imageUploadPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ImageUploadPayload")
+		case "uploadUrl":
+			out.Values[i] = ec._ImageUploadPayload_uploadUrl(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "fileUrl":
+			out.Values[i] = ec._ImageUploadPayload_fileUrl(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "uploadId":
+			out.Values[i] = ec._ImageUploadPayload_uploadId(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -5218,6 +5564,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "updateRecipe":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_updateRecipe(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createImageUploadUrl":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createImageUploadUrl(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -5891,6 +6244,8 @@ func (ec *executionContext) _RecipeVersion(ctx context.Context, sel ast.Selectio
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "imgSrc":
+			out.Values[i] = ec._RecipeVersion_imgSrc(ctx, field, obj)
 		case "source":
 			field := field
 
@@ -6454,6 +6809,11 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) unmarshalNCreateImageUploadUrlInput2foodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐCreateImageUploadURLInput(ctx context.Context, v any) (model.CreateImageUploadURLInput, error) {
+	res, err := ec.unmarshalInputCreateImageUploadUrlInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNCreateIngredientUsageInput2ᚕᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐCreateIngredientUsageInputᚄ(ctx context.Context, v any) ([]*model.CreateIngredientUsageInput, error) {
 	var vSlice []any
 	vSlice = graphql.CoerceList(v)
@@ -6519,6 +6879,20 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNImageUploadPayload2foodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐImageUploadPayload(ctx context.Context, sel ast.SelectionSet, v model.ImageUploadPayload) graphql.Marshaler {
+	return ec._ImageUploadPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNImageUploadPayload2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐImageUploadPayload(ctx context.Context, sel ast.SelectionSet, v *model.ImageUploadPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ImageUploadPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNIngredient2ᚕᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐIngredientᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Ingredient) graphql.Marshaler {

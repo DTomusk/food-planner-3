@@ -19,6 +19,7 @@ type RecipeVersion {
   prepMins: Int!
   cookMins: Int!
   portions: Int!
+  imgSrc: String
   source: RecipeSource! @goField(forceResolver: true)
 
   createdAt: Time!
@@ -76,6 +77,7 @@ input CreateRecipeInput {
   cookMins: Int!
   portions: Int!
   recipeSource: CreateRecipeSourceInput!
+  imgUploadId: ID
 }
 
 input CreateIngredientUsageInput {
@@ -95,6 +97,7 @@ input CreateRecipeSourceInput {
 input UpdateRecipeInput {
   id: ID!
   details: CreateRecipeInput!
+  removeImage: Boolean
 }
 
 extend type Mutation {

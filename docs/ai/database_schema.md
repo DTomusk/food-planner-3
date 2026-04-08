@@ -1,6 +1,6 @@
 # Database Schema
 
-This file documents the current state of the PostgreSQL schema as of migration `0017`. It is derived from all up-migrations in `api/migrations/` and is intended as a quick reference for AI agents. Do not hand-edit column definitions here — regenerate from migrations when the schema changes.
+This file documents the current state of the PostgreSQL schema as of migration `0021`. It is derived from all up-migrations in `api/migrations/` and is intended as a quick reference for AI agents. Do not hand-edit column definitions here — regenerate from migrations when the schema changes.
 
 ## Schemas
 
@@ -46,6 +46,33 @@ Notes:
 
 ---
 
+## public.uploads
+
+Tracks temporary upload intents and claim state for media objects (for example recipe images).
+
+| Column               | Type        | Constraints                                                |
+|----------------------|-------------|------------------------------------------------------------|
+| `id`                 | UUID        | PRIMARY KEY                                                |
+| `owner_user_id`      | UUID        | NOT NULL, FK → `users(id)` ON DELETE CASCADE              |
+| `object_key`         | TEXT        | NOT NULL, UNIQUE                                           |
+| `file_name`          | TEXT        | NOT NULL                                                   |
+| `file_type`          | TEXT        | NOT NULL                                                   |
+| `file_size_bytes`    | BIGINT      | NOT NULL, CHECK `>= 0`                                     |
+| `purpose`            | TEXT        | NOT NULL, CHECK IN (`recipe-images`)                       |
+| `created_at`         | TIMESTAMPTZ | NOT NULL, DEFAULT now()                                    |
+| `expires_at`         | TIMESTAMPTZ | NOT NULL, CHECK `expires_at > created_at`                  |
+| `used_at`            | TIMESTAMPTZ | NULLABLE                                                   |
+| `linked_entity_type` | TEXT        | NULLABLE                                                   |
+| `linked_entity_id`   | UUID        | NULLABLE                                                   |
+
+Notes:
+- Constraint `uploads_link_pair_check` enforces both link fields are null or both non-null.
+- `used_at` marks successful claim by a domain entity; unclaimed rows remain `NULL`.
+- Index `idx_uploads_owner_user_id` supports owner-scoped reads.
+- Partial index `idx_uploads_active_unlinked` covers active unclaimed rows (`used_at IS NULL`).
+
+---
+
 ## public.recipe_containers
 
 The long-lived record for a recipe. Belongs to a user and tracks which version is currently active.
@@ -62,6 +89,7 @@ Notes:
 - `current_version_id` is nullable during initial insert (container is created before its first version, then updated in the same transaction).
 - The FK is deferrable to allow container and version to be inserted in any order within one transaction.
 - `deleted_on` implements soft delete at the container level.
+- Partial index `idx_recipes_created_at_id` supports newest-first pagination for non-deleted rows.
 
 ---
 
@@ -78,11 +106,14 @@ A single immutable snapshot of a recipe's content. Recipes are never mutated in 
 | `cook_mins` | INTEGER     | NOT NULL, DEFAULT 0                              |
 | `portions`  | INTEGER     | NOT NULL, DEFAULT 1                              |
 | `version`   | INTEGER     | NOT NULL, DEFAULT 1                              |
+| `img_src`   | VARCHAR(255)| NULLABLE                                         |
 | `created_at`| TIMESTAMPTZ | NOT NULL, DEFAULT now()                          |
 
 Notes:
 - Version numbers are incremented by the service layer, not enforced by a DB constraint.
 - Treat this table as append-only history. Old rows are never updated.
+- Search indexes exist on `name`: `idx_recipe_versions_name_fts_gin` (full text) and `idx_recipe_versions_name_trgm_gin` (fuzzy trigram).
+- Migration `0019` enables `pg_trgm` extension (`CREATE EXTENSION IF NOT EXISTS pg_trgm`).
 
 ---
 
@@ -153,10 +184,14 @@ Notes:
 users
   ├── refresh_tokens (user_id)
   │     └── refresh_tokens (replaced_by_token_id)
+  ├── uploads (owner_user_id)
   └── recipe_containers (user_id)
     └── recipe_versions (recipe_id)
       ├── recipe_sources (recipe_version_id)    [0..1 per version]
       └── ingredient_usages (recipe_version_id) [0..N per version]
+
+uploads
+  └── claimed by domain rows via (linked_entity_type, linked_entity_id)
 
 reference.ingredients
   └── ingredient_usages (ingredient_id)
@@ -183,3 +218,7 @@ reference.ingredients
 | 0015      | Add `created_at` to `recipe_versions`                          |
 | 0016      | Add `version` integer to `recipe_versions`                     |
 | 0017      | Create `refresh_tokens`                                        |
+| 0018      | Add partial index for newest non-deleted recipe pagination     |
+| 0019      | Add recipe search indexes (`fts` and `trgm`) on version name   |
+| 0020      | Create `uploads` table for upload lifecycle tracking           |
+| 0021      | Add `img_src` to `recipe_versions`                             |

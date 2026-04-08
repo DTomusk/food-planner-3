@@ -20,7 +20,7 @@ func TestInstantiateRecipe(t *testing.T) {
 		Type: URL,
 		URL:  testutil.PtrString("https://example.com/pancakes"),
 	}
-	recipeContainer, err := NewRecipe(name, userID, []*IngredientUsage{ingredientUsage}, 10, 20, 4, source)
+	recipeContainer, err := NewRecipe(name, userID, []*IngredientUsage{ingredientUsage}, 10, 20, 4, source, nil)
 	require.NoError(t, err)
 	recipeVersion := recipeContainer.CurrentVersion
 
@@ -48,7 +48,7 @@ func TestEmptyRecipeName(t *testing.T) {
 		Type: URL,
 		URL:  testutil.PtrString("https://example.com/pancakes"),
 	}
-	_, err := NewRecipe("", userID, []*IngredientUsage{ingredientUsage}, 10, 20, 4, source)
+	_, err := NewRecipe("", userID, []*IngredientUsage{ingredientUsage}, 10, 20, 4, source, nil)
 	require.Error(t, err)
 	require.Equal(t, ErrEmptyName, err)
 }
@@ -60,7 +60,7 @@ func TestNoIngredients(t *testing.T) {
 		Type: URL,
 		URL:  testutil.PtrString("https://example.com/pancakes"),
 	}
-	_, err := NewRecipe(name, userID, []*IngredientUsage{}, 10, 20, 4, source)
+	_, err := NewRecipe(name, userID, []*IngredientUsage{}, 10, 20, 4, source, nil)
 	require.Error(t, err)
 	require.Equal(t, ErrNoIngredients, err)
 }
@@ -77,7 +77,7 @@ func TestNegativePrepMins(t *testing.T) {
 		Type: URL,
 		URL:  testutil.PtrString("https://example.com/pancakes"),
 	}
-	_, err := NewRecipe(name, userID, []*IngredientUsage{ingredientUsage}, -5, 20, 4, source)
+	_, err := NewRecipe(name, userID, []*IngredientUsage{ingredientUsage}, -5, 20, 4, source, nil)
 	require.Error(t, err)
 	require.Equal(t, ErrInvalidPrepMins, err)
 }
@@ -94,7 +94,7 @@ func TestNegativeCookMins(t *testing.T) {
 		Type: URL,
 		URL:  testutil.PtrString("https://example.com/pancakes"),
 	}
-	_, err := NewRecipe(name, userID, []*IngredientUsage{ingredientUsage}, 10, -5, 4, source)
+	_, err := NewRecipe(name, userID, []*IngredientUsage{ingredientUsage}, 10, -5, 4, source, nil)
 	require.Error(t, err)
 	require.Equal(t, ErrInvalidCookMins, err)
 }
@@ -111,7 +111,7 @@ func TestInvalidPortions(t *testing.T) {
 		Type: URL,
 		URL:  testutil.PtrString("https://example.com/pancakes"),
 	}
-	_, err := NewRecipe(name, userID, []*IngredientUsage{ingredientUsage}, 10, 20, 0, source)
+	_, err := NewRecipe(name, userID, []*IngredientUsage{ingredientUsage}, 10, 20, 0, source, nil)
 	require.Error(t, err)
 	require.Equal(t, ErrInvalidPortions, err)
 }

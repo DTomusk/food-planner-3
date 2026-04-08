@@ -25,11 +25,13 @@ export function mapRecipeDetail(
             bookTitle: gqlRecipe.currentVersion.source.bookTitle || undefined,
             bookPage: gqlRecipe.currentVersion.source.bookPage || undefined,
             instructions: gqlRecipe.currentVersion.source.instructions || undefined,
-        }} ,
+        },
+        imageUrl: gqlRecipe.currentVersion.imgSrc || null,
+        },
         user: {
             id: gqlRecipe.author.id,
             username: gqlRecipe.author.username,
-        } 
+        }
     }
 }
 
@@ -60,7 +62,9 @@ export function mapRecipeVersionDetail(
             bookTitle: gqlRecipe.version.source.bookTitle || undefined,
             bookPage: gqlRecipe.version.source.bookPage || undefined,
             instructions: gqlRecipe.version.source.instructions || undefined,
-        }} ,
+        },
+        imageUrl: gqlRecipe.version.imgSrc || null,
+        },
         user: {
             id: gqlRecipe.author.id,
             username: gqlRecipe.author.username,
@@ -75,6 +79,7 @@ export function mapRecipeSummary(
         recipes: gqlRecipes.edges.map((edge) => ({
             id: edge.node.id,
             name: edge.node.currentVersion.name,
+            imageUrl: edge.node.currentVersion.imgSrc || null,
         })),
         endCursor: gqlRecipes.pageInfo.endCursor || null,
         hasNextPage: gqlRecipes.pageInfo.hasNextPage,

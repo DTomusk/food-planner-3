@@ -53,8 +53,9 @@ func (r *mutationResolver) UpdateRecipe(ctx context.Context, input model.UpdateR
 	}
 
 	request := recipe.UpdateRecipeRequest{
-		RecipeId: input.ID,
-		Request:  createRequest,
+		RecipeId:    input.ID,
+		Request:     createRequest,
+		RemoveImage: input.RemoveImage,
 	}
 
 	recipeContainer, err := r.RecipeService.UpdateRecipe(ctx, request)

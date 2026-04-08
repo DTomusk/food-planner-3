@@ -10,6 +10,7 @@ export type Recipe = {
     portions: number;
     source: RecipeSource;
     version: number;
+    imageUrl: string | null;
 };
 
 // TODO: move to user feature
@@ -44,6 +45,7 @@ export type RecipePage = {
 export type RecipeSummary = {
     id: string;
     name: string;
+    imageUrl: string | null;
 };
 
 export type RecipeFormValues = z.infer<typeof recipeFormSchema>;

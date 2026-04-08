@@ -1,8 +1,7 @@
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { Alert, BackLink, PageTitle, Spinner } from "@/components";
+import { Alert, BackLink, Spinner } from "@/components";
 import { useRecipe } from "@/features/recipes";
 import { Page } from "@/layout";
-import SharedBy from "@/components/SharedBy";
 import IngredientList from "@/features/recipes/components/IngredientList";
 import SectionTitle from "@/components/ui/SectionTitle";
 import Container from "@/components/layout/Container";
@@ -15,6 +14,7 @@ import IconButton from "@/components/ui/IconButton";
 import { ClockFading, SquarePen } from "lucide-react";
 import Dropdown from "@/components/ui/Dropdown";
 import { useRecipeVersions } from "@/features/recipes/hooks/useRecipeVersions";
+import RecipeDetailsCard from "@/features/recipes/components/RecipeDetailsCard";
 
 type RecipePageLocationState = {
     successMessage?: string;
@@ -34,6 +34,9 @@ export default function RecipePage() {
 
     const versionsQuery = useRecipeVersions(recipeId);
     const versions = versionsQuery.data;
+    const currentVersionNumber = versions?.length
+        ? Math.max(...versions.map((version) => version.version))
+        : undefined;
 
     useEffect(() => {
         if (!successMessage) {
@@ -55,10 +58,15 @@ export default function RecipePage() {
                     sections={[
                         {
                             title: "Recipe versions",
-                            items: versions.map((version) => ({
-                                label: `Version ${version.version} - ${new Date(version.createdAt).toLocaleString()}`,
-                                onClick: () => navigate(`/recipes/${recipeId}/versions/${version.version}`),
-                            })),
+                            items: versions.map((version) => {
+                                const isCurrentVersion = version.version === currentVersionNumber;
+
+                                return {
+                                    label: `Version ${version.version} - ${new Date(version.createdAt).toLocaleString()}${isCurrentVersion ? " (current)" : ""}`,
+                                    onClick: () => navigate(`/recipes/${recipeId}/versions/${version.version}`),
+                                    disabled: isCurrentVersion,
+                                };
+                            }),
                         },
                     ]}
                 />
@@ -71,7 +79,7 @@ export default function RecipePage() {
 
     return (
         <Page toolbarLeft={<BackLink />} toolbarActions={toolbarActions}>
-            <Container size="xl">
+            <Container size="md">
                 <Stack space="xl">
                     {!recipeId && <Alert message="No recipe ID provided." />}
                     {recipeQuery.isLoading && <Spinner />}
@@ -79,13 +87,15 @@ export default function RecipePage() {
                     {successMessage && <Alert message={successMessage} type="success" closable duration={3000} onClose={() => setSuccessMessage(undefined)} />}
                     {recipe ? (
                     <>
-                    <PageTitle text={recipe.name} />
-                    { user && <SharedBy user={user} /> }
-                    <Stack space="sm">
-                        <div className="text-center">Prep time: {recipe.prepMins} mins</div>
-                        <div className="text-center">Cook time: {recipe.cookMins} mins</div>
-                        <div className="text-center">Portions: {recipe.portions}</div>
-                    </Stack>
+                    <RecipeDetailsCard
+                        recipeTitle={recipe.name}
+                        imageUrl={recipe.imageUrl}
+                        description="blah blah blah"
+                        prepTimeMinutes={recipe.prepMins}
+                        cookTimeMinutes={recipe.cookMins}
+                        portions={recipe.portions}
+                        sharedBy={ user ? { username: user.username, id: user.id } : undefined }
+                    />
                     <Container size="xs">
                         <Stack space="lg">
                             <SectionTitle text="Ingredients" />

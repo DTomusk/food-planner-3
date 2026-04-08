@@ -10,6 +10,7 @@ export function useCreateRecipe() {
         mutationFn: (variables) => graphqlRequest(CreateRecipeDocument, variables),
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ["recipes"] });
+            queryClient.invalidateQueries({ queryKey: ["me", "recipes"] });
             console.log("Recipe created:", data.createRecipe);
         },
         onError: (error) => {

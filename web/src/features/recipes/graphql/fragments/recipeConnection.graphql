@@ -4,6 +4,7 @@ fragment RecipeConnectionListFields on RecipeConnection {
       id
       currentVersion {
         name
+        imgSrc
       }
     }
   }

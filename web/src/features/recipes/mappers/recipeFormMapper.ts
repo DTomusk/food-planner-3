@@ -40,7 +40,19 @@ export function toRecipeSourceTypeValue(sourceType: RecipeSourceType): number {
   }
 }
 
-export function mapFormValuesToCreateRecipeInput(values: RecipeFormValues): CreateRecipeInput {
+type MapCreateRecipeInputOptions = {
+  imgUploadId?: string | null;
+};
+
+type MapUpdateRecipeInputOptions = {
+  imgUploadId?: string | null;
+  removeImage?: boolean;
+};
+
+export function mapFormValuesToCreateRecipeInput(
+  values: RecipeFormValues,
+  options?: MapCreateRecipeInputOptions,
+): CreateRecipeInput {
   return {
     name: values.name,
     ingredientUsages: values.ingredientUsages.map((usage) => ({
@@ -58,6 +70,19 @@ export function mapFormValuesToCreateRecipeInput(values: RecipeFormValues): Crea
       bookPage: values.sourceType === RecipeSourceType.Cookbook ? values.bookPage : undefined,
       instructions: values.sourceType === RecipeSourceType.Original ? values.instructions : undefined,
     },
+    imgUploadId: options?.imgUploadId ?? undefined,
+  };
+}
+
+export function mapFormValuesToUpdateRecipeInput(
+  values: RecipeFormValues,
+  options?: MapUpdateRecipeInputOptions,
+): { input: CreateRecipeInput; removeImage?: boolean } {
+  return {
+    input: mapFormValuesToCreateRecipeInput(values, {
+      imgUploadId: options?.imgUploadId,
+    }),
+    removeImage: options?.removeImage,
   };
 }
 
@@ -84,5 +109,6 @@ export function mapRecipeToFormValues(
     bookTitle: recipe.currentVersion.source.bookTitle ?? "",
     bookPage: recipe.currentVersion.source.bookPage ?? undefined,
     instructions: recipe.currentVersion.source.instructions ?? "",
+    imgSrc: recipe.currentVersion.imgSrc ?? undefined,
   };
 }

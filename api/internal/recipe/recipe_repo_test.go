@@ -49,6 +49,40 @@ func TestGetRecipe_DoesNotErrorWhenNotFound(t *testing.T) {
 	})
 }
 
+func TestGetRecipeByID_ReturnsCurrentVersionImgSrc(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		r, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err, "Failed to seed test user")
+
+		recipeID := uuid.New()
+		versionID := uuid.New()
+		expectedImgSrc := "https://cdn.example.com/recipe-images/test-user/test-upload.png"
+
+		err = seeds.InsertRecipeContainer(ctx, tx, recipeID, testUser.ID)
+		require.NoError(t, err)
+
+		err = seeds.InsertRecipeVersion(ctx, tx, versionID, recipeID, "Image Recipe", 30, 60, 8, 1)
+		require.NoError(t, err)
+
+		_, err = tx.ExecContext(ctx, `UPDATE recipe_versions SET img_src = $1 WHERE id = $2`, expectedImgSrc, versionID)
+		require.NoError(t, err)
+
+		err = seeds.SetRecipeContainerCurrentVersion(ctx, tx, recipeID, versionID)
+		require.NoError(t, err)
+
+		recipeContainer, err := r.getRecipeByID(ctx, tx, recipeID)
+		require.NoError(t, err)
+		require.NotNil(t, recipeContainer)
+		require.NotNil(t, recipeContainer.CurrentVersion)
+		require.NotNil(t, recipeContainer.CurrentVersion.ImgSrc)
+		require.Equal(t, expectedImgSrc, *recipeContainer.CurrentVersion.ImgSrc)
+	})
+}
+
 func TestGetRecipesByUserID(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange

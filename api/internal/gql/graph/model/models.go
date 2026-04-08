@@ -22,4 +22,5 @@ type RecipeVersion struct {
 	CookMins  int32
 	Portions  int32
 	CreatedAt time.Time
+	ImgSrc    *string
 }

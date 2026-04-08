@@ -1,5 +1,4 @@
 import { Alert, Button, PageTitle, Spinner } from "@/components";
-import Container from "@/components/layout/Container";
 import Inline from "@/components/layout/Inline";
 import Stack from "@/components/layout/Stack";
 import SearchBar from "@/components/ui/SearchBar";
@@ -47,7 +46,7 @@ export default function RecipeListingPage() {
     return (
         <Page>
             <PageTitle text="Recipes" />
-            <Container size="md">
+            <div className="max-w-md md:max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
                 <Stack space="lg">
                 {!isAuthenticated && <Alert type="info" message="Please sign in to add a new recipe." />}
                 {isAuthenticated && 
@@ -69,26 +68,26 @@ export default function RecipeListingPage() {
                     onSubmit={handleSubmitSearch}
                 />
                 {data && (
-                    <>
-                        <SectionTitle text={hasQuery ? "Search results" : "Top recipes"} />
-                        <RecipeList recipes={data.recipes} />
-                        {hasNextPage && (
-                            <Inline>
-                                <Button
-                                    onClick={() => {
-                                        void fetchNextPage();
-                                    }}
-                                    variant="secondary"
-                                    loading={isFetchingNextPage}
-                                >
-                                    Load more
-                                </Button>
-                            </Inline>
-                        )}
-                    </>
+                <>
+                    <SectionTitle text={hasQuery ? "Search results" : "Top recipes"} />
+                    <RecipeList recipes={data.recipes} />
+                    {hasNextPage && (
+                        <Inline>
+                            <Button
+                                onClick={() => {
+                                    void fetchNextPage();
+                                }}
+                                variant="secondary"
+                                loading={isFetchingNextPage}
+                            >
+                                Load more
+                            </Button>
+                        </Inline>
+                    )}
+                </>
                 )}
                 </Stack>
-            </Container>
+            </div>
         </Page>
     );
 }

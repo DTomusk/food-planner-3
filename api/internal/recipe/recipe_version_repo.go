@@ -16,9 +16,9 @@ func NewRecipeVersionRepo() *recipeVersionRepo {
 
 const (
 	insertRecipeVersionQuery = `INSERT INTO recipe_versions 
-	(id, recipe_id, name, prep_mins, cook_mins, portions, version) 
-	VALUES ($1, $2, $3, $4, $5, $6, $7) 
-	RETURNING id, recipe_id, name, prep_mins, cook_mins, portions, created_at`
+	(id, recipe_id, name, prep_mins, cook_mins, portions, version, img_src) 
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+	RETURNING id, recipe_id, name, prep_mins, cook_mins, portions, created_at, version, img_src`
 )
 
 func (r *recipeVersionRepo) createRecipeVersion(ctx context.Context, tx *sql.Tx, version *RecipeVersion) (*RecipeVersion, error) {
@@ -33,6 +33,7 @@ func (r *recipeVersionRepo) createRecipeVersion(ctx context.Context, tx *sql.Tx,
 		version.CookMins,
 		version.Portions,
 		version.Version,
+		version.ImgSrc,
 	).Scan(
 		&dbRecipeVersion.ID,
 		&dbRecipeVersion.RecipeID,
@@ -41,6 +42,8 @@ func (r *recipeVersionRepo) createRecipeVersion(ctx context.Context, tx *sql.Tx,
 		&dbRecipeVersion.CookMins,
 		&dbRecipeVersion.Portions,
 		&dbRecipeVersion.CreatedAt,
+		&dbRecipeVersion.Version,
+		&dbRecipeVersion.ImgSrc,
 	)
 	if err != nil {
 		return nil, err
@@ -59,7 +62,7 @@ func (r *recipeVersionRepo) insertRecipeSource(ctx context.Context, tx *sql.Tx, 
 
 func (r *recipeVersionRepo) getRecipeVersionByID(ctx context.Context, db db.DBTX, id uuid.UUID) (*RecipeVersion, error) {
 	var recipeVersion RecipeVersion
-	row := db.QueryRowContext(ctx, `SELECT id, recipe_id, name, prep_mins, cook_mins, portions, created_at, version FROM recipe_versions WHERE id = $1`, id)
+	row := db.QueryRowContext(ctx, `SELECT id, recipe_id, name, prep_mins, cook_mins, portions, created_at, version, img_src FROM recipe_versions WHERE id = $1`, id)
 	err := row.Scan(
 		&recipeVersion.ID,
 		&recipeVersion.RecipeID,
@@ -69,6 +72,7 @@ func (r *recipeVersionRepo) getRecipeVersionByID(ctx context.Context, db db.DBTX
 		&recipeVersion.Portions,
 		&recipeVersion.CreatedAt,
 		&recipeVersion.Version,
+		&recipeVersion.ImgSrc,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -81,7 +85,7 @@ func (r *recipeVersionRepo) getRecipeVersionByID(ctx context.Context, db db.DBTX
 
 func (r *recipeVersionRepo) getRecipeVersionByRecipeIDAndVersion(ctx context.Context, db db.DBTX, id uuid.UUID, version int) (*RecipeVersion, error) {
 	var recipeVersion RecipeVersion
-	row := db.QueryRowContext(ctx, `SELECT id, recipe_id, name, prep_mins, cook_mins, portions, created_at, version 
+	row := db.QueryRowContext(ctx, `SELECT id, recipe_id, name, prep_mins, cook_mins, portions, created_at, version, img_src
 	FROM recipe_versions 
 	WHERE recipe_id = $1 AND version = $2`, id, version)
 	err := row.Scan(
@@ -93,6 +97,7 @@ func (r *recipeVersionRepo) getRecipeVersionByRecipeIDAndVersion(ctx context.Con
 		&recipeVersion.Portions,
 		&recipeVersion.CreatedAt,
 		&recipeVersion.Version,
+		&recipeVersion.ImgSrc,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -104,7 +109,7 @@ func (r *recipeVersionRepo) getRecipeVersionByRecipeIDAndVersion(ctx context.Con
 }
 
 func (r *recipeVersionRepo) getRecipeVersionsByRecipeID(ctx context.Context, db db.DBTX, recipeID uuid.UUID) ([]*RecipeVersion, error) {
-	rows, err := db.QueryContext(ctx, `SELECT id, recipe_id, name, prep_mins, cook_mins, portions, created_at, version FROM recipe_versions WHERE recipe_id = $1 ORDER BY created_at DESC`, recipeID)
+	rows, err := db.QueryContext(ctx, `SELECT id, recipe_id, name, prep_mins, cook_mins, portions, created_at, version, img_src FROM recipe_versions WHERE recipe_id = $1 ORDER BY created_at DESC`, recipeID)
 	if err != nil {
 		return nil, err
 	}
@@ -125,6 +130,7 @@ func (r *recipeVersionRepo) getRecipeVersionsByRecipeID(ctx context.Context, db 
 			&version.Portions,
 			&version.CreatedAt,
 			&version.Version,
+			&version.ImgSrc,
 		); err != nil {
 			return nil, err
 		}

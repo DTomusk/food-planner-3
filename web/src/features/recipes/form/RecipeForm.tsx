@@ -15,15 +15,27 @@ import { DEFAULT_RECIPE_FORM_VALUES } from "../mappers/recipeFormMapper";
 type RecipeFormProps = {
   onSubmit: (values: RecipeFormValues) => void;
   isSubmitting?: boolean;
+  isPreparingImageUpload?: boolean;
   ingredients: IngredientOptionModel[];
   defaultValues?: RecipeFormValues;
+  imageFile?: File | null;
+  onImageFileChange?: (file: File | null) => void;
+  existingImageUrl?: string | null;
+  onRemoveExistingImage?: () => void;
+  isCreateForm?: boolean;
 };
 
 export default function RecipeForm({
   onSubmit,
   isSubmitting = false,
+  isPreparingImageUpload = false,
   ingredients,
   defaultValues,
+  imageFile = null,
+  onImageFileChange = () => {},
+  existingImageUrl = null,
+  onRemoveExistingImage = () => {},
+  isCreateForm = true,
 }: RecipeFormProps) {
   const methods = useForm<RecipeFormValues>({
     resolver: zodResolver(recipeFormSchema),
@@ -41,12 +53,17 @@ export default function RecipeForm({
       <FormProvider {...methods}>
         <Form onSubmit={handleSubmit(onSubmit)}>
           <Stack space="lg">
-            <RecipeDetailSection />
+            <RecipeDetailSection
+              imageFile={imageFile}
+              onImageFileChange={onImageFileChange}
+              existingImageUrl={existingImageUrl}
+              onRemoveExistingImage={onRemoveExistingImage}
+            />
             <IngredientSection ingredients={ingredients} />
             <RecipeSourceSection />
             <Inline justify="start">
-            <Button disabled={isSubmitting || (isSubmitted && !isValid)} type="submit" loading={isSubmitting}>
-              {commonStrings.forms.create}
+            <Button disabled={isSubmitting || isPreparingImageUpload || (isSubmitted && !isValid)} type="submit" loading={isSubmitting || isPreparingImageUpload}>
+              {isCreateForm ? commonStrings.forms.create : commonStrings.forms.update}
             </Button>
             </Inline>
           </Stack>

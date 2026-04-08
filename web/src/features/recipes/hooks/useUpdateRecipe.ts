@@ -7,8 +7,15 @@ export function useUpdateRecipe() {
 
     return useMutation<UpdateRecipeMutation, ClientError, UpdateRecipeMutationVariables, unknown>({
         mutationFn: (variables) => graphqlRequest(UpdateRecipeDocument, variables),
-        onSuccess: (data) => {
-            queryClient.invalidateQueries({ queryKey: ["recipes"] });
+        onSuccess: async (data, variables) => {
+            const updatedRecipeID = data.updateRecipe.id ?? variables.input.id;
+
+            await Promise.all([
+                queryClient.invalidateQueries({ queryKey: ["recipes"] }),
+                queryClient.invalidateQueries({ queryKey: ["recipe", updatedRecipeID] }),
+                queryClient.invalidateQueries({ queryKey: ["me", "recipes"] }),
+            ]);
+
             console.log("Recipe updated:", data.updateRecipe);
         },
         onError: (error) => {

@@ -17,7 +17,7 @@ export default function Page({children, toolbarLeft, toolbarActions}: PageProps)
                     </Inline>
                 </div>
             )}
-            <div className="space-y-8 max-w-5xl mx-auto pt-12 px-6 pb-12">
+            <div className="space-y-8 max-w-5xl mx-auto pt-12 pb-12">
                 {children}
             </div>
         </>
