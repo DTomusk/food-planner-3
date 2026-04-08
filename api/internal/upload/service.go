@@ -213,5 +213,10 @@ func buildObjectKey(userID, uploadID uuid.UUID, fileName string, purpose UploadP
 }
 
 func (s *UploadService) DeleteExpiredUploads(ctx context.Context) error {
+	// Get expired uploads that aren't used
+
+	// Send keys to R2 (or other provider) for deletion
+
+	// Delete records from DB
 	return nil
 }

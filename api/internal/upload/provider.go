@@ -23,6 +23,7 @@ type CreateSignedUploadURLResponse struct {
 type UploadProvider interface {
 	CreateSignedUploadURL(ctx context.Context, req CreateSignedUploadURLRequest) (*CreateSignedUploadURLResponse, error)
 	FileURLForObjectKey(objectKey string) string
+	DeleteObjects(ctx context.Context, objectKeys []string) (map[string]error, error)
 }
 
 // Static upload provider is for testing
@@ -60,4 +61,13 @@ func (p *StaticUploadProvider) FileURLForObjectKey(objectKey string) string {
 
 func joinURL(baseURL, path string) string {
 	return strings.TrimRight(baseURL, "/") + "/" + strings.TrimLeft(path, "/")
+}
+
+func (p *StaticUploadProvider) DeleteObjects(ctx context.Context, objectKeys []string) (map[string]error, error) {
+	// No-op for static provider since files aren't actually stored
+	result := make(map[string]error)
+	for _, key := range objectKeys {
+		result[key] = nil
+	}
+	return result, nil
 }

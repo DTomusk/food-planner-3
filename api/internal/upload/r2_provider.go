@@ -10,6 +10,7 @@ import (
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
 const (
@@ -33,6 +34,7 @@ type R2UploadProvider struct {
 	publicBaseURL string
 	presignClient *s3.PresignClient
 	presignExpiry time.Duration
+	s3Client      *s3.Client
 }
 
 func NewR2UploadProvider(ctx context.Context, cfg R2UploadProviderConfig) (*R2UploadProvider, error) {
@@ -92,6 +94,7 @@ func NewR2UploadProvider(ctx context.Context, cfg R2UploadProviderConfig) (*R2Up
 		publicBaseURL: publicBaseURL,
 		presignClient: s3.NewPresignClient(s3Client),
 		presignExpiry: presignExpiry,
+		s3Client:      s3Client,
 	}, nil
 }
 
@@ -139,6 +142,60 @@ func (p *R2UploadProvider) FileURLForObjectKey(objectKey string) string {
 	}
 
 	return joinURL(p.publicBaseURL, objectKey)
+}
+
+// Delete objects with given keys in batches of up to 1000
+func (p *R2UploadProvider) DeleteObjects(ctx context.Context, objectKeys []string) (map[string]error, error) {
+	failed := map[string]error{}
+
+	if p == nil || p.s3Client == nil {
+		return nil, ErrProviderNotConfigured
+	}
+
+	cleaned := make([]string, 0, len(objectKeys))
+	for _, key := range objectKeys {
+		if strings.TrimSpace(key) != "" {
+			cleaned = append(cleaned, key)
+		}
+	}
+
+	const batchSize = 1000
+	for i := 0; i < len(cleaned); i += batchSize {
+		end := i + batchSize
+		if end > len(cleaned) {
+			end = len(cleaned)
+		}
+
+		ids := make([]types.ObjectIdentifier, 0, end-i)
+		for _, key := range cleaned[i:end] {
+			ids = append(ids, types.ObjectIdentifier{Key: aws.String(key)})
+		}
+
+		out, err := p.s3Client.DeleteObjects(ctx, &s3.DeleteObjectsInput{
+			Bucket: aws.String(p.bucketName),
+			Delete: &types.Delete{
+				Objects: ids,
+				Quiet:   aws.Bool(false),
+			},
+		})
+		if err != nil {
+			for _, key := range cleaned[i:end] {
+				failed[key] = err
+			}
+			continue
+		}
+
+		for _, e := range out.Errors {
+			if e.Key != nil {
+				failed[aws.ToString(e.Key)] = fmt.Errorf("R2 delete error: %s", aws.ToString(e.Message))
+			}
+		}
+	}
+
+	if len(failed) > 0 {
+		return failed, fmt.Errorf("failed to delete %d objects from R2", len(failed))
+	}
+	return failed, nil
 }
 
 func resolveR2EndpointURL(cfg R2UploadProviderConfig) (string, error) {
