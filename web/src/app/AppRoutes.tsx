@@ -38,6 +38,7 @@ export const router = createBrowserRouter([
       {
         path: "recipes",
         element: <RecipeLayout />,
+        handle: { crumb: () => "Recipes" },
         children: [
           {
             index: true,
@@ -49,10 +50,12 @@ export const router = createBrowserRouter([
               {
                 path: "create",
                 element: <RecipeCreatePage />,
+                handle: { crumb: () => "Create" },
               },
               {
                 path: ":id/edit",
                 element: <RecipeUpdatePage />,
+                handle: { crumb: () => "Edit" },
               },
             ],
           },
@@ -73,10 +76,12 @@ export const router = createBrowserRouter([
           {
             path: "signin",
             element: <SignInPage />,
+            handle : { crumb: () => "Sign In" },
           },
           {
             path: "signup",
             element: <SignUpPage />,
+            handle : { crumb: () => "Sign Up" },
           },
         ],
       },
@@ -86,6 +91,7 @@ export const router = createBrowserRouter([
           {
             path: "me/recipes",
             element: <MyRecipesPage />,
+            handle: { crumb: () => "My Recipes" },
           },
         ],
       },

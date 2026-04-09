@@ -24,7 +24,7 @@ export default function Page({children, toolbarLeft, toolbarActions}: PageProps)
             };
         });
 
-    const hasBreadcrumbs = crumbs.length > 0;
+    const hasBreadcrumbs = crumbs.length > 1;
 
     return (
         <>
