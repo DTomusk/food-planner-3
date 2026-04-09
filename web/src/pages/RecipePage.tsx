@@ -1,5 +1,5 @@
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { Alert, BackLink, Spinner } from "@/components";
+import { Alert, Spinner } from "@/components";
 import { useRecipe } from "@/features/recipes";
 import { Page } from "@/layout";
 import IngredientList from "@/features/recipes/components/IngredientList";
@@ -78,7 +78,7 @@ export default function RecipePage() {
     );
 
     return (
-        <Page toolbarLeft={<BackLink />} toolbarActions={toolbarActions}>
+        <Page toolbarActions={toolbarActions}>
             <Container size="md">
                 <Stack space="xl">
                     {!recipeId && <Alert message="No recipe ID provided." />}

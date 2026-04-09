@@ -1,4 +1,4 @@
-import { Alert, BackLink, PageTitle } from "@/components";
+import { Alert, PageTitle } from "@/components";
 import Container from "@/components/layout/Container";
 import { useIngredients } from "@/features/ingredients/hooks/useIngredients";
 import { RecipeForm, useCreateRecipe, type RecipeFormValues } from "@/features/recipes";
@@ -95,7 +95,7 @@ export default function RecipeCreatePage() {
   };
 
   return (
-    <Page toolbarLeft={<BackLink />} >
+    <Page >
       <PageTitle text={commonStrings.recipe.create} />
       {uploadError && <Container><Alert message={uploadError} closable /></Container>}
       {error && <Container><Alert message={extractErrorMessage(error)} closable /></Container>}

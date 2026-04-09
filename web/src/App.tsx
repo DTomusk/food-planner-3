@@ -1,11 +1,9 @@
-import { AppRoutes } from "./app/AppRoutes";
-import AppLayout from "./layout/AppLayout";
+import { RouterProvider } from "react-router-dom";
+import { router } from "./app/AppRoutes";
 
 function App() {
   return (
-    <AppLayout>
-      <AppRoutes />
-    </AppLayout>
+    <RouterProvider router={router} />
   )
 }
 
