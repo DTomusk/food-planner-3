@@ -1,4 +1,4 @@
-import { Alert, BackLink, PageTitle, Spinner } from "@/components";
+import { Alert, PageTitle, Spinner } from "@/components";
 import Container from "@/components/layout/Container";
 import { useIngredients } from "@/features/ingredients/hooks/useIngredients";
 import { RecipeForm, useRecipe, type RecipeFormValues } from "@/features/recipes";
@@ -119,7 +119,7 @@ export default function RecipeUpdatePage() {
     };
 
     return (
-        <Page toolbarLeft={<BackLink />}>
+        <Page>
             <PageTitle text={commonStrings.recipe.update} />
             {!id && <Container><Alert message="No recipe ID provided." /></Container>}
             {isLoading && <Container><Spinner /></Container>}

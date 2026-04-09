@@ -58,7 +58,7 @@ export default function Page({children, toolbarLeft, toolbarActions}: PageProps)
                         </div>
 
                         <Inline justify="end" align="center">
-                        {toolbarActions}
+                            {toolbarActions}
                         </Inline>
                     </Inline>
                 </div>
