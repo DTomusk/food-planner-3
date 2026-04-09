@@ -1,5 +1,6 @@
 import Inline from "@/components/layout/Inline";
-import { Link, useMatches } from "react-router-dom";
+import { useMatches } from "react-router-dom";
+import Breadcrumbs from "./Breadcrumbs";
 
 type PageProps = {
     children: React.ReactNode;
@@ -33,25 +34,7 @@ export default function Page({children, toolbarLeft, toolbarActions}: PageProps)
                     <Inline justify="between" className="w-full">
                         <div className="flex items-center gap-4">
                         {hasBreadcrumbs && (
-                            <nav className="text-sm text-gray-600">
-                            {crumbs.map((crumb, index) => {
-                                const isLast = index === crumbs.length - 1;
-
-                                return (
-                                <span key={crumb.path}>
-                                    {!isLast ? (
-                                    <>
-                                        <Link to={crumb.path}>{crumb.label}</Link> /{" "}
-                                    </>
-                                    ) : (
-                                    <span className="text-gray-900 font-medium">
-                                        {crumb.label}
-                                    </span>
-                                    )}
-                                </span>
-                                );
-                            })}
-                            </nav>
+                            <Breadcrumbs crumbs={crumbs} />
                         )}
 
                         {toolbarLeft && <div>{toolbarLeft}</div>}
