@@ -10,6 +10,7 @@ import { Page } from "@/layout";
 import { commonStrings } from "@/lib";
 import { extractErrorMessage } from "@/lib/errors";
 import type { CreateImageUploadUrlMutation } from "@/lib/graphql.generated";
+import { useUnsavedChanges } from "@/lib/hooks/useUnsavedChanges";
 import imageCompression from "browser-image-compression";
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -30,6 +31,11 @@ export default function RecipeUpdatePage() {
     const [hasRemovedExistingImage, setHasRemovedExistingImage] = useState(false);
 
     const existingImageUrl = data?.formValues?.imgSrc ?? null;
+    const [isFormDirty, setIsFormDirty] = useState(false);
+
+     useUnsavedChanges(isFormDirty || Boolean(imageFile), {
+        blockRouteChange: true,
+      });
 
     const handleImageFileChange = async (file: File | null) => {
         setImageFile(file);
@@ -139,6 +145,7 @@ export default function RecipeUpdatePage() {
                     existingImageUrl={hasRemovedExistingImage ? null : existingImageUrl}
                     onRemoveExistingImage={handleRemoveExistingImage}
                     isCreateForm={false}
+                    onDirtyChange={setIsFormDirty}
                 />
             )}
         </Page>
