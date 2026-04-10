@@ -11,7 +11,8 @@ const sourceTypeOptions = [
 const urlSchema = z.url("Enter a valid URL");
 
 export const recipeFormSchema = z.object({
-    name: z.string().min(1, "Recipe name is required"),
+    name: z.string().min(1, "Recipe name is required").max(100, "Recipe name must be at most 100 characters"),
+    description: z.string().trim().max(200, "Description must be at most 200 characters").optional(),
     prepMins: z.number().min(1, "Preparation time must be at least 1 minute"),
     cookMins: z.number().min(1, "Cooking time must be at least 1 minute"),
     portions: z.number().min(1, "Number of portions must be at least 1"),
