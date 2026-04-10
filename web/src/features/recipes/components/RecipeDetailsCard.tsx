@@ -28,31 +28,31 @@ export default function RecipeDetailsCard({
 }: RecipeDetailsCardProps) {
     return (
         <div className="flex flex-col border border-black bg-white rounded shadow">
-        <div className="flex flex-col md:flex-row border-b border-black rounded-t">
-            <ImageDisplay
-                imageUrl={imageUrl}
-                altText={recipeTitle}
-                containerClassName="aspect-square w-full shrink-0 md:w-64 overflow-hidden"
-            />
-            <Stack className="py-3 px-4">
-                {versionNumber !== undefined && (
-                    <span className="inline-flex w-fit rounded-full bg-primary-100 px-2 py-1 text-xs font-semibold text-primary-800">
-                        Version {versionNumber}
-                    </span>
-                )}
-                <h2 className="text-3xl font-bold">{recipeTitle}</h2>
-                {sharedBy && <SharedBy user={sharedBy} />}
-                <p className="text-gray-700">{description}</p>
-                
-            </Stack>
-        </div>
-        <div className="bg-primary-600 text-white rounded-b px-4 py-3 mt-[-1px]">
-            <Inline justify="center" gap="lg">
-                <span>Prep Time: {prepTimeMinutes} mins</span>
-                <span>Cook Time: {cookTimeMinutes} mins</span>
-                <span>Portions: {portions}</span>
-            </Inline>
-        </div>
+            <div className="flex flex-col md:flex-row border-b border-black rounded-t overflow-hidden">
+                <ImageDisplay
+                    imageUrl={imageUrl}
+                    altText={recipeTitle}
+                    containerClassName="aspect-square w-full shrink-0 md:w-64 overflow-hidden"
+                />
+                <Stack className="py-3 px-4">
+                    {versionNumber !== undefined && (
+                        <span className="inline-flex w-fit rounded-full bg-primary-100 px-2 py-1 text-xs font-semibold text-primary-800">
+                            Version {versionNumber}
+                        </span>
+                    )}
+                    <h2 className="text-3xl font-bold">{recipeTitle}</h2>
+                    {sharedBy && <SharedBy user={sharedBy} />}
+                    <p className="text-gray-700">{description}</p>
+                    
+                </Stack>
+            </div>
+            <div className="bg-primary-600 text-white rounded-b px-4 py-3 mt-[-1px]">
+                <Inline justify="center" gap="lg">
+                    <span>Prep Time: {prepTimeMinutes} mins</span>
+                    <span>Cook Time: {cookTimeMinutes} mins</span>
+                    <span>Portions: {portions}</span>
+                </Inline>
+            </div>
         </div>
     );
 }
