@@ -3032,9 +3032,9 @@ func (ec *executionContext) _RecipeVersion_description(ctx context.Context, fiel
 			return obj.Description, nil
 		},
 		nil,
-		ec.marshalOString2string,
+		ec.marshalNString2string,
 		true,
-		false,
+		true,
 	)
 }
 
@@ -6244,6 +6244,9 @@ func (ec *executionContext) _RecipeVersion(ctx context.Context, sel ast.Selectio
 			}
 		case "description":
 			out.Values[i] = ec._RecipeVersion_description(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "ingredientUsages":
 			field := field
 
@@ -7652,18 +7655,6 @@ func (ec *executionContext) marshalORecipeVersion2ᚖfoodplannerᚋinternalᚋgq
 		return graphql.Null
 	}
 	return ec._RecipeVersion(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalOString2string(ctx context.Context, v any) (string, error) {
-	res, err := graphql.UnmarshalString(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
-	_ = sel
-	_ = ctx
-	res := graphql.MarshalString(v)
-	return res
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v any) (*string, error) {
