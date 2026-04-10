@@ -1,0 +1,2 @@
+ALTER TABLE recipe_versions
+DROP COLUMN animal_product_level;

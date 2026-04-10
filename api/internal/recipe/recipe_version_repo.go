@@ -15,11 +15,11 @@ func NewRecipeVersionRepo() *recipeVersionRepo {
 }
 
 const (
-	recipeVersionColumns       = `id, recipe_id, name, description, prep_mins, cook_mins, portions, created_at, version, img_src`
-	recipeVersionInsertColumns = `id, recipe_id, name, description, prep_mins, cook_mins, portions, version, img_src`
+	recipeVersionColumns       = `id, recipe_id, name, description, prep_mins, cook_mins, portions, created_at, version, img_src, animal_product_level`
+	recipeVersionInsertColumns = `id, recipe_id, name, description, prep_mins, cook_mins, portions, version, img_src, animal_product_level`
 
 	insertRecipeVersionQuery = `INSERT INTO recipe_versions (` + recipeVersionInsertColumns + `)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	RETURNING ` + recipeVersionColumns
 	selectRecipeVersionByIDQuery                 = `SELECT ` + recipeVersionColumns + ` FROM recipe_versions WHERE id = $1`
 	selectRecipeVersionByRecipeIDAndVersionQuery = `SELECT ` + recipeVersionColumns + `
@@ -43,6 +43,7 @@ func recipeVersionScanDest(version *RecipeVersion) []any {
 		&version.CreatedAt,
 		&version.Version,
 		&version.ImgSrc,
+		&version.AnimalProductLevel,
 	}
 }
 

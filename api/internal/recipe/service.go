@@ -48,7 +48,7 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 	logger.Debug("Creating recipe")
 	// Basic request validation
 	// We might want to enforce unique name per user
-	ingredientUsages, recipeSource, err := s.validateRecipeRequest(ctx, logger, request)
+	ingredientUsages, recipeSource, maxAnimalProductLevel, err := s.validateRecipeRequest(ctx, logger, request)
 	if err != nil {
 		logger.Error("Error validating recipe request", "error", err)
 		return nil, err
@@ -90,6 +90,7 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 		request.Portions,
 		recipeSource,
 		imgSrc,
+		maxAnimalProductLevel,
 	)
 	if err != nil {
 		logger.Error("Error creating recipe", "error", err)
@@ -160,25 +161,25 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 	return persistedRecipe, nil
 }
 
-func (s *Service) validateRecipeRequest(ctx context.Context, logger *slog.Logger, request CreateRecipeRequest) ([]*IngredientUsage, *RecipeSource, error) {
+func (s *Service) validateRecipeRequest(ctx context.Context, logger *slog.Logger, request CreateRecipeRequest) ([]*IngredientUsage, *RecipeSource, int, error) {
 	if len(strings.TrimSpace(request.Name)) == 0 {
-		return nil, nil, ErrEmptyName
+		return nil, nil, 0, ErrEmptyName
 	}
 	if len(request.Ingredients) == 0 {
-		return nil, nil, ErrNoIngredients
+		return nil, nil, 0, ErrNoIngredients
 	}
 
-	ingredientUsages, err := s.validateAndConvertIngredientUsages(ctx, logger, request.Ingredients)
+	ingredientUsages, maxAnimalProductLevel, err := s.validateAndConvertIngredientUsages(ctx, logger, request.Ingredients)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, 0, err
 	}
 
 	recipeSource, err := newSource(&request.Source)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, 0, err
 	}
 
-	return ingredientUsages, recipeSource, nil
+	return ingredientUsages, recipeSource, maxAnimalProductLevel, nil
 }
 
 func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest) (*RecipeContainer, error) {
@@ -195,7 +196,7 @@ func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest)
 		return nil, ErrUnauthorized
 	}
 	// Validate request
-	ingredientUsages, recipeSource, err := s.validateRecipeRequest(ctx, logger, request.Request)
+	ingredientUsages, recipeSource, maxAnimalProductLevel, err := s.validateRecipeRequest(ctx, logger, request.Request)
 	if err != nil {
 		return nil, err
 	}
@@ -239,6 +240,7 @@ func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest)
 		request.Request.Portions,
 		recipeSource,
 		imgSrc,
+		maxAnimalProductLevel,
 	)
 	if err != nil {
 		return nil, err
@@ -304,12 +306,12 @@ func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest)
 	return dbRecipeContainer, nil
 }
 
-func (s *Service) validateAndConvertIngredientUsages(ctx context.Context, logger *slog.Logger, ingredientUsageRequests []CreateIngredientUsageRequest) ([]*IngredientUsage, error) {
+func (s *Service) validateAndConvertIngredientUsages(ctx context.Context, logger *slog.Logger, ingredientUsageRequests []CreateIngredientUsageRequest) ([]*IngredientUsage, int, error) {
 	seen := make(map[string]struct{}, len(ingredientUsageRequests))
 	uniqueIDs := make([]string, 0, len(ingredientUsageRequests))
 	for _, req := range ingredientUsageRequests {
 		if _, exists := seen[req.IngredientID]; exists {
-			return nil, ErrDuplicateIngredient
+			return nil, 0, ErrDuplicateIngredient
 		}
 		seen[req.IngredientID] = struct{}{}
 		uniqueIDs = append(uniqueIDs, req.IngredientID)
@@ -317,18 +319,28 @@ func (s *Service) validateAndConvertIngredientUsages(ctx context.Context, logger
 
 	dbIngredients, err := s.ingredientService.GetIngredientsByIDs(ctx, logger, uniqueIDs)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	if len(dbIngredients) != len(uniqueIDs) {
-		return nil, ErrIngredientNotFound
+		return nil, 0, ErrIngredientNotFound
 	}
+
+	maxAnimalProductLevel := 0
 
 	ingredientByID := make(map[string]*ingredient.Ingredient, len(dbIngredients))
 	for _, ing := range dbIngredients {
 		ingredientByID[ing.ID.String()] = ing
+		if int(ing.AnimalProductLevel) > maxAnimalProductLevel {
+			maxAnimalProductLevel = int(ing.AnimalProductLevel)
+		}
 	}
 
-	return newIngredientUsages(ingredientUsageRequests, ingredientByID)
+	usages, err := newIngredientUsages(ingredientUsageRequests, ingredientByID)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return usages, maxAnimalProductLevel, nil
 }
 
 const (
