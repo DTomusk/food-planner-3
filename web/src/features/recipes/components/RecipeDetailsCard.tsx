@@ -1,6 +1,8 @@
 import { Inline, Stack } from "@/components";
 import SharedBy from "@/components/SharedBy";
 import ImageDisplay from "@/components/ui/ImageDisplay";
+import Tag from "@/components/ui/Tag";
+import DietLevelTag from "./DietLevelTag";
 
 type RecipeDetailsCardProps = {
     recipeTitle: string;
@@ -13,7 +15,8 @@ type RecipeDetailsCardProps = {
     sharedBy?: {
         username: string;
         id: string;
-    }
+    },
+    dietLevel: number;
 };
 
 export default function RecipeDetailsCard({ 
@@ -24,7 +27,8 @@ export default function RecipeDetailsCard({
     cookTimeMinutes, 
     portions,
     versionNumber,
-    sharedBy
+    sharedBy,
+    dietLevel,
 }: RecipeDetailsCardProps) {
     return (
         <div className="flex flex-col border border-black bg-white rounded shadow">
@@ -36,14 +40,12 @@ export default function RecipeDetailsCard({
                 />
                 <Stack className="py-3 px-4">
                     {versionNumber !== undefined && (
-                        <span className="inline-flex w-fit rounded-full bg-primary-100 px-2 py-1 text-xs font-semibold text-primary-800">
-                            Version {versionNumber}
-                        </span>
+                        <Tag>Version {versionNumber}</Tag>
                     )}
                     <h2 className="text-3xl font-bold">{recipeTitle}</h2>
                     {sharedBy && <SharedBy user={sharedBy} />}
                     <p className="text-gray-700">{description}</p>
-                    
+                    <DietLevelTag level={dietLevel} /> 
                 </Stack>
             </div>
             <div className="bg-primary-600 text-white rounded-b px-4 py-3 mt-[-1px]">

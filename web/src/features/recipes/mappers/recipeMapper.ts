@@ -28,6 +28,7 @@ export function mapRecipeDetail(
             instructions: gqlRecipe.currentVersion.source.instructions || undefined,
         },
         imageUrl: gqlRecipe.currentVersion.imgSrc || null,
+        animalProductLevel: gqlRecipe.currentVersion.animalProductLevel,
         },
         user: {
             id: gqlRecipe.author.id,
@@ -66,6 +67,7 @@ export function mapRecipeVersionDetail(
             instructions: gqlRecipe.version.source.instructions || undefined,
         },
         imageUrl: gqlRecipe.version.imgSrc || null,
+        animalProductLevel: gqlRecipe.version.animalProductLevel,
         },
         user: {
             id: gqlRecipe.author.id,

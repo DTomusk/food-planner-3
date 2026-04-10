@@ -12,6 +12,7 @@ export type Recipe = {
     source: RecipeSource;
     version: number;
     imageUrl: string | null;
+    animalProductLevel: number;
 };
 
 // TODO: move to user feature

@@ -7,6 +7,7 @@ fragment RecipeConnectionListFields on RecipeConnection {
         name
         imgSrc
         description
+        animalProductLevel
       }
       author {
         id
