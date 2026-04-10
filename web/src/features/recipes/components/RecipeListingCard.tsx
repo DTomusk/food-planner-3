@@ -29,8 +29,10 @@ export default function RecipeListingCard({ recipe, onClick, actions }: RecipeLi
                         {actions && <Inline className="shrink-0 self-start">{actions}</Inline>}
                     </Inline>
                     <SharedBy user={recipe.author} />
-                    {recipe.description && <Text variant="muted">{recipe.description}</Text>}
-                    {recipe.createdAt && <Text variant="muted">Created on {new Date(recipe.createdAt).toLocaleDateString()}</Text>}
+                    <div className="hidden md:block">
+                        <Text variant="muted">Created on {new Date(recipe.createdAt).toLocaleDateString()}</Text>
+                    </div>
+                    <Text variant="body">{recipe.description}</Text>
                     </Stack>
                 </div>
             </div>
