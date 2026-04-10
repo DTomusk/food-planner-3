@@ -47,3 +47,66 @@ func TestGetRecipeSourceByRecipeVersionID(t *testing.T) {
 		require.Equal(t, url, *retrievedSource.URL)
 	})
 }
+
+func TestCreateRecipeVersion_PersistsAnimalProductLevel(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		r := NewRecipeVersionRepo()
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		recipeID := uuid.New()
+		err = seeds.InsertRecipeContainer(ctx, tx, recipeID, testUser.ID)
+		require.NoError(t, err)
+
+		recipeVersion := &RecipeVersion{
+			ID:                 uuid.New(),
+			RecipeID:           recipeID,
+			Version:            1,
+			Name:               "Version With Animal Level",
+			Description:        "test",
+			PrepMins:           10,
+			CookMins:           20,
+			Portions:           2,
+			AnimalProductLevel: 2,
+		}
+
+		createdVersion, err := r.createRecipeVersion(ctx, tx, recipeVersion)
+		require.NoError(t, err)
+		require.NotNil(t, createdVersion)
+		require.Equal(t, recipeVersion.AnimalProductLevel, createdVersion.AnimalProductLevel)
+
+		var persistedAnimalProductLevel int
+		err = tx.QueryRowContext(ctx, `SELECT animal_product_level FROM recipe_versions WHERE id = $1`, recipeVersion.ID).Scan(&persistedAnimalProductLevel)
+		require.NoError(t, err)
+		require.Equal(t, recipeVersion.AnimalProductLevel, persistedAnimalProductLevel)
+	})
+}
+
+func TestGetRecipeVersionByID_ReturnsAnimalProductLevel(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		r := NewRecipeVersionRepo()
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		recipeID := uuid.New()
+		versionID := uuid.New()
+
+		err = seeds.InsertRecipeContainer(ctx, tx, recipeID, testUser.ID)
+		require.NoError(t, err)
+		err = seeds.InsertRecipeVersion(ctx, tx, versionID, recipeID, "Recipe With Animal Level", 30, 60, 8, 1)
+		require.NoError(t, err)
+
+		expectedAnimalProductLevel := 1
+		_, err = tx.ExecContext(ctx, `UPDATE recipe_versions SET animal_product_level = $1 WHERE id = $2`, expectedAnimalProductLevel, versionID)
+		require.NoError(t, err)
+
+		retrievedVersion, err := r.getRecipeVersionByID(ctx, tx, versionID)
+		require.NoError(t, err)
+		require.NotNil(t, retrievedVersion)
+		require.Equal(t, expectedAnimalProductLevel, retrievedVersion.AnimalProductLevel)
+	})
+}

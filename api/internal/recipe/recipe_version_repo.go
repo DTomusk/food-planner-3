@@ -61,6 +61,7 @@ func (r *recipeVersionRepo) createRecipeVersion(ctx context.Context, tx *sql.Tx,
 		version.Portions,
 		version.Version,
 		version.ImgSrc,
+		version.AnimalProductLevel,
 	).Scan(recipeVersionScanDest(&dbRecipeVersion)...)
 	if err != nil {
 		return nil, err

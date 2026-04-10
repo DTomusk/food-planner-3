@@ -147,6 +147,77 @@ func TestCreateRecipe_PersistsDescription(t *testing.T) {
 	})
 }
 
+func TestCreateRecipe_SetsAnimalProductLevelFromIngredients(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+
+		veganIngredientID := uuid.New()
+		veganIngredient := ingredient.Ingredient{
+			ID:                 veganIngredientID,
+			FileKey:            "vegan_ingredient",
+			Name:               "Tofu",
+			PreferredUnit:      1,
+			AnimalProductLevel: ingredient.Vegan,
+		}
+		err := seeds.InsertIngredient(ctx, tx, &veganIngredient)
+		require.NoError(t, err)
+
+		meatIngredientID := uuid.New()
+		meatIngredient := ingredient.Ingredient{
+			ID:                 meatIngredientID,
+			FileKey:            "meat_ingredient",
+			Name:               "Chicken",
+			PreferredUnit:      1,
+			AnimalProductLevel: ingredient.Meat,
+		}
+		err = seeds.InsertIngredient(ctx, tx, &meatIngredient)
+		require.NoError(t, err)
+
+		_, err = tx.ExecContext(ctx, `UPDATE reference.ingredients SET animal_product_level = $1 WHERE id = $2`, int(ingredient.Vegan), veganIngredientID)
+		require.NoError(t, err)
+		_, err = tx.ExecContext(ctx, `UPDATE reference.ingredients SET animal_product_level = $1 WHERE id = $2`, int(ingredient.Meat), meatIngredientID)
+		require.NoError(t, err)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		s := NewService(
+			txRunner,
+			repo,
+			NewRecipeVersionRepo(),
+			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
+			NewIngredientUsageRepo(),
+			nil,
+			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
+		)
+
+		request := CreateRecipeRequest{
+			Name: "Mixed Dish",
+			Ingredients: []CreateIngredientUsageRequest{
+				{IngredientID: veganIngredientID.String(), Quantity: 1, Unit: 1},
+				{IngredientID: meatIngredientID.String(), Quantity: 1, Unit: 1},
+			},
+			UserID:   testUser.ID.String(),
+			PrepMins: 10,
+			CookMins: 15,
+			Portions: 2,
+		}
+
+		recipeContainer, err := s.CreateRecipe(ctx, request)
+		require.NoError(t, err)
+		require.NotNil(t, recipeContainer)
+		require.Equal(t, int(ingredient.Meat), recipeContainer.CurrentVersion.AnimalProductLevel)
+
+		var persistedAnimalProductLevel int
+		err = tx.QueryRowContext(ctx, `SELECT animal_product_level FROM recipe_versions WHERE id = $1`, recipeContainer.CurrentVersionID).Scan(&persistedAnimalProductLevel)
+		require.NoError(t, err)
+		require.Equal(t, int(ingredient.Meat), persistedAnimalProductLevel)
+	})
+}
+
 func TestCreateRecipe_WithImageUploadID_PersistsAndRetrievesImageURL(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		txRunner := testutil.NewTestTxRunner(tx)
@@ -548,6 +619,101 @@ func TestUpdateRecipe_PersistsDescriptionOnNewVersion(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, originalVersion)
 		require.Equal(t, createDescription, originalVersion.Description)
+	})
+}
+
+func TestUpdateRecipe_SetsAnimalProductLevelOnNewVersionFromIngredients(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+
+		veganIngredientID := uuid.New()
+		veganIngredient := ingredient.Ingredient{
+			ID:                 veganIngredientID,
+			FileKey:            "vegan_ingredient_update",
+			Name:               "Spinach",
+			PreferredUnit:      1,
+			AnimalProductLevel: ingredient.Vegan,
+		}
+		err := seeds.InsertIngredient(ctx, tx, &veganIngredient)
+		require.NoError(t, err)
+
+		vegetarianIngredientID := uuid.New()
+		vegetarianIngredient := ingredient.Ingredient{
+			ID:                 vegetarianIngredientID,
+			FileKey:            "vegetarian_ingredient_update",
+			Name:               "Cheese",
+			PreferredUnit:      1,
+			AnimalProductLevel: ingredient.Vegetarian,
+		}
+		err = seeds.InsertIngredient(ctx, tx, &vegetarianIngredient)
+		require.NoError(t, err)
+
+		_, err = tx.ExecContext(ctx, `UPDATE reference.ingredients SET animal_product_level = $1 WHERE id = $2`, int(ingredient.Vegan), veganIngredientID)
+		require.NoError(t, err)
+		_, err = tx.ExecContext(ctx, `UPDATE reference.ingredients SET animal_product_level = $1 WHERE id = $2`, int(ingredient.Vegetarian), vegetarianIngredientID)
+		require.NoError(t, err)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		s := NewService(
+			txRunner,
+			repo,
+			NewRecipeVersionRepo(),
+			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
+			NewIngredientUsageRepo(),
+			nil,
+			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
+		)
+
+		createReq := CreateRecipeRequest{
+			Name: "Salad",
+			Ingredients: []CreateIngredientUsageRequest{
+				{IngredientID: veganIngredientID.String(), Quantity: 1, Unit: 1},
+			},
+			UserID:   testUser.ID.String(),
+			PrepMins: 5,
+			CookMins: 0,
+			Portions: 1,
+		}
+
+		createdRecipe, err := s.CreateRecipe(ctx, createReq)
+		require.NoError(t, err)
+		require.NotNil(t, createdRecipe)
+		require.Equal(t, int(ingredient.Vegan), createdRecipe.CurrentVersion.AnimalProductLevel)
+
+		updateReq := UpdateRecipeRequest{
+			RecipeId: createdRecipe.ID.String(),
+			Request: CreateRecipeRequest{
+				Name: "Salad With Cheese",
+				Ingredients: []CreateIngredientUsageRequest{
+					{IngredientID: veganIngredientID.String(), Quantity: 1, Unit: 1},
+					{IngredientID: vegetarianIngredientID.String(), Quantity: 1, Unit: 1},
+				},
+				UserID:   testUser.ID.String(),
+				PrepMins: 5,
+				CookMins: 0,
+				Portions: 1,
+			},
+		}
+
+		updatedRecipe, err := s.UpdateRecipe(ctx, updateReq)
+		require.NoError(t, err)
+		require.NotNil(t, updatedRecipe)
+		require.Equal(t, int(ingredient.Vegetarian), updatedRecipe.CurrentVersion.AnimalProductLevel)
+
+		var persistedAnimalProductLevel int
+		err = tx.QueryRowContext(ctx, `SELECT animal_product_level FROM recipe_versions WHERE id = $1`, updatedRecipe.CurrentVersionID).Scan(&persistedAnimalProductLevel)
+		require.NoError(t, err)
+		require.Equal(t, int(ingredient.Vegetarian), persistedAnimalProductLevel)
+
+		originalVersion, err := s.GetRecipeVersionByRecipeIDAndVersion(ctx, updatedRecipe.ID, 1)
+		require.NoError(t, err)
+		require.NotNil(t, originalVersion)
+		require.Equal(t, int(ingredient.Vegan), originalVersion.AnimalProductLevel)
 	})
 }
 

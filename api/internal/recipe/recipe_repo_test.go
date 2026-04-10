@@ -83,6 +83,39 @@ func TestGetRecipeByID_ReturnsCurrentVersionImgSrc(t *testing.T) {
 	})
 }
 
+func TestGetRecipeByID_ReturnsCurrentVersionAnimalProductLevel(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		r, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		recipeID := uuid.New()
+		versionID := uuid.New()
+		expectedAnimalProductLevel := 2
+
+		err = seeds.InsertRecipeContainer(ctx, tx, recipeID, testUser.ID)
+		require.NoError(t, err)
+
+		err = seeds.InsertRecipeVersion(ctx, tx, versionID, recipeID, "Animal Level Recipe", 30, 60, 8, 1)
+		require.NoError(t, err)
+
+		_, err = tx.ExecContext(ctx, `UPDATE recipe_versions SET animal_product_level = $1 WHERE id = $2`, expectedAnimalProductLevel, versionID)
+		require.NoError(t, err)
+
+		err = seeds.SetRecipeContainerCurrentVersion(ctx, tx, recipeID, versionID)
+		require.NoError(t, err)
+
+		recipeContainer, err := r.getRecipeByID(ctx, tx, recipeID)
+		require.NoError(t, err)
+		require.NotNil(t, recipeContainer)
+		require.NotNil(t, recipeContainer.CurrentVersion)
+		require.Equal(t, expectedAnimalProductLevel, recipeContainer.CurrentVersion.AnimalProductLevel)
+	})
+}
+
 func TestGetRecipesByUserID(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange

@@ -18,7 +18,7 @@ type recipeRepo struct {
 const (
 	selectRecipeContainerWithVersionBaseQuery = `SELECT 
 	rc.id, rc.user_id, rc.created_at, rc.current_version_id,
-	rv.id, rv.recipe_id, rv.name, rv.prep_mins, rv.cook_mins, rv.portions, rv.created_at, rv.version, rv.img_src, rv.description
+	rv.id, rv.recipe_id, rv.name, rv.prep_mins, rv.cook_mins, rv.portions, rv.created_at, rv.version, rv.img_src, rv.description, rv.animal_product_level
 	FROM recipe_containers rc
 	JOIN recipe_versions rv ON rc.current_version_id = rv.id`
 	selectRecipeContainerWithVersionByIDQuery = selectRecipeContainerWithVersionBaseQuery + `
@@ -157,6 +157,7 @@ WITH ranked AS (
         rv.created_at AS version_created_at,
         rv.version,
 		rv.img_src,
+		rv.animal_product_level
     ` + scoreExpression + `
     FROM recipe_containers rc
     JOIN recipe_versions rv ON rc.current_version_id = rv.id
@@ -182,6 +183,7 @@ SELECT
     version,
 	img_src,
     description,
+	animal_product_level,
     relevance_score
 FROM ranked
 `
@@ -237,6 +239,7 @@ FROM ranked
 			&rv.Version,
 			&rv.ImgSrc,
 			&rv.Description,
+			&rv.AnimalProductLevel,
 			score,
 		)
 		if err != nil {
@@ -297,6 +300,7 @@ func scanRecipeContainerWithVersion(
 		&rv.Version,
 		&rv.ImgSrc,
 		&rv.Description,
+		&rv.AnimalProductLevel,
 	)
 	if err != nil {
 		return nil, err
