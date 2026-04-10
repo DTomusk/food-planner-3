@@ -157,7 +157,7 @@ WITH ranked AS (
         rv.created_at AS version_created_at,
         rv.version,
 		rv.img_src,
-		rv.animal_product_level
+		rv.animal_product_level,
     ` + scoreExpression + `
     FROM recipe_containers rc
     JOIN recipe_versions rv ON rc.current_version_id = rv.id
