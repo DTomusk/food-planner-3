@@ -61,16 +61,17 @@ func mapRecipeVersion(recipeVersion *recipe.RecipeVersion) *model.RecipeVersion 
 		return nil
 	}
 	return &model.RecipeVersion{
-		ID:          recipeVersion.ID.String(),
-		RecipeID:    recipeVersion.RecipeID.String(),
-		Name:        recipeVersion.Name,
-		Description: recipeVersion.Description,
-		PrepMins:    int32(recipeVersion.PrepMins),
-		CookMins:    int32(recipeVersion.CookMins),
-		Portions:    int32(recipeVersion.Portions),
-		CreatedAt:   recipeVersion.CreatedAt,
-		Version:     int32(recipeVersion.Version),
-		ImgSrc:      recipeVersion.ImgSrc,
+		ID:                 recipeVersion.ID.String(),
+		RecipeID:           recipeVersion.RecipeID.String(),
+		Name:               recipeVersion.Name,
+		Description:        recipeVersion.Description,
+		PrepMins:           int32(recipeVersion.PrepMins),
+		CookMins:           int32(recipeVersion.CookMins),
+		Portions:           int32(recipeVersion.Portions),
+		CreatedAt:          recipeVersion.CreatedAt,
+		Version:            int32(recipeVersion.Version),
+		ImgSrc:             recipeVersion.ImgSrc,
+		AnimalProductLevel: int32(recipeVersion.AnimalProductLevel),
 	}
 }
 
