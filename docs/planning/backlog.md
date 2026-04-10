@@ -1,17 +1,18 @@
 # Backlog
 
-## Ready  
+## Ready
 
-- [ ] Add description to recipes
-    - Priority: medium
-    - Area: recipes, fullstack
+- [ ] Dietary tags (gf, vegan etc.)
+    - Priority: high
+    - Area: recipes, ingredients, fullstack
     - Type: feature
-    - Why: it would be good for recipes to have a tagline/short description that would appear both in listing and detail views. 
+    - Why: it should be easy for people with different dietary requirements to search recipes that meet their needs/wants
     - DoD: 
-        - [ ] description added to recipe version 
-        - [ ] editable in create and update forms 
-        - [ ] appears in listing card
-        - [ ] appears in detail
+        - [ ] animal product enum on ingredients (i.e. vegan, vegetarian, meat)
+        - [ ] gluten on ingredients 
+        - [ ] recipe versions store whether they are whatever 
+        - [ ] users can filter on dietary tags 
+        - [ ] recipes show clearly in listing and detail what they are
 
 ## Planning
 
@@ -48,14 +49,7 @@
     - Area: 
     - Type: (bug, tech debt, feature)
     - Why: 
-    - DoD:  
-
-- [ ] Dietary tags (gf, vegan etc.)
-    - Priority: 
-    - Area: 
-    - Type: (bug, tech debt, feature)
-    - Why: 
-    - DoD:     
+    - DoD:      
 
 - [ ] Ingredient registry where users can suggest missing ingredients
     - Priority: 
@@ -83,6 +77,27 @@
         - [ ] users can upload profile images using the existing upload infrastructure 
         - [ ] users can change propfile picture 
 
+- [ ] Allergens
+    - Priority: 
+    - Area: 
+    - Type: (bug, tech debt, feature)
+    - Why: 
+    - DoD: 
+
+- [ ] Dish storage time (freezable etc.)
+    - Priority: 
+    - Area: 
+    - Type: (bug, tech debt, feature)
+    - Why: 
+    - DoD: 
+
+- [ ] Code coverage improvements 
+    - Priority: 
+    - Area: 
+    - Type: tech debt
+    - Why: right now, code coverage is checking files we can't test (e.g. gql generated files). This brings down the score and gives a false understanding of the actual coverage, making the coverage report much less useful
+    - DoD: 
+
 ## Item template 
 
 - [ ] Item name
@@ -93,6 +108,17 @@
     - DoD: 
 
 ## Done
+
+- [x] Add description to recipes
+    - Priority: medium
+    - Area: recipes, fullstack
+    - Type: feature
+    - Why: it would be good for recipes to have a tagline/short description that would appear both in listing and detail views. 
+    - DoD: 
+        - [x] description added to recipe version 
+        - [x] editable in create and update forms 
+        - [x] appears in listing card
+        - [x] appears in detail
 
 - [x] Are you sure you want to exit form
     - Priority: medium
