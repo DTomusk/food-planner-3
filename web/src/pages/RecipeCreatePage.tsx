@@ -27,7 +27,9 @@ export default function RecipeCreatePage() {
   const [isFormDirty, setIsFormDirty] = useState(false);
 
   // Image handling lives outside RHF, so include selected file state in the unsaved check.
-  useUnsavedChanges(isFormDirty || Boolean(imageFile));
+  useUnsavedChanges(isFormDirty || Boolean(imageFile), {
+    blockRouteChange: true,
+  });
 
   const handleImageFileChange = async (file: File | null) => {
     setImageFile(file);

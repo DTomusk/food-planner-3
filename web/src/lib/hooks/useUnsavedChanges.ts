@@ -1,6 +1,20 @@
 import { useEffect } from "react";
+import { useBlocker } from "react-router-dom";
 
-export function useUnsavedChanges(shouldWarn: boolean) {
+type UseUnsavedChangesOptions = {
+  blockRouteChange?: boolean;
+  routeChangeMessage?: string;
+};
+
+export function useUnsavedChanges(
+  shouldWarn: boolean,
+  {
+    blockRouteChange = false,
+    routeChangeMessage = "You have unsaved changes. Leave this page?",
+  }: UseUnsavedChangesOptions = {},
+) {
+  const blocker = useBlocker(blockRouteChange && shouldWarn);
+
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (!shouldWarn) return;
@@ -15,4 +29,15 @@ export function useUnsavedChanges(shouldWarn: boolean) {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, [shouldWarn]);
+
+  useEffect(() => {
+    if (blocker.state !== "blocked") return;
+
+    if (window.confirm(routeChangeMessage)) {
+      blocker.proceed();
+      return;
+    }
+
+    blocker.reset();
+  }, [blocker, routeChangeMessage]);
 }
