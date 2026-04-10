@@ -32,8 +32,9 @@ export default function RecipeUpdatePage() {
 
     const existingImageUrl = data?.formValues?.imgSrc ?? null;
     const [isFormDirty, setIsFormDirty] = useState(false);
+        const shouldWarnUnsavedChanges = !isPending && (isFormDirty || Boolean(imageFile));
 
-     useUnsavedChanges(isFormDirty || Boolean(imageFile), {
+        useUnsavedChanges(shouldWarnUnsavedChanges, {
         blockRouteChange: true,
       });
 

@@ -1,0 +1,30 @@
+fragment RecipeVersionFields on RecipeVersion {
+  name
+  description
+  ingredientUsages {
+    quantity
+    unit {
+      val
+      symbol
+    }
+    ingredient {
+      id
+      name
+      counter
+      plural
+      counterPlural
+    }
+  }
+  prepMins
+  cookMins
+  portions
+  version
+  source {
+    type
+    url
+    bookTitle
+    bookPage
+    instructions
+  }
+  imgSrc
+}

@@ -10,7 +10,10 @@ interface SharedByProps {
 export default function SharedBy({ user }: SharedByProps) {
     const navigate = useNavigate();
     return (
-        <Link onClick={() => navigate(`/users/${user.id}`)}>
+        <Link onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            navigate(`/users/${user.id}`)}}>
             Shared by {user.username}
         </Link>
     );

@@ -55,6 +55,7 @@ export function mapFormValuesToCreateRecipeInput(
 ): CreateRecipeInput {
   return {
     name: values.name,
+    description: values.description?.trim() ? values.description.trim() : undefined,
     ingredientUsages: values.ingredientUsages.map((usage) => ({
       ingredientID: usage.ingredientId,
       quantity: usage.quantity,
@@ -97,6 +98,7 @@ export function mapRecipeToFormValues(
 
   return {
     name: recipe.currentVersion.name,
+    description: recipe.currentVersion.description ?? "",
     prepMins: recipe.currentVersion.prepMins,
     cookMins: recipe.currentVersion.cookMins,
     portions: recipe.currentVersion.portions,

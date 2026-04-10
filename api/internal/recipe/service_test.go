@@ -83,6 +83,70 @@ func TestCreateRecipe(t *testing.T) {
 	})
 }
 
+func TestCreateRecipe_PersistsDescription(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+
+		ingredientID := uuid.New()
+		testIngredient := ingredient.Ingredient{
+			ID:            ingredientID,
+			FileKey:       "test_ingredient",
+			Name:          "Test Ingredient",
+			PreferredUnit: 1,
+		}
+		err := seeds.InsertIngredient(ctx, tx, &testIngredient)
+		require.NoError(t, err)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		s := NewService(
+			txRunner,
+			repo,
+			NewRecipeVersionRepo(),
+			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
+			NewIngredientUsageRepo(),
+			nil,
+			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
+		)
+
+		description := "Silky vanilla ice cream with a soft-set custard base."
+		request := CreateRecipeRequest{
+			Name: "Vanilla Ice Cream",
+			Ingredients: []CreateIngredientUsageRequest{
+				{
+					IngredientID: ingredientID.String(),
+					Quantity:     200,
+					Unit:         1,
+				},
+			},
+			UserID:      testUser.ID.String(),
+			Description: description,
+			PrepMins:    15,
+			CookMins:    0,
+			Portions:    6,
+		}
+
+		recipeContainer, err := s.CreateRecipe(ctx, request)
+		require.NoError(t, err)
+		require.NotNil(t, recipeContainer)
+		require.Equal(t, description, recipeContainer.CurrentVersion.Description)
+
+		var persistedDescription string
+		err = tx.QueryRowContext(ctx, `SELECT description FROM recipe_versions WHERE id = $1`, recipeContainer.CurrentVersionID).Scan(&persistedDescription)
+		require.NoError(t, err)
+		require.Equal(t, description, persistedDescription)
+
+		retrievedVersion, err := s.GetRecipeVersionByID(ctx, recipeContainer.CurrentVersionID)
+		require.NoError(t, err)
+		require.NotNil(t, retrievedVersion)
+		require.Equal(t, description, retrievedVersion.Description)
+	})
+}
+
 func TestCreateRecipe_WithImageUploadID_PersistsAndRetrievesImageURL(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		txRunner := testutil.NewTestTxRunner(tx)
@@ -391,6 +455,99 @@ func TestUpdateRecipe_WithImageUploadID_PersistsAndRetrievesImageURL(t *testing.
 		require.Equal(t, updatedRecipe.CurrentVersionID.String(), linkedEntityID.String)
 		require.True(t, linkedEntityType.Valid)
 		require.Equal(t, "recipe-version", linkedEntityType.String)
+	})
+}
+
+func TestUpdateRecipe_PersistsDescriptionOnNewVersion(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+
+		ingredientID := uuid.New()
+		testIngredient := ingredient.Ingredient{
+			ID:            ingredientID,
+			FileKey:       "test_ingredient",
+			Name:          "Test Ingredient",
+			PreferredUnit: 1,
+		}
+		err := seeds.InsertIngredient(ctx, tx, &testIngredient)
+		require.NoError(t, err)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		s := NewService(
+			txRunner,
+			repo,
+			NewRecipeVersionRepo(),
+			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
+			NewIngredientUsageRepo(),
+			nil,
+			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
+		)
+
+		createDescription := "Original vanilla ice cream description."
+		baseRequest := CreateRecipeRequest{
+			Name: "Vanilla Ice Cream",
+			Ingredients: []CreateIngredientUsageRequest{
+				{
+					IngredientID: ingredientID.String(),
+					Quantity:     200,
+					Unit:         1,
+				},
+			},
+			UserID:      testUser.ID.String(),
+			Description: createDescription,
+			PrepMins:    15,
+			CookMins:    0,
+			Portions:    6,
+		}
+
+		recipeContainer, err := s.CreateRecipe(ctx, baseRequest)
+		require.NoError(t, err)
+		require.NotNil(t, recipeContainer)
+
+		updatedDescription := "Updated description with more detail about the new version."
+		updateReq := UpdateRecipeRequest{
+			RecipeId: recipeContainer.ID.String(),
+			Request: CreateRecipeRequest{
+				Name: "Vanilla Ice Cream Updated",
+				Ingredients: []CreateIngredientUsageRequest{
+					{
+						IngredientID: ingredientID.String(),
+						Quantity:     200,
+						Unit:         1,
+					},
+				},
+				UserID:      testUser.ID.String(),
+				Description: updatedDescription,
+				PrepMins:    20,
+				CookMins:    0,
+				Portions:    6,
+			},
+		}
+
+		updatedRecipe, err := s.UpdateRecipe(ctx, updateReq)
+		require.NoError(t, err)
+		require.NotNil(t, updatedRecipe)
+		require.Equal(t, updatedDescription, updatedRecipe.CurrentVersion.Description)
+
+		var persistedDescription string
+		err = tx.QueryRowContext(ctx, `SELECT description FROM recipe_versions WHERE id = $1`, updatedRecipe.CurrentVersionID).Scan(&persistedDescription)
+		require.NoError(t, err)
+		require.Equal(t, updatedDescription, persistedDescription)
+
+		retrievedVersion, err := s.GetRecipeVersionByRecipeIDAndVersion(ctx, updatedRecipe.ID, 2)
+		require.NoError(t, err)
+		require.NotNil(t, retrievedVersion)
+		require.Equal(t, updatedDescription, retrievedVersion.Description)
+
+		originalVersion, err := s.GetRecipeVersionByRecipeIDAndVersion(ctx, updatedRecipe.ID, 1)
+		require.NoError(t, err)
+		require.NotNil(t, originalVersion)
+		require.Equal(t, createDescription, originalVersion.Description)
 	})
 }
 

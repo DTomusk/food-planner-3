@@ -1,7 +1,7 @@
 import { Combobox, ComboboxButton, ComboboxInput, ComboboxOption, ComboboxOptions } from "@headlessui/react";
 import clsx from "clsx";
 import { Check, ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Text from "./Text";
 
 type SearchDropdownItem = {
@@ -18,7 +18,11 @@ type SearchDropdownProps = {
 }
 
 export default function SearchDropdown({ items, onSelect, selectedItem, maxResults, filterFunction }: SearchDropdownProps) {
-    const [query, setQuery] = useState("");
+    const [query, setQuery] = useState(selectedItem?.label ?? "");
+
+    useEffect(() => {
+        setQuery(selectedItem?.label ?? "");
+    }, [selectedItem]);
 
     const defaultFilter = (query: string) => 
         items.filter((item) => item.label.toLowerCase().includes(query.toLowerCase()));
@@ -28,7 +32,15 @@ export default function SearchDropdown({ items, onSelect, selectedItem, maxResul
 
     return (
          <div className="mx-auto w-full max-w-xs">
-            <Combobox value={selectedItem} onChange={onSelect} onClose={() => setQuery("")} by="value">
+            <Combobox
+                value={selectedItem}
+                onChange={(item) => {
+                    setQuery(item?.label ?? "");
+                    onSelect(item);
+                }}
+                onClose={() => setQuery(selectedItem?.label ?? "")}
+                by="value"
+            >
                 <div className="relative">
                     <ComboboxInput 
                         displayValue={(item?: SearchDropdownItem) => item?.label ?? ""}

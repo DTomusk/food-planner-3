@@ -25,9 +25,10 @@ export default function RecipeCreatePage() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isCompressingImage, setIsCompressingImage] = useState(false);
   const [isFormDirty, setIsFormDirty] = useState(false);
+  const shouldWarnUnsavedChanges = !isPending && (isFormDirty || Boolean(imageFile));
 
   // Image handling lives outside RHF, so include selected file state in the unsaved check.
-  useUnsavedChanges(isFormDirty || Boolean(imageFile), {
+  useUnsavedChanges(shouldWarnUnsavedChanges, {
     blockRouteChange: true,
   });
 

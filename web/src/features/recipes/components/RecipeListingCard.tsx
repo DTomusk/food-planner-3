@@ -1,7 +1,8 @@
-import { Inline, } from "@/components";
+import { Inline, Stack, Text, } from "@/components";
 import type { RecipeSummary } from "../types";
 import ImageDisplay from "@/components/ui/ImageDisplay";
 import Heading from "@/components/ui/Heading";
+import SharedBy from "@/components/SharedBy";
 
 interface RecipeListingCardProps {
     recipe: RecipeSummary;
@@ -22,10 +23,17 @@ export default function RecipeListingCard({ recipe, onClick, actions }: RecipeLi
                     containerClassName="aspect-square w-full shrink-0 md:w-48 lg:w-64"
                 />
                 <div className="flex min-w-0 flex-1 flex-col justify-between gap-3 p-4">
+                    <Stack space="sm">
                     <Inline justify="between" align="start" gap="md">
                         <Heading text={recipe.name} />
                         {actions && <Inline className="shrink-0 self-start">{actions}</Inline>}
                     </Inline>
+                    <SharedBy user={recipe.author} />
+                    <div className="hidden md:block">
+                        <Text variant="muted">Created on {new Date(recipe.createdAt).toLocaleDateString()}</Text>
+                    </div>
+                    <Text variant="body">{recipe.description}</Text>
+                    </Stack>
                 </div>
             </div>
         </div>

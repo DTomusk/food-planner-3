@@ -10,6 +10,7 @@ import Stack from "@/components/layout/Stack";
 import IconButton from "@/components/ui/IconButton";
 import { Trash2 } from "lucide-react";
 import Label from "@/components/ui/Label";
+import TextArea from "@/components/ui/TextArea";
 
 type RecipeDetailSectionProps = {
   imageFile?: File | null;
@@ -73,6 +74,10 @@ export default function RecipeDetailSection({
           <FormField htmlFor="name" label="Recipe name" error={errors.name?.message}>
             <Input type="text" placeholder="Recipe name" 
             {...register("name")} />
+          </FormField>
+          <FormField htmlFor="description" label="Description" error={errors.description?.message}>
+            <TextArea placeholder="Short description of the recipe (optional)" rows={3}
+            {...register("description")} />
           </FormField>
           <Inline>
             <FormField htmlFor="prepMins" label="Preparation time (minutes)" error={errors.prepMins?.message}>

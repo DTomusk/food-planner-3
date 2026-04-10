@@ -115,7 +115,7 @@ export const router = createBrowserRouter([
                     const version = recipeVersionData?.recipe?.version?.version;
 
                     if (recipeName && version) {
-                      return `v${version} ${recipeName}`;
+                      return `v${version}`;
                     }
 
                     return "Version";

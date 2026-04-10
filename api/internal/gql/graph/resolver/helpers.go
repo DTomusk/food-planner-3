@@ -61,15 +61,16 @@ func mapRecipeVersion(recipeVersion *recipe.RecipeVersion) *model.RecipeVersion 
 		return nil
 	}
 	return &model.RecipeVersion{
-		ID:        recipeVersion.ID.String(),
-		RecipeID:  recipeVersion.RecipeID.String(),
-		Name:      recipeVersion.Name,
-		PrepMins:  int32(recipeVersion.PrepMins),
-		CookMins:  int32(recipeVersion.CookMins),
-		Portions:  int32(recipeVersion.Portions),
-		CreatedAt: recipeVersion.CreatedAt,
-		Version:   int32(recipeVersion.Version),
-		ImgSrc:    recipeVersion.ImgSrc,
+		ID:          recipeVersion.ID.String(),
+		RecipeID:    recipeVersion.RecipeID.String(),
+		Name:        recipeVersion.Name,
+		Description: recipeVersion.Description,
+		PrepMins:    int32(recipeVersion.PrepMins),
+		CookMins:    int32(recipeVersion.CookMins),
+		Portions:    int32(recipeVersion.Portions),
+		CreatedAt:   recipeVersion.CreatedAt,
+		Version:     int32(recipeVersion.Version),
+		ImgSrc:      recipeVersion.ImgSrc,
 	}
 }
 
@@ -173,8 +174,14 @@ func toCreateRecipeRequest(input *model.CreateRecipeInput, userID string) (recip
 		Instructions: input.RecipeSource.Instructions,
 	}
 
+	description := ""
+	if input.Description != nil {
+		description = *input.Description
+	}
+
 	return recipe.CreateRecipeRequest{
 		Name:        input.Name,
+		Description: description,
 		Ingredients: toIngredientUsageRequests(input.IngredientUsages),
 		UserID:      userID,
 		PrepMins:    int(input.PrepMins),
