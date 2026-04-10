@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import type { RecipeFormValues } from "../types";
 import { Form, Button, Inline } from "@/components/";
@@ -17,6 +18,7 @@ type RecipeFormProps = {
   isSubmitting?: boolean;
   isPreparingImageUpload?: boolean;
   ingredients: IngredientOptionModel[];
+  onDirtyChange?: (isDirty: boolean) => void;
   defaultValues?: RecipeFormValues;
   imageFile?: File | null;
   onImageFileChange?: (file: File | null) => void;
@@ -30,6 +32,7 @@ export default function RecipeForm({
   isSubmitting = false,
   isPreparingImageUpload = false,
   ingredients,
+  onDirtyChange,
   defaultValues,
   imageFile = null,
   onImageFileChange = () => {},
@@ -45,8 +48,12 @@ export default function RecipeForm({
 
   const {
     handleSubmit,
-    formState: { isValid, isSubmitted },
+    formState: { isDirty, isValid, isSubmitted },
   } = methods;
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
 
   return (
     <Container size="md">
