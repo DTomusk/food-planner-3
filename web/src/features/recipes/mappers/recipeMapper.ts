@@ -7,6 +7,7 @@ export function mapRecipeDetail(
     return { recipe:{
         id: gqlRecipe.id,
         name: gqlRecipe.currentVersion.name,
+        description: gqlRecipe.currentVersion.description,
         ingredients: gqlRecipe.currentVersion.ingredientUsages.map((iu) => ({
             name: iu.ingredient.name,
             quantity: iu.quantity,
@@ -44,6 +45,7 @@ export function mapRecipeVersionDetail(
     return { recipe:{
         id: gqlRecipe.id,
         name: gqlRecipe.version.name,
+        description: gqlRecipe.version.description,
         ingredients: gqlRecipe.version.ingredientUsages.map((iu) => ({
             name: iu.ingredient.name,
             quantity: iu.quantity,
@@ -80,6 +82,12 @@ export function mapRecipeSummary(
             id: edge.node.id,
             name: edge.node.currentVersion.name,
             imageUrl: edge.node.currentVersion.imgSrc || null,
+            description: edge.node.currentVersion.description,
+            createdAt: edge.node.createdAt,
+            author: {
+                id: edge.node.author.id,
+                username: edge.node.author.username,
+            },
         })),
         endCursor: gqlRecipes.pageInfo.endCursor || null,
         hasNextPage: gqlRecipes.pageInfo.hasNextPage,

@@ -4,6 +4,7 @@ import type { recipeFormSchema } from "./schemas/recipeFormSchema";
 export type Recipe = {
     id: string;
     name: string;
+    description: string;
     ingredients: Ingredient[];
     prepMins: number;
     cookMins: number;
@@ -45,7 +46,10 @@ export type RecipePage = {
 export type RecipeSummary = {
     id: string;
     name: string;
+    description: string;
     imageUrl: string | null;
+    createdAt: string;
+    author: User;
 };
 
 export type RecipeFormValues = z.infer<typeof recipeFormSchema>;

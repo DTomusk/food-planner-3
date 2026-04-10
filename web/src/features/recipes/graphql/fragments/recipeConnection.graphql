@@ -8,6 +8,10 @@ fragment RecipeConnectionListFields on RecipeConnection {
         imgSrc
         description
       }
+      author {
+        id
+        username
+      }
     }
   }
   pageInfo {
