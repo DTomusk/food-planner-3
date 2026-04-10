@@ -2,6 +2,7 @@ package recipe
 
 import (
 	"foodplanner/internal/testutil"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -114,4 +115,76 @@ func TestInvalidPortions(t *testing.T) {
 	_, err := NewRecipe(name, "", userID, []*IngredientUsage{ingredientUsage}, 10, 20, 0, source, nil)
 	require.Error(t, err)
 	require.Equal(t, ErrInvalidPortions, err)
+}
+
+func TestRecipeNameMaxLength(t *testing.T) {
+	name := strings.Repeat("a", 100)
+	userID := uuid.New()
+	ingredientUsage := &IngredientUsage{
+		IngredientID: uuid.New(),
+		Quantity:     200,
+		Unit:         1,
+	}
+	source := &RecipeSource{
+		Type: URL,
+		URL:  testutil.PtrString("https://example.com/pancakes"),
+	}
+
+	recipeContainer, err := NewRecipe(name, "", userID, []*IngredientUsage{ingredientUsage}, 10, 20, 4, source, nil)
+	require.NoError(t, err)
+	require.Equal(t, name, recipeContainer.CurrentVersion.Name)
+}
+
+func TestRecipeNameTooLong(t *testing.T) {
+	name := strings.Repeat("a", 101)
+	userID := uuid.New()
+	ingredientUsage := &IngredientUsage{
+		IngredientID: uuid.New(),
+		Quantity:     200,
+		Unit:         1,
+	}
+	source := &RecipeSource{
+		Type: URL,
+		URL:  testutil.PtrString("https://example.com/pancakes"),
+	}
+
+	_, err := NewRecipe(name, "", userID, []*IngredientUsage{ingredientUsage}, 10, 20, 4, source, nil)
+	require.Error(t, err)
+	require.Equal(t, ErrNameTooLong, err)
+}
+
+func TestRecipeDescriptionMaxLength(t *testing.T) {
+	description := strings.Repeat("a", 200)
+	userID := uuid.New()
+	ingredientUsage := &IngredientUsage{
+		IngredientID: uuid.New(),
+		Quantity:     200,
+		Unit:         1,
+	}
+	source := &RecipeSource{
+		Type: URL,
+		URL:  testutil.PtrString("https://example.com/pancakes"),
+	}
+
+	recipeContainer, err := NewRecipe("Pancakes", description, userID, []*IngredientUsage{ingredientUsage}, 10, 20, 4, source, nil)
+	require.NoError(t, err)
+	require.Equal(t, description, recipeContainer.CurrentVersion.Description)
+}
+
+func TestRecipeDescriptionTooLong(t *testing.T) {
+	description := strings.Repeat("a", 201)
+	userID := uuid.New()
+	ingredientUsage := &IngredientUsage{
+		IngredientID: uuid.New(),
+		Quantity:     200,
+		Unit:         1,
+	}
+	source := &RecipeSource{
+		Type: URL,
+		URL:  testutil.PtrString("https://example.com/pancakes"),
+	}
+
+	_, err := NewRecipe("Pancakes", description, userID, []*IngredientUsage{ingredientUsage}, 10, 20, 4, source, nil)
+	require.Error(t, err)
+	require.Equal(t, ErrInvalidDescription, err)
 }
