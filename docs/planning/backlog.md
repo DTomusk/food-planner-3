@@ -2,19 +2,16 @@
 
 ## Ready  
 
-- [x] Add images to recipes
-    - Priority: high
+- [ ] Add description to recipes
+    - Priority: medium
     - Area: recipes, fullstack
     - Type: feature
-    - Why: it's important to know what a dish looks like
-    - DoD:
-        - [x] recipe version stores image 
-        - [x] image appears on listing and detail screens 
-        - [x] image infrastructure figured out, provider (at least current) chosen 
-        - [x] recipes default to a standard empty image when image not populated 
-        - [x] file drop component built and added to recipe form
-        - [ ] a process to remove unused images 
-        - [x] a process to claim images for entities
+    - Why: it would be good for recipes to have a tagline/short description that would appear both in listing and detail views. 
+    - DoD: 
+        - [ ] description added to recipe version 
+        - [ ] editable in create and update forms 
+        - [ ] appears in listing card
+        - [ ] appears in detail
 
 ## Planning
 
@@ -51,13 +48,6 @@
     - Area: 
     - Type: (bug, tech debt, feature)
     - Why: 
-    - DoD: 
-
-- [ ] Add description to recipes
-    - Priority: 
-    - Area: 
-    - Type: (bug, tech debt, feature)
-    - Why: 
     - DoD:  
 
 - [ ] Dietary tags (gf, vegan etc.)
@@ -84,27 +74,6 @@
         - they can make changes 
         - UI shows that it's a fork of a given recipe with a link to the parent 
 
-- [ ] Are you sure you want to exit form
-    - Priority: medium
-    - Area: recipes, frontend
-    - Type: feature
-    - Why: users can lose a lot of progress by accidentally clicking off a form 
-    - DoD: 
-        - Users get a warning whenever they perform an action that would take them off a form page 
-            - clicking back 
-            - back (mouse)
-            - closing tab/window 
-
-- [ ] Proper breadcrumbs
-    - Priority: high
-    - Area: frontend navigation
-    - Type: tech debt
-    - Why: navgiation is really bad at the moment. Some pages have a back button that isn't clear about what it does, and some don't have one at all. You can go back to a form for example by clicking back. The back button isn't as useful as breadcrumbs would be
-    - DoD: 
-        - [ ] breadcrumb component implemented
-        - [ ] hierarchy decided 
-        - [ ] back button removed
-
 - [ ] Profile images
     - Priority: medium 
     - Area: users, fullstack
@@ -124,6 +93,41 @@
     - DoD: 
 
 ## Done
+
+- [x] Are you sure you want to exit form
+    - Priority: medium
+    - Area: recipes, frontend
+    - Type: feature
+    - Why: users can lose a lot of progress by accidentally clicking off a form 
+    - DoD: 
+        - Users get a warning whenever they perform an action that would take them off a form page 
+            - [x] clicking back 
+            - [x] back (mouse)
+            - [x] closing tab/window 
+
+- [x] Proper breadcrumbs
+    - Priority: high
+    - Area: frontend navigation
+    - Type: tech debt
+    - Why: navgiation is really bad at the moment. Some pages have a back button that isn't clear about what it does, and some don't have one at all. You can go back to a form for example by clicking back. The back button isn't as useful as breadcrumbs would be
+    - DoD: 
+        - [x] breadcrumb component implemented
+        - [x] hierarchy decided 
+        - [x] back button removed
+
+- [x] Add images to recipes
+    - Priority: high
+    - Area: recipes, fullstack
+    - Type: feature
+    - Why: it's important to know what a dish looks like
+    - DoD:
+        - [x] recipe version stores image 
+        - [x] image appears on listing and detail screens 
+        - [x] image infrastructure figured out, provider (at least current) chosen 
+        - [x] recipes default to a standard empty image when image not populated 
+        - [x] file drop component built and added to recipe form
+        - [x] a process to remove unused images 
+        - [x] a process to claim images for entities
 
 - [x] Nav bar item styling 
     - Priority: medium
