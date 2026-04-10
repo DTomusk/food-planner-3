@@ -1,5 +1,6 @@
 fragment RecipeVersionFields on RecipeVersion {
   name
+  description
   ingredientUsages {
     quantity
     unit {

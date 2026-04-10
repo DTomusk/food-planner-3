@@ -2,9 +2,11 @@ fragment RecipeConnectionListFields on RecipeConnection {
   edges {
     node {
       id
+      createdAt
       currentVersion {
         name
         imgSrc
+        description
       }
     }
   }
