@@ -82,6 +82,7 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 
 	recipeContainer, err := NewRecipe(
 		request.Name,
+		request.Description,
 		userID,
 		ingredientUsages,
 		request.PrepMins,
@@ -231,6 +232,7 @@ func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest)
 		existingRecipe.ID,
 		existingRecipe.CurrentVersion.Version+1,
 		request.Request.Name,
+		request.Request.Description,
 		ingredientUsages,
 		request.Request.PrepMins,
 		request.Request.CookMins,

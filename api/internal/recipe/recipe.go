@@ -22,6 +22,7 @@ type RecipeVersion struct {
 	Version  int
 
 	Name        string
+	Description string
 	Ingredients []*IngredientUsage
 	PrepMins    int
 	CookMins    int
@@ -34,6 +35,7 @@ type RecipeVersion struct {
 
 func NewRecipe(
 	name string,
+	description string,
 	userID uuid.UUID,
 	ingredients []*IngredientUsage,
 	prepMins,
@@ -45,7 +47,7 @@ func NewRecipe(
 	recipeID := uuid.New()
 	now := time.Now()
 
-	version, err := NewRecipeVersion(recipeID, 1, name, ingredients, prepMins, cookMins, portions, source, imgSrc)
+	version, err := NewRecipeVersion(recipeID, 1, name, description, ingredients, prepMins, cookMins, portions, source, imgSrc)
 	if err != nil {
 		return nil, err
 	}
@@ -65,6 +67,7 @@ func NewRecipeVersion(
 	recipeID uuid.UUID,
 	version int,
 	name string,
+	description string,
 	ingredients []*IngredientUsage,
 	prepMins,
 	cookMins,
@@ -74,6 +77,14 @@ func NewRecipeVersion(
 ) (*RecipeVersion, error) {
 	if name == "" {
 		return nil, ErrEmptyName
+	}
+
+	if len(name) > 100 {
+		return nil, ErrNameTooLong
+	}
+
+	if len(description) > 200 {
+		return nil, ErrInvalidDescription
 	}
 
 	if len(ingredients) == 0 {
@@ -96,6 +107,7 @@ func NewRecipeVersion(
 		RecipeID:    recipeID,
 		Version:     version,
 		Name:        name,
+		Description: description,
 		Ingredients: ingredients,
 		PrepMins:    prepMins,
 		CookMins:    cookMins,

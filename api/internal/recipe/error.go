@@ -21,6 +21,8 @@ var (
 	ErrMissingURL           = errors.New("URL source must include a URL")
 	ErrMissingBookReference = errors.New("book reference source must include a book title and page")
 	ErrMissingInstructions  = errors.New("original source must include instructions")
+	ErrNameTooLong          = errors.New("recipe name cannot be longer than 100 characters")
+	ErrInvalidDescription   = errors.New("recipe description cannot be longer than 200 characters")
 	// TODO: this should be somewhere generic
 	ErrUnauthorized    = errors.New("unauthorized to perform this action")
 	ErrRecipeNotFound  = errors.New("recipe not found")

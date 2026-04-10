@@ -28,6 +28,7 @@ type CreateIngredientUsageInput struct {
 
 type CreateRecipeInput struct {
 	Name             string                        `json:"name"`
+	Description      *string                       `json:"description,omitempty"`
 	IngredientUsages []*CreateIngredientUsageInput `json:"ingredientUsages"`
 	PrepMins         int32                         `json:"prepMins"`
 	CookMins         int32                         `json:"cookMins"`

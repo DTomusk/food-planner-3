@@ -135,6 +135,7 @@ type ComplexityRoot struct {
 	RecipeVersion struct {
 		CookMins         func(childComplexity int) int
 		CreatedAt        func(childComplexity int) int
+		Description      func(childComplexity int) int
 		ID               func(childComplexity int) int
 		ImgSrc           func(childComplexity int) int
 		IngredientUsages func(childComplexity int) int
@@ -565,6 +566,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.RecipeVersion.CreatedAt(childComplexity), true
+	case "RecipeVersion.description":
+		if e.complexity.RecipeVersion.Description == nil {
+			break
+		}
+
+		return e.complexity.RecipeVersion.Description(childComplexity), true
 	case "RecipeVersion.id":
 		if e.complexity.RecipeVersion.ID == nil {
 			break
@@ -2424,6 +2431,8 @@ func (ec *executionContext) fieldContext_Recipe_currentVersion(_ context.Context
 				return ec.fieldContext_RecipeVersion_version(ctx, field)
 			case "name":
 				return ec.fieldContext_RecipeVersion_name(ctx, field)
+			case "description":
+				return ec.fieldContext_RecipeVersion_description(ctx, field)
 			case "ingredientUsages":
 				return ec.fieldContext_RecipeVersion_ingredientUsages(ctx, field)
 			case "prepMins":
@@ -2477,6 +2486,8 @@ func (ec *executionContext) fieldContext_Recipe_versions(_ context.Context, fiel
 				return ec.fieldContext_RecipeVersion_version(ctx, field)
 			case "name":
 				return ec.fieldContext_RecipeVersion_name(ctx, field)
+			case "description":
+				return ec.fieldContext_RecipeVersion_description(ctx, field)
 			case "ingredientUsages":
 				return ec.fieldContext_RecipeVersion_ingredientUsages(ctx, field)
 			case "prepMins":
@@ -2531,6 +2542,8 @@ func (ec *executionContext) fieldContext_Recipe_version(ctx context.Context, fie
 				return ec.fieldContext_RecipeVersion_version(ctx, field)
 			case "name":
 				return ec.fieldContext_RecipeVersion_name(ctx, field)
+			case "description":
+				return ec.fieldContext_RecipeVersion_description(ctx, field)
 			case "ingredientUsages":
 				return ec.fieldContext_RecipeVersion_ingredientUsages(ctx, field)
 			case "prepMins":
@@ -2997,6 +3010,35 @@ func (ec *executionContext) _RecipeVersion_name(ctx context.Context, field graph
 }
 
 func (ec *executionContext) fieldContext_RecipeVersion_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RecipeVersion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RecipeVersion_description(ctx context.Context, field graphql.CollectedField, obj *model.RecipeVersion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RecipeVersion_description,
+		func(ctx context.Context) (any, error) {
+			return obj.Description, nil
+		},
+		nil,
+		ec.marshalOString2string,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RecipeVersion_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "RecipeVersion",
 		Field:      field,
@@ -4992,7 +5034,7 @@ func (ec *executionContext) unmarshalInputCreateRecipeInput(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "ingredientUsages", "prepMins", "cookMins", "portions", "recipeSource", "imgUploadId"}
+	fieldsInOrder := [...]string{"name", "description", "ingredientUsages", "prepMins", "cookMins", "portions", "recipeSource", "imgUploadId"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -5006,6 +5048,13 @@ func (ec *executionContext) unmarshalInputCreateRecipeInput(ctx context.Context,
 				return it, err
 			}
 			it.Name = data
+		case "description":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Description = data
 		case "ingredientUsages":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ingredientUsages"))
 			data, err := ec.unmarshalNCreateIngredientUsageInput2ᚕᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐCreateIngredientUsageInputᚄ(ctx, v)
@@ -6193,6 +6242,8 @@ func (ec *executionContext) _RecipeVersion(ctx context.Context, sel ast.Selectio
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "description":
+			out.Values[i] = ec._RecipeVersion_description(ctx, field, obj)
 		case "ingredientUsages":
 			field := field
 
@@ -7601,6 +7652,18 @@ func (ec *executionContext) marshalORecipeVersion2ᚖfoodplannerᚋinternalᚋgq
 		return graphql.Null
 	}
 	return ec._RecipeVersion(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOString2string(ctx context.Context, v any) (string, error) {
+	res, err := graphql.UnmarshalString(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalString(v)
+	return res
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v any) (*string, error) {

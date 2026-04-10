@@ -15,6 +15,7 @@ type RecipeVersion {
 
   version: Int!
   name: String!
+  description: String
   ingredientUsages: [IngredientUsage!]! @goField(forceResolver: true)
   prepMins: Int!
   cookMins: Int!
@@ -72,6 +73,7 @@ input RecipeFilterInput {
 
 input CreateRecipeInput {
   name: String!
+  description: String
   ingredientUsages: [CreateIngredientUsageInput!]!
   prepMins: Int!
   cookMins: Int!

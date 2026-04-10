@@ -2,6 +2,7 @@ package recipe
 
 type CreateRecipeRequest struct {
 	Name        string                         `json:"name" validate:"required"`
+	Description string                         `json:"description,omitempty"`
 	Ingredients []CreateIngredientUsageRequest `json:"ingredients" validate:"required,dive"`
 	UserID      string                         `json:"user_id" validate:"required,uuid4"`
 	PrepMins    int                            `json:"prep_mins" validate:"required,gte=0"`
