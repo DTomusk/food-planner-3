@@ -8,6 +8,7 @@ import { useUploadUrl } from "@/features/upload/hooks/useUploadUrl";
 import { Page } from "@/layout";
 import type { CreateImageUploadUrlMutation } from "@/lib/graphql.generated";
 import { extractErrorMessage } from "@/lib/errors";
+import { useUnsavedChanges } from "@/lib/hooks/useUnsavedChanges";
 import { commonStrings } from "@/lib/strings";
 import imageCompression from "browser-image-compression";
 import { useState } from "react";
@@ -23,6 +24,10 @@ export default function RecipeCreatePage() {
   const [imageUploadPayload, setImageUploadPayload] = useState<CreateImageUploadUrlMutation["createImageUploadUrl"] | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isCompressingImage, setIsCompressingImage] = useState(false);
+  const [isFormDirty, setIsFormDirty] = useState(false);
+
+  // Image handling lives outside RHF, so include selected file state in the unsaved check.
+  useUnsavedChanges(isFormDirty || Boolean(imageFile));
 
   const handleImageFileChange = async (file: File | null) => {
     setImageFile(file);
@@ -104,6 +109,7 @@ export default function RecipeCreatePage() {
         isSubmitting={isPending}
         isPreparingImageUpload={isCompressingImage || isPreparingImageUpload || isUploadingImage}
         ingredients={ingredientsData || []}
+        onDirtyChange={setIsFormDirty}
         imageFile={imageFile}
         onImageFileChange={handleImageFileChange}
       />
