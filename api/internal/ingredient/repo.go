@@ -15,7 +15,7 @@ import (
 type IngredientRepo struct{}
 
 const (
-	selectIngredientColumnsBaseQuery = "SELECT id, name, preferred_unit, file_key, counter, plural, counter_plural FROM reference.ingredients"
+	selectIngredientColumnsBaseQuery = "SELECT id, name, preferred_unit, file_key, counter, plural, counter_plural, animal_product_level FROM reference.ingredients"
 	selectIngredientsByIDsQuery      = selectIngredientColumnsBaseQuery + " WHERE id = ANY($1)"
 )
 
@@ -24,13 +24,14 @@ func NewIngredientRepo() *IngredientRepo {
 }
 
 type IngredientRow struct {
-	ID            uuid.UUID
-	Name          string
-	PreferredUnit int
-	FileKey       string
-	Counter       *string
-	Plural        *string
-	CounterPlural *string
+	ID                 uuid.UUID
+	Name               string
+	PreferredUnit      int
+	FileKey            string
+	Counter            *string
+	Plural             *string
+	CounterPlural      *string
+	AnimalProductLevel int
 }
 
 func (r *IngredientRepo) IngredientExists(ctx context.Context, db db.DBTX, ingredientID string) (bool, error) {
@@ -52,7 +53,7 @@ func (r *IngredientRepo) GetAllIngredients(ctx context.Context, db db.DBTX) ([]*
 	var ingredients []*Ingredient
 	for rows.Next() {
 		var ingredientRow IngredientRow
-		if err := rows.Scan(&ingredientRow.ID, &ingredientRow.Name, &ingredientRow.PreferredUnit, &ingredientRow.FileKey, &ingredientRow.Counter, &ingredientRow.Plural, &ingredientRow.CounterPlural); err != nil {
+		if err := rows.Scan(&ingredientRow.ID, &ingredientRow.Name, &ingredientRow.PreferredUnit, &ingredientRow.FileKey, &ingredientRow.Counter, &ingredientRow.Plural, &ingredientRow.CounterPlural, &ingredientRow.AnimalProductLevel); err != nil {
 			return nil, err
 		}
 
@@ -62,13 +63,14 @@ func (r *IngredientRepo) GetAllIngredients(ctx context.Context, db db.DBTX) ([]*
 		}
 
 		ingredients = append(ingredients, &Ingredient{
-			ID:            ingredientRow.ID,
-			Name:          ingredientRow.Name,
-			PreferredUnit: unit,
-			FileKey:       ingredientRow.FileKey,
-			Counter:       ingredientRow.Counter,
-			Plural:        ingredientRow.Plural,
-			CounterPlural: ingredientRow.CounterPlural,
+			ID:                 ingredientRow.ID,
+			Name:               ingredientRow.Name,
+			PreferredUnit:      unit,
+			FileKey:            ingredientRow.FileKey,
+			Counter:            ingredientRow.Counter,
+			Plural:             ingredientRow.Plural,
+			CounterPlural:      ingredientRow.CounterPlural,
+			AnimalProductLevel: AnimalProductLevel(ingredientRow.AnimalProductLevel),
 		})
 	}
 	return ingredients, nil
@@ -90,7 +92,7 @@ func (r *IngredientRepo) GetIngredientsByIDs(ctx context.Context, db db.DBTX, in
 	var ingredients []*Ingredient
 	for rows.Next() {
 		var ingredientRow IngredientRow
-		if err := rows.Scan(&ingredientRow.ID, &ingredientRow.Name, &ingredientRow.PreferredUnit, &ingredientRow.FileKey, &ingredientRow.Counter, &ingredientRow.Plural, &ingredientRow.CounterPlural); err != nil {
+		if err := rows.Scan(&ingredientRow.ID, &ingredientRow.Name, &ingredientRow.PreferredUnit, &ingredientRow.FileKey, &ingredientRow.Counter, &ingredientRow.Plural, &ingredientRow.CounterPlural, &ingredientRow.AnimalProductLevel); err != nil {
 			return nil, err
 		}
 
@@ -100,13 +102,14 @@ func (r *IngredientRepo) GetIngredientsByIDs(ctx context.Context, db db.DBTX, in
 		}
 
 		ingredients = append(ingredients, &Ingredient{
-			ID:            ingredientRow.ID,
-			Name:          ingredientRow.Name,
-			PreferredUnit: unit,
-			FileKey:       ingredientRow.FileKey,
-			Counter:       ingredientRow.Counter,
-			Plural:        ingredientRow.Plural,
-			CounterPlural: ingredientRow.CounterPlural,
+			ID:                 ingredientRow.ID,
+			Name:               ingredientRow.Name,
+			PreferredUnit:      unit,
+			FileKey:            ingredientRow.FileKey,
+			Counter:            ingredientRow.Counter,
+			Plural:             ingredientRow.Plural,
+			CounterPlural:      ingredientRow.CounterPlural,
+			AnimalProductLevel: AnimalProductLevel(ingredientRow.AnimalProductLevel),
 		})
 	}
 	return ingredients, nil
@@ -118,15 +121,15 @@ func (r *IngredientRepo) UpsertIngredients(ctx context.Context, db db.DBTX, ingr
 	}
 
 	var (
-		query  = "INSERT INTO reference.ingredients (id, name, preferred_unit, file_key, counter, plural, counter_plural) VALUES"
+		query  = "INSERT INTO reference.ingredients (id, name, preferred_unit, file_key, counter, plural, counter_plural, animal_product_level) VALUES"
 		args   []any
 		values []string
 	)
 
 	for i, ingredient := range ingredients {
-		start := i*7 + 1
-		values = append(values, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d)", start, start+1, start+2, start+3, start+4, start+5, start+6))
-		args = append(args, ingredient.ID, ingredient.Name, int(ingredient.PreferredUnit), ingredient.FileKey, ingredient.Counter, ingredient.Plural, ingredient.CounterPlural)
+		start := i*8 + 1
+		values = append(values, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d)", start, start+1, start+2, start+3, start+4, start+5, start+6, start+7))
+		args = append(args, ingredient.ID, ingredient.Name, int(ingredient.PreferredUnit), ingredient.FileKey, ingredient.Counter, ingredient.Plural, ingredient.CounterPlural, int(ingredient.AnimalProductLevel))
 	}
 
 	query += " " + strings.Join(values, ", ") + `
@@ -136,7 +139,8 @@ func (r *IngredientRepo) UpsertIngredients(ctx context.Context, db db.DBTX, ingr
 	preferred_unit = EXCLUDED.preferred_unit,
 	counter = EXCLUDED.counter,
 	plural = EXCLUDED.plural,
-	counter_plural = EXCLUDED.counter_plural;
+	counter_plural = EXCLUDED.counter_plural,
+	animal_product_level = EXCLUDED.animal_product_level;
 	`
 
 	_, err := db.ExecContext(ctx, query, args...)
