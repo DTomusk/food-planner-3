@@ -17,7 +17,6 @@ ingredients:
   - id: "flour"
     name: "Flour"
     preferred_unit: 2
-    animal_product_level: 0
     contains_gluten: true
   - id: "bacon_rasher"
     name: "Bacon"
@@ -28,7 +27,6 @@ ingredients:
   - id: "pasta"
     name: "Pasta"
     preferred_unit: 2
-    animal_product_level: 0
     contains_gluten: true
   - id: "cheese"
     name: "Cheese"
@@ -47,10 +45,48 @@ ingredients:
     preferred_unit: 1
     counter: "clove"
     counter_plural: "cloves"
-    animal_product_level: 0
   - id: "garlic_bulb"
     name: "Garlic"
     preferred_unit: 1
     counter: "bulb"
     counter_plural: "bulbs"
-    animal_product_level: 0
+  - id: "lentils_red"
+    name: "Red lentils"
+    preferred_unit: 2
+  - id: "oil_vegetable"
+    name: "Vegetable oil"
+    preferred_unit: 3
+  - id: "peppercorns"
+    name: "Peppercorn"
+    plural: "Peppercorns"
+    preferred_unit: 1
+  - id: "cloves"
+    name: "Clove"
+    plural: "Cloves"
+    preferred_unit: 1
+  - id: "onion"
+    name: "Onion"
+    plural: "Onions"
+    preferred_unit: 1
+  - id: "onion_brown"
+    name: "Brown onion"
+    plural: "Brown onions"
+    preferred_unit: 1
+  - id: "ginger"  
+    name: "Ginger"
+    preferred_unit: 6
+  - id: "chilli_powder"
+    name: "Chilli powder"
+    preferred_unit: 5
+  - id: "coriander_ground"
+    name: "Ground coriander"
+    preferred_unit: 5
+  - id: "turmeric_ground"
+    name: "Ground turmeric"
+    preferred_unit: 5
+  - id: "salt"
+    name: "Salt"
+    preferred_unit: 5
+  - id: "tomatoes_tinned"
+    name: "Tinned tomatoes"
+    preferred_unit: 2

@@ -93,6 +93,20 @@
     - Why: 
     - DoD: 
 
+- [ ] Unit conversion
+    - Priority: 
+    - Area: 
+    - Type: (bug, tech debt, feature)
+    - Why: 
+    - DoD: 
+
+- [ ] User preferences
+    - Priority: 
+    - Area: 
+    - Type: (bug, tech debt, feature)
+    - Why: users can set dietary requirements that apply to all searches by default (but can be changed). Users can choose whether they prefer metric or imperial
+    - DoD: 
+
 ## Item template 
 
 - [ ] Item name

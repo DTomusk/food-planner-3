@@ -61,7 +61,7 @@ export default function IngredientSelector({ index, control, register, ingredien
         <Input
           type="number"
           min={0}
-          step={1}
+          step="any"
           placeholder="Qty"
           {...register(`ingredientUsages.${index}.quantity`, {
             valueAsNumber: true})}
