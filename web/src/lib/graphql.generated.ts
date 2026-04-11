@@ -181,6 +181,7 @@ export type RecipeEdge = {
 };
 
 export type RecipeFilterInput = {
+  animalProductLevel?: InputMaybe<Scalars['Int']['input']>;
   query?: InputMaybe<Scalars['String']['input']>;
   userID?: InputMaybe<Scalars['ID']['input']>;
 };

@@ -16,7 +16,7 @@ export default function SearchBar(
 
     return (
         <form
-            className="relative"
+            className="relative w-full"
             onSubmit={(e) => {
                 e.preventDefault();
                 if (onSubmit) {

@@ -145,7 +145,7 @@ export default function RecipeListingPage() {
                         <RecipeFilters dietLevel={dietLevel} onDietLevelChange={handleDietLevelChange} />
                     </div>
                     {/* Search bar and list */}
-                    <Stack className="min-w-0 flex-1" space="lg">
+                    <Stack className="min-w-0 w-full flex-1" space="lg">
                         <Inline justify="start" align="center" className="w-full">
                             <div className="min-w-0 flex-1">
                                 <SearchBar
