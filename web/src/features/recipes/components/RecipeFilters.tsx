@@ -1,3 +1,4 @@
+import { Stack, Text } from "@/components";
 import CollapsibleHeader from "@/components/ui/CollapsibleHeader";
 import Label from "@/components/ui/Label";
 import Select from "@/components/ui/Select";
@@ -8,6 +9,7 @@ type RecipeDietLevelFilter = "all" | "0" | "1";
 type RecipeFiltersProps = {
     dietLevel: RecipeDietLevelFilter;
     onDietLevelChange: (dietLevel: RecipeDietLevelFilter) => void;
+    mobile?: boolean;
 };
 
 const dietLevelOptions: Array<{ value: RecipeDietLevelFilter; label: string; }> = [
@@ -25,15 +27,32 @@ const dietLevelOptions: Array<{ value: RecipeDietLevelFilter; label: string; }> 
     },
 ];
 
-export default function RecipeFilters({ dietLevel, onDietLevelChange }: RecipeFiltersProps) {
+export default function RecipeFilters({ dietLevel, onDietLevelChange, mobile = false }: RecipeFiltersProps) {
     const [collapsed, setCollapsed] = useState(false);
     return (
-        <aside className="w-full rounded-md border border-black bg-white p-3 md:w-56 md:shrink-0">
+        <>
+        {mobile && 
+        (<Stack space="sm">
+            <Text>Filters</Text>
+            <Label htmlFor="dietLevel" >
+                Diet
+            </Label>
+            <Select id="dietLevel" value={dietLevel} onChange={(e) => onDietLevelChange(e.target.value as RecipeDietLevelFilter)}>
+                {dietLevelOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                        {option.label}
+                    </option>
+                ))}
+            </Select>
+        </Stack>)
+        }
+        {!mobile && <aside className="w-full rounded-md border border-black bg-white p-3 md:w-56 md:shrink-0">
             <fieldset>
                 <CollapsibleHeader title="Filters" collapsible collapsed={collapsed} onToggle={setCollapsed} />
                 
                 {!collapsed && (
                     <>
+                    <Stack space="md">
                     <Label htmlFor="dietLevel" >
                         Diet
                     </Label>
@@ -44,9 +63,12 @@ export default function RecipeFilters({ dietLevel, onDietLevelChange }: RecipeFi
                             </option>
                         ))}
                     </Select>
+                    </Stack>
                     </>
                 )}
             </fieldset>
         </aside>
+        }
+        </>
     );
 }

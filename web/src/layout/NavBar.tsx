@@ -1,7 +1,7 @@
 import { Stack } from "@/components";
 import NavItem from "@/layout/NavItem";
 import IconButton from "@/components/ui/IconButton";
-import MobileNavDrawer from "./MobileNavDrawer";
+import MobileNavDrawer from "../components/ui/MobileNavDrawer";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useSignOut } from "@/features/auth/hooks/useSignOut";
 import { commonStrings } from "@/lib";

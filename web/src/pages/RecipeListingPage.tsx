@@ -2,6 +2,8 @@ import { Alert, Button, PageTitle, Spinner } from "@/components";
 import Inline from "@/components/layout/Inline";
 import Stack from "@/components/layout/Stack";
 import BackToTop from "@/components/ui/BackToTop";
+import IconButton from "@/components/ui/IconButton";
+import MobileNavDrawer from "@/components/ui/MobileNavDrawer";
 import SearchBar from "@/components/ui/SearchBar";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { RecipeList, useRecipes } from "@/features/recipes";
@@ -10,7 +12,7 @@ import RecipeFilters from "@/features/recipes/components/RecipeFilters";
 import { Page } from "@/layout";
 import { extractErrorMessage } from "@/lib/errors";
 import { commonStrings } from "@/lib/strings";
-import { Plus } from "lucide-react";
+import { Plus, SlidersHorizontal } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
@@ -39,6 +41,7 @@ export default function RecipeListingPage() {
     const hasQuery = query.length > 0;
     const [draftQuery, setDraftQuery] = useState(query);
     const [showScrollTopButton, setShowScrollTopButton] = useState(false);
+    const [showFilterDrawer, setShowFilterDrawer] = useState(false);
 
     const dietLevel = normalizeDietLevelParam(searchParams.get("dietLevel"));
 
@@ -138,14 +141,25 @@ export default function RecipeListingPage() {
                 {error && <Alert message={extractErrorMessage(error)} closable />}
                 <Inline align="start" justify="start" wrap className="w-full" gap="lg">
                     {/* Filters */}
-                    <RecipeFilters dietLevel={dietLevel} onDietLevelChange={handleDietLevelChange} />
+                    <div className="hidden lg:block">
+                        <RecipeFilters dietLevel={dietLevel} onDietLevelChange={handleDietLevelChange} />
+                    </div>
                     {/* Search bar and list */}
                     <Stack className="min-w-0 flex-1" space="lg">
-                        <SearchBar
-                            value={draftQuery}
-                            onChange={setDraftQuery}
-                            onSubmit={handleSubmitSearch}
-                        />
+                        <Inline justify="start" align="center" className="w-full">
+                            <div className="min-w-0 flex-1">
+                                <SearchBar
+                                    value={draftQuery}
+                                    onChange={setDraftQuery}
+                                    onSubmit={handleSubmitSearch}
+                                />
+                            </div>
+                            <div className="block shrink-0 lg:hidden">
+                                <IconButton variant="secondary" onClick={() => setShowFilterDrawer(true)} aria-label="Open filters">
+                                    <SlidersHorizontal />
+                                </IconButton>
+                            </div>
+                        </Inline>
                         {hasActiveFilters && (
                             <Inline justify="start" align="center" className="w-full rounded-md border border-black bg-gray-50 p-2">
                                 <span className="text-xs font-semibold uppercase tracking-wide text-gray-600">Active filters</span>
@@ -189,6 +203,11 @@ export default function RecipeListingPage() {
             </div>
 
             <BackToTop showScrollTopButton={showScrollTopButton} scrollToTop={scrollToTop} />
+            {showFilterDrawer && (
+                <MobileNavDrawer open={showFilterDrawer} onClose={() => setShowFilterDrawer(false)}>
+                    <RecipeFilters mobile dietLevel={dietLevel} onDietLevelChange={handleDietLevelChange} />
+                </MobileNavDrawer>
+            )}
         </Page>
     );
 }

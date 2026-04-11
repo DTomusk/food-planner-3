@@ -3,7 +3,7 @@ import { useState } from "react";
 import { BookOpen, Home, LogOut } from "lucide-react";
 import { fn } from "storybook/test";
 import MobileNavDrawer from "./MobileNavDrawer";
-import NavItem from "./NavItem";
+import NavItem from "../../layout/NavItem";
 import Stack from "@/components/layout/Stack";
 
 function DefaultChildren() {
