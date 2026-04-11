@@ -8,11 +8,11 @@
     - Type: feature
     - Why: it should be easy for people with different dietary requirements to search recipes that meet their needs/wants
     - DoD: 
-        - [ ] animal product enum on ingredients (i.e. vegan, vegetarian, meat)
+        - [x] animal product enum on ingredients (i.e. vegan, vegetarian, meat)
         - [ ] gluten on ingredients 
-        - [ ] recipe versions store whether they are whatever 
-        - [ ] users can filter on dietary tags 
-        - [ ] recipes show clearly in listing and detail what they are
+        - [x] recipe versions store whether they are whatever 
+        - [x] users can filter on dietary tags 
+        - [x] recipes show clearly in listing and detail what they are
 
 ## Planning
 

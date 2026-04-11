@@ -8,6 +8,7 @@ type IngredientModel struct {
 	Plural             *string `yaml:"plural,omitempty"`
 	CounterPlural      *string `yaml:"counter_plural,omitempty"`
 	AnimalProductLevel int     `yaml:"animal_product_level,omitempty"`
+	ContainsGluten     bool    `yaml:"contains_gluten,omitempty"`
 }
 
 type FileData struct {

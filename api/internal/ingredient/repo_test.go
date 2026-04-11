@@ -25,6 +25,7 @@ func TestUpsertIngredients_PersistsAnimalProductLevel(t *testing.T) {
 			Plural:             nil,
 			CounterPlural:      nil,
 			AnimalProductLevel: Vegan,
+			ContainsGluten:     false,
 		}
 		ingredientB := &Ingredient{
 			ID:                 uuid.New(),
@@ -35,6 +36,7 @@ func TestUpsertIngredients_PersistsAnimalProductLevel(t *testing.T) {
 			Plural:             nil,
 			CounterPlural:      nil,
 			AnimalProductLevel: Meat,
+			ContainsGluten:     true,
 		}
 
 		err := repo.UpsertIngredients(ctx, tx, []*Ingredient{ingredientA, ingredientB})
@@ -51,6 +53,8 @@ func TestUpsertIngredients_PersistsAnimalProductLevel(t *testing.T) {
 
 		require.Equal(t, Vegan, persistedByID[ingredientA.ID].AnimalProductLevel)
 		require.Equal(t, Meat, persistedByID[ingredientB.ID].AnimalProductLevel)
+		require.Equal(t, ingredientA.ContainsGluten, persistedByID[ingredientA.ID].ContainsGluten)
+		require.Equal(t, ingredientB.ContainsGluten, persistedByID[ingredientB.ID].ContainsGluten)
 	})
 }
 
@@ -68,6 +72,7 @@ func TestUpsertIngredients_UpdatesExistingIngredientByFileKey(t *testing.T) {
 			Plural:             nil,
 			CounterPlural:      nil,
 			AnimalProductLevel: Vegan,
+			ContainsGluten:     false,
 		}
 
 		err := repo.UpsertIngredients(ctx, tx, []*Ingredient{original})
@@ -82,6 +87,7 @@ func TestUpsertIngredients_UpdatesExistingIngredientByFileKey(t *testing.T) {
 			Plural:             testutil.PtrString("Test Ingredient Updateds"),
 			CounterPlural:      testutil.PtrString("slices"),
 			AnimalProductLevel: Vegetarian,
+			ContainsGluten:     true,
 		}
 
 		err = repo.UpsertIngredients(ctx, tx, []*Ingredient{updated})
@@ -98,6 +104,7 @@ func TestUpsertIngredients_UpdatesExistingIngredientByFileKey(t *testing.T) {
 		require.Equal(t, updated.Plural, persisted[0].Plural)
 		require.Equal(t, updated.CounterPlural, persisted[0].CounterPlural)
 		require.Equal(t, updated.AnimalProductLevel, persisted[0].AnimalProductLevel)
+		require.Equal(t, updated.ContainsGluten, persisted[0].ContainsGluten)
 	})
 }
 

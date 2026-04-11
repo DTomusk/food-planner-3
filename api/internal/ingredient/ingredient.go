@@ -15,9 +15,10 @@ type Ingredient struct {
 	Plural             *string
 	CounterPlural      *string
 	AnimalProductLevel AnimalProductLevel
+	ContainsGluten     bool
 }
 
-func NewIngredient(name, fileKey string, preferredUnit int, counter, plural, counterPlural *string, animalProductLevel AnimalProductLevel) (*Ingredient, error) {
+func NewIngredient(name, fileKey string, preferredUnit int, counter, plural, counterPlural *string, animalProductLevel AnimalProductLevel, containsGluten bool) (*Ingredient, error) {
 	if name == "" {
 		return nil, ErrInvalidName
 	}
@@ -33,6 +34,7 @@ func NewIngredient(name, fileKey string, preferredUnit int, counter, plural, cou
 		Plural:             plural,
 		CounterPlural:      counterPlural,
 		AnimalProductLevel: animalProductLevel,
+		ContainsGluten:     containsGluten,
 	}, nil
 }
 
