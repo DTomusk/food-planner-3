@@ -116,6 +116,39 @@ func TestGetRecipeByID_ReturnsCurrentVersionAnimalProductLevel(t *testing.T) {
 	})
 }
 
+func TestGetRecipeByID_ReturnsCurrentVersionContainsGluten(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		r, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		recipeID := uuid.New()
+		versionID := uuid.New()
+		expectedContainsGluten := true
+
+		err = seeds.InsertRecipeContainer(ctx, tx, recipeID, testUser.ID)
+		require.NoError(t, err)
+
+		err = seeds.InsertRecipeVersion(ctx, tx, versionID, recipeID, "Gluten Recipe", 30, 60, 8, 1)
+		require.NoError(t, err)
+
+		_, err = tx.ExecContext(ctx, `UPDATE recipe_versions SET contains_gluten = $1 WHERE id = $2`, expectedContainsGluten, versionID)
+		require.NoError(t, err)
+
+		err = seeds.SetRecipeContainerCurrentVersion(ctx, tx, recipeID, versionID)
+		require.NoError(t, err)
+
+		recipeContainer, err := r.getRecipeByID(ctx, tx, recipeID)
+		require.NoError(t, err)
+		require.NotNil(t, recipeContainer)
+		require.NotNil(t, recipeContainer.CurrentVersion)
+		require.Equal(t, expectedContainsGluten, recipeContainer.CurrentVersion.ContainsGluten)
+	})
+}
+
 func TestGetRecipes_ReturnsActiveRecipesOrderedByCreatedAtAndIDDesc(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		ctx := context.Background()
@@ -369,6 +402,70 @@ func TestGetRecipesByRelevance_FiltersByAnimalProductLevel(t *testing.T) {
 		require.True(t, hasVegan)
 		require.True(t, hasVegetarian)
 		require.True(t, hasMeat)
+	})
+}
+
+func TestGetRecipesByCreatedAt_FiltersByContainsGluten(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		r, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		base := time.Date(2026, time.March, 17, 11, 40, 48, 147630000, time.UTC)
+		glutenFree := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("12341234-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "Gluten Free Soup", base, nil, nil)
+		containsGluten := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("12341234-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "Wheat Soup", base.Add(-1*time.Minute), nil, nil)
+
+		_, err = tx.ExecContext(ctx, `UPDATE recipe_versions SET contains_gluten = $1 WHERE id = $2`, false, glutenFree.VersionID)
+		require.NoError(t, err)
+		_, err = tx.ExecContext(ctx, `UPDATE recipe_versions SET contains_gluten = $1 WHERE id = $2`, true, containsGluten.VersionID)
+		require.NoError(t, err)
+
+		trueFilter := true
+		recipes, err := r.getRecipesByCreatedAt(ctx, tx, 10, nil, normalizedRecipeFilter{ContainsGluten: &trueFilter})
+		require.NoError(t, err)
+		require.Len(t, recipes, 1)
+		require.Equal(t, containsGluten.RecipeID, recipes[0].Recipe.ID)
+
+		falseFilter := false
+		recipes, err = r.getRecipesByCreatedAt(ctx, tx, 10, nil, normalizedRecipeFilter{ContainsGluten: &falseFilter})
+		require.NoError(t, err)
+		require.Len(t, recipes, 1)
+		require.Equal(t, glutenFree.RecipeID, recipes[0].Recipe.ID)
+	})
+}
+
+func TestGetRecipesByRelevance_FiltersByContainsGluten(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		r, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		base := time.Date(2026, time.March, 17, 11, 40, 48, 147630000, time.UTC)
+		glutenFree := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("12341234-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "Rice Curry", base, nil, nil)
+		containsGluten := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("12341234-dddd-dddd-dddd-ddddddddddd4"), uuid.New(), "Naan Curry", base.Add(-1*time.Minute), nil, nil)
+
+		_, err = tx.ExecContext(ctx, `UPDATE recipe_versions SET contains_gluten = $1 WHERE id = $2`, false, glutenFree.VersionID)
+		require.NoError(t, err)
+		_, err = tx.ExecContext(ctx, `UPDATE recipe_versions SET contains_gluten = $1 WHERE id = $2`, true, containsGluten.VersionID)
+		require.NoError(t, err)
+
+		trueFilter := true
+		recipes, err := r.getRecipesByRelevance(ctx, tx, "curry", 10, nil, normalizedRecipeFilter{ContainsGluten: &trueFilter})
+		require.NoError(t, err)
+		require.Len(t, recipes, 1)
+		require.Equal(t, containsGluten.RecipeID, recipes[0].Recipe.ID)
+
+		falseFilter := false
+		recipes, err = r.getRecipesByRelevance(ctx, tx, "curry", 10, nil, normalizedRecipeFilter{ContainsGluten: &falseFilter})
+		require.NoError(t, err)
+		require.Len(t, recipes, 1)
+		require.Equal(t, glutenFree.RecipeID, recipes[0].Recipe.ID)
 	})
 }
 

@@ -15,11 +15,11 @@ func NewRecipeVersionRepo() *recipeVersionRepo {
 }
 
 const (
-	recipeVersionColumns       = `id, recipe_id, name, description, prep_mins, cook_mins, portions, created_at, version, img_src, animal_product_level`
-	recipeVersionInsertColumns = `id, recipe_id, name, description, prep_mins, cook_mins, portions, version, img_src, animal_product_level`
+	recipeVersionColumns       = `id, recipe_id, name, description, prep_mins, cook_mins, portions, created_at, version, img_src, animal_product_level, contains_gluten`
+	recipeVersionInsertColumns = `id, recipe_id, name, description, prep_mins, cook_mins, portions, version, img_src, animal_product_level, contains_gluten`
 
 	insertRecipeVersionQuery = `INSERT INTO recipe_versions (` + recipeVersionInsertColumns + `)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 	RETURNING ` + recipeVersionColumns
 	selectRecipeVersionByIDQuery                 = `SELECT ` + recipeVersionColumns + ` FROM recipe_versions WHERE id = $1`
 	selectRecipeVersionByRecipeIDAndVersionQuery = `SELECT ` + recipeVersionColumns + `
@@ -44,6 +44,7 @@ func recipeVersionScanDest(version *RecipeVersion) []any {
 		&version.Version,
 		&version.ImgSrc,
 		&version.AnimalProductLevel,
+		&version.ContainsGluten,
 	}
 }
 
@@ -62,6 +63,7 @@ func (r *recipeVersionRepo) createRecipeVersion(ctx context.Context, tx *sql.Tx,
 		version.Version,
 		version.ImgSrc,
 		version.AnimalProductLevel,
+		version.ContainsGluten,
 	).Scan(recipeVersionScanDest(&dbRecipeVersion)...)
 	if err != nil {
 		return nil, err

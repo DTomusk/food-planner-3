@@ -1,0 +1,2 @@
+ALTER TABLE recipe_versions
+ADD COLUMN contains_gluten BOOLEAN NOT NULL DEFAULT FALSE;

@@ -717,6 +717,163 @@ func TestUpdateRecipe_SetsAnimalProductLevelOnNewVersionFromIngredients(t *testi
 	})
 }
 
+func TestCreateRecipe_SetsContainsGlutenFromIngredients(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+
+		glutenFreeIngredientID := uuid.New()
+		glutenFreeIngredient := ingredient.Ingredient{
+			ID:            glutenFreeIngredientID,
+			FileKey:       "gluten_free_ingredient",
+			Name:          "Rice",
+			PreferredUnit: 1,
+		}
+		err := seeds.InsertIngredient(ctx, tx, &glutenFreeIngredient)
+		require.NoError(t, err)
+
+		glutenIngredientID := uuid.New()
+		glutenIngredient := ingredient.Ingredient{
+			ID:            glutenIngredientID,
+			FileKey:       "gluten_ingredient",
+			Name:          "Flour",
+			PreferredUnit: 1,
+		}
+		err = seeds.InsertIngredient(ctx, tx, &glutenIngredient)
+		require.NoError(t, err)
+
+		_, err = tx.ExecContext(ctx, `UPDATE reference.ingredients SET contains_gluten = $1 WHERE id = $2`, false, glutenFreeIngredientID)
+		require.NoError(t, err)
+		_, err = tx.ExecContext(ctx, `UPDATE reference.ingredients SET contains_gluten = $1 WHERE id = $2`, true, glutenIngredientID)
+		require.NoError(t, err)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		s := NewService(
+			txRunner,
+			repo,
+			NewRecipeVersionRepo(),
+			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
+			NewIngredientUsageRepo(),
+			nil,
+			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
+		)
+
+		request := CreateRecipeRequest{
+			Name: "Gluten Dish",
+			Ingredients: []CreateIngredientUsageRequest{
+				{IngredientID: glutenFreeIngredientID.String(), Quantity: 1, Unit: 1},
+				{IngredientID: glutenIngredientID.String(), Quantity: 1, Unit: 1},
+			},
+			UserID:   testUser.ID.String(),
+			PrepMins: 10,
+			CookMins: 15,
+			Portions: 2,
+		}
+
+		recipeContainer, err := s.CreateRecipe(ctx, request)
+		require.NoError(t, err)
+		require.NotNil(t, recipeContainer)
+		require.True(t, recipeContainer.CurrentVersion.ContainsGluten)
+
+		var persistedContainsGluten bool
+		err = tx.QueryRowContext(ctx, `SELECT contains_gluten FROM recipe_versions WHERE id = $1`, recipeContainer.CurrentVersionID).Scan(&persistedContainsGluten)
+		require.NoError(t, err)
+		require.True(t, persistedContainsGluten)
+	})
+}
+
+func TestUpdateRecipe_SetsContainsGlutenOnNewVersionFromIngredients(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+
+		glutenFreeIngredientID := uuid.New()
+		glutenFreeIngredient := ingredient.Ingredient{
+			ID:            glutenFreeIngredientID,
+			FileKey:       "gluten_free_ingredient_update",
+			Name:          "Rice",
+			PreferredUnit: 1,
+		}
+		err := seeds.InsertIngredient(ctx, tx, &glutenFreeIngredient)
+		require.NoError(t, err)
+
+		glutenIngredientID := uuid.New()
+		glutenIngredient := ingredient.Ingredient{
+			ID:            glutenIngredientID,
+			FileKey:       "gluten_ingredient_update",
+			Name:          "Wheat",
+			PreferredUnit: 1,
+		}
+		err = seeds.InsertIngredient(ctx, tx, &glutenIngredient)
+		require.NoError(t, err)
+
+		_, err = tx.ExecContext(ctx, `UPDATE reference.ingredients SET contains_gluten = $1 WHERE id = $2`, false, glutenFreeIngredientID)
+		require.NoError(t, err)
+		_, err = tx.ExecContext(ctx, `UPDATE reference.ingredients SET contains_gluten = $1 WHERE id = $2`, true, glutenIngredientID)
+		require.NoError(t, err)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		s := NewService(
+			txRunner,
+			repo,
+			NewRecipeVersionRepo(),
+			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
+			NewIngredientUsageRepo(),
+			nil,
+			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
+		)
+
+		createReq := CreateRecipeRequest{
+			Name: "Gluten Free Dish",
+			Ingredients: []CreateIngredientUsageRequest{
+				{IngredientID: glutenFreeIngredientID.String(), Quantity: 1, Unit: 1},
+			},
+			UserID:   testUser.ID.String(),
+			PrepMins: 5,
+			CookMins: 10,
+			Portions: 1,
+		}
+
+		createdRecipe, err := s.CreateRecipe(ctx, createReq)
+		require.NoError(t, err)
+		require.NotNil(t, createdRecipe)
+		require.False(t, createdRecipe.CurrentVersion.ContainsGluten)
+
+		updateReq := UpdateRecipeRequest{
+			RecipeId: createdRecipe.ID.String(),
+			Request: CreateRecipeRequest{
+				Name: "Now With Wheat",
+				Ingredients: []CreateIngredientUsageRequest{
+					{IngredientID: glutenFreeIngredientID.String(), Quantity: 1, Unit: 1},
+					{IngredientID: glutenIngredientID.String(), Quantity: 1, Unit: 1},
+				},
+				UserID:   testUser.ID.String(),
+				PrepMins: 5,
+				CookMins: 10,
+				Portions: 1,
+			},
+		}
+
+		updatedRecipe, err := s.UpdateRecipe(ctx, updateReq)
+		require.NoError(t, err)
+		require.NotNil(t, updatedRecipe)
+		require.True(t, updatedRecipe.CurrentVersion.ContainsGluten)
+
+		var persistedContainsGluten bool
+		err = tx.QueryRowContext(ctx, `SELECT contains_gluten FROM recipe_versions WHERE id = $1`, updatedRecipe.CurrentVersionID).Scan(&persistedContainsGluten)
+		require.NoError(t, err)
+		require.True(t, persistedContainsGluten)
+	})
+}
+
 func TestUpdateRecipe_WithUsedImageUploadID_ReturnsErrorAndDoesNotCreateNewVersion(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		txRunner := testutil.NewTestTxRunner(tx)
@@ -1857,6 +2014,59 @@ func TestGetRecipes_UnsupportedAnimalProductLevelUsesUnfilteredCursorHash(t *tes
 		require.NoError(t, err)
 		require.NotNil(t, parsed)
 		require.Equal(t, filterHash(RecipeCursorModeNewest, nil, normalizedRecipeFilter{}), parsed.FilterHash)
+	})
+}
+
+func TestGetRecipes_FiltersByContainsGluten(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx, s, newest, middle, _ := setupRecipeListFixture(t, tx)
+
+		_, err := tx.ExecContext(ctx, `UPDATE recipe_versions SET contains_gluten = $1 WHERE id = $2`, false, newest.VersionID)
+		require.NoError(t, err)
+		_, err = tx.ExecContext(ctx, `UPDATE recipe_versions SET contains_gluten = $1 WHERE id = $2`, true, middle.VersionID)
+		require.NoError(t, err)
+
+		containsGluten := true
+		recipes, nextCursor, err := s.GetRecipes(ctx, RecipeListParams{
+			Pagination: RecipePagination{First: 10},
+			Filter:     RecipeFilter{ContainsGluten: &containsGluten},
+		})
+		require.NoError(t, err)
+		require.Nil(t, nextCursor)
+		require.Len(t, recipes, 1)
+		require.Equal(t, middle.RecipeID, recipes[0].Recipe.ID)
+
+		glutenFree := false
+		recipes, nextCursor, err = s.GetRecipes(ctx, RecipeListParams{
+			Pagination: RecipePagination{First: 10},
+			Filter:     RecipeFilter{ContainsGluten: &glutenFree},
+		})
+		require.NoError(t, err)
+		require.Nil(t, nextCursor)
+		require.Len(t, recipes, 2)
+		require.Equal(t, newest.RecipeID, recipes[0].Recipe.ID)
+	})
+}
+
+func TestGetRecipes_ContainsGlutenFilterAffectsCursorHash(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx, s, newest, _, _ := setupRecipeListFixture(t, tx)
+
+		_, err := tx.ExecContext(ctx, `UPDATE recipe_versions SET contains_gluten = $1 WHERE id = $2`, true, newest.VersionID)
+		require.NoError(t, err)
+
+		containsGluten := true
+		recipes, _, err := s.GetRecipes(ctx, RecipeListParams{
+			Pagination: RecipePagination{First: 2},
+			Filter:     RecipeFilter{ContainsGluten: &containsGluten},
+		})
+		require.NoError(t, err)
+		require.NotEmpty(t, recipes)
+
+		parsed, err := ParseRecipeCursor(&recipes[0].Cursor)
+		require.NoError(t, err)
+		require.NotNil(t, parsed)
+		require.Equal(t, filterHash(RecipeCursorModeNewest, nil, normalizedRecipeFilter{ContainsGluten: &containsGluten}), parsed.FilterHash)
 	})
 }
 

@@ -39,6 +39,14 @@ func TestFilterHash(t *testing.T) {
 		h := filterHash(RecipeCursorModeNewest, nilQuery, normalizedRecipeFilter{})
 		require.Len(t, h, 16)
 	})
+
+	t.Run("different contains gluten filters produce different hashes", func(t *testing.T) {
+		containsGluten := true
+		glutenFree := false
+		h1 := filterHash(RecipeCursorModeNewest, nilQuery, normalizedRecipeFilter{ContainsGluten: &containsGluten})
+		h2 := filterHash(RecipeCursorModeNewest, nilQuery, normalizedRecipeFilter{ContainsGluten: &glutenFree})
+		require.NotEqual(t, h1, h2)
+	})
 }
 
 func TestNormalizedAnimalProductLevelFilter(t *testing.T) {

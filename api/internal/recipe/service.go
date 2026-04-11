@@ -48,7 +48,7 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 	logger.Debug("Creating recipe")
 	// Basic request validation
 	// We might want to enforce unique name per user
-	ingredientUsages, recipeSource, maxAnimalProductLevel, err := s.validateRecipeRequest(ctx, logger, request)
+	ingredientUsages, recipeSource, maxAnimalProductLevel, containsGluten, err := s.validateRecipeRequest(ctx, logger, request)
 	if err != nil {
 		logger.Error("Error validating recipe request", "error", err)
 		return nil, err
@@ -91,6 +91,7 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 		recipeSource,
 		imgSrc,
 		maxAnimalProductLevel,
+		containsGluten,
 	)
 	if err != nil {
 		logger.Error("Error creating recipe", "error", err)
@@ -161,25 +162,25 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 	return persistedRecipe, nil
 }
 
-func (s *Service) validateRecipeRequest(ctx context.Context, logger *slog.Logger, request CreateRecipeRequest) ([]*IngredientUsage, *RecipeSource, int, error) {
+func (s *Service) validateRecipeRequest(ctx context.Context, logger *slog.Logger, request CreateRecipeRequest) ([]*IngredientUsage, *RecipeSource, int, bool, error) {
 	if len(strings.TrimSpace(request.Name)) == 0 {
-		return nil, nil, 0, ErrEmptyName
+		return nil, nil, 0, false, ErrEmptyName
 	}
 	if len(request.Ingredients) == 0 {
-		return nil, nil, 0, ErrNoIngredients
+		return nil, nil, 0, false, ErrNoIngredients
 	}
 
-	ingredientUsages, maxAnimalProductLevel, err := s.validateAndConvertIngredientUsages(ctx, logger, request.Ingredients)
+	ingredientUsages, maxAnimalProductLevel, containsGluten, err := s.validateAndConvertIngredientUsages(ctx, logger, request.Ingredients)
 	if err != nil {
-		return nil, nil, 0, err
+		return nil, nil, 0, false, err
 	}
 
 	recipeSource, err := newSource(&request.Source)
 	if err != nil {
-		return nil, nil, 0, err
+		return nil, nil, 0, false, err
 	}
 
-	return ingredientUsages, recipeSource, maxAnimalProductLevel, nil
+	return ingredientUsages, recipeSource, maxAnimalProductLevel, containsGluten, nil
 }
 
 func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest) (*RecipeContainer, error) {
@@ -196,7 +197,7 @@ func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest)
 		return nil, ErrUnauthorized
 	}
 	// Validate request
-	ingredientUsages, recipeSource, maxAnimalProductLevel, err := s.validateRecipeRequest(ctx, logger, request.Request)
+	ingredientUsages, recipeSource, maxAnimalProductLevel, containsGluten, err := s.validateRecipeRequest(ctx, logger, request.Request)
 	if err != nil {
 		return nil, err
 	}
@@ -241,6 +242,7 @@ func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest)
 		recipeSource,
 		imgSrc,
 		maxAnimalProductLevel,
+		containsGluten,
 	)
 	if err != nil {
 		return nil, err
@@ -306,12 +308,12 @@ func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest)
 	return dbRecipeContainer, nil
 }
 
-func (s *Service) validateAndConvertIngredientUsages(ctx context.Context, logger *slog.Logger, ingredientUsageRequests []CreateIngredientUsageRequest) ([]*IngredientUsage, int, error) {
+func (s *Service) validateAndConvertIngredientUsages(ctx context.Context, logger *slog.Logger, ingredientUsageRequests []CreateIngredientUsageRequest) ([]*IngredientUsage, int, bool, error) {
 	seen := make(map[string]struct{}, len(ingredientUsageRequests))
 	uniqueIDs := make([]string, 0, len(ingredientUsageRequests))
 	for _, req := range ingredientUsageRequests {
 		if _, exists := seen[req.IngredientID]; exists {
-			return nil, 0, ErrDuplicateIngredient
+			return nil, 0, false, ErrDuplicateIngredient
 		}
 		seen[req.IngredientID] = struct{}{}
 		uniqueIDs = append(uniqueIDs, req.IngredientID)
@@ -319,13 +321,14 @@ func (s *Service) validateAndConvertIngredientUsages(ctx context.Context, logger
 
 	dbIngredients, err := s.ingredientService.GetIngredientsByIDs(ctx, logger, uniqueIDs)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, false, err
 	}
 	if len(dbIngredients) != len(uniqueIDs) {
-		return nil, 0, ErrIngredientNotFound
+		return nil, 0, false, ErrIngredientNotFound
 	}
 
 	maxAnimalProductLevel := 0
+	containsGluten := false
 
 	ingredientByID := make(map[string]*ingredient.Ingredient, len(dbIngredients))
 	for _, ing := range dbIngredients {
@@ -333,14 +336,17 @@ func (s *Service) validateAndConvertIngredientUsages(ctx context.Context, logger
 		if int(ing.AnimalProductLevel) > maxAnimalProductLevel {
 			maxAnimalProductLevel = int(ing.AnimalProductLevel)
 		}
+		if ing.ContainsGluten {
+			containsGluten = true
+		}
 	}
 
 	usages, err := newIngredientUsages(ingredientUsageRequests, ingredientByID)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, false, err
 	}
 
-	return usages, maxAnimalProductLevel, nil
+	return usages, maxAnimalProductLevel, containsGluten, nil
 }
 
 const (

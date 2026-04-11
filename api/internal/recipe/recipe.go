@@ -30,6 +30,7 @@ type RecipeVersion struct {
 	Source             *RecipeSource
 	ImgSrc             *string
 	AnimalProductLevel int
+	ContainsGluten     bool
 
 	CreatedAt time.Time
 }
@@ -45,11 +46,12 @@ func NewRecipe(
 	source *RecipeSource,
 	imgSrc *string,
 	animalProductLevel int,
+	containsGluten bool,
 ) (*RecipeContainer, error) {
 	recipeID := uuid.New()
 	now := time.Now()
 
-	version, err := NewRecipeVersion(recipeID, 1, name, description, ingredients, prepMins, cookMins, portions, source, imgSrc, animalProductLevel)
+	version, err := NewRecipeVersion(recipeID, 1, name, description, ingredients, prepMins, cookMins, portions, source, imgSrc, animalProductLevel, containsGluten)
 	if err != nil {
 		return nil, err
 	}
@@ -77,6 +79,7 @@ func NewRecipeVersion(
 	source *RecipeSource,
 	imgSrc *string,
 	animalProductLevel int,
+	containsGluten bool,
 ) (*RecipeVersion, error) {
 	if name == "" {
 		return nil, ErrEmptyName
@@ -119,6 +122,7 @@ func NewRecipeVersion(
 		CreatedAt:          now,
 		ImgSrc:             imgSrc,
 		AnimalProductLevel: animalProductLevel,
+		ContainsGluten:     containsGluten,
 	}, nil
 }
 

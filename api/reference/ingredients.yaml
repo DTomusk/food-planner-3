@@ -18,6 +18,7 @@ ingredients:
     name: "Flour"
     preferred_unit: 2
     animal_product_level: 0
+    contains_gluten: true
   - id: "bacon_rasher"
     name: "Bacon"
     preferred_unit: 1
@@ -28,6 +29,7 @@ ingredients:
     name: "Pasta"
     preferred_unit: 2
     animal_product_level: 0
+    contains_gluten: true
   - id: "cheese"
     name: "Cheese"
     preferred_unit: 2
