@@ -13,6 +13,20 @@ type RecipeFilter struct {
 	AnimalProductLevel *int
 }
 
+// normalizedRecipeFilter holds a validated, scrubbed form of RecipeFilter.
+// Always construct via normalizeFilter() to guarantee invariants.
+type normalizedRecipeFilter struct {
+	UserID             *uuid.UUID
+	AnimalProductLevel *int
+}
+
+func normalizeFilter(f RecipeFilter) normalizedRecipeFilter {
+	return normalizedRecipeFilter{
+		UserID:             f.UserID,
+		AnimalProductLevel: normalizedAnimalProductLevelFilter(f.AnimalProductLevel),
+	}
+}
+
 func normalizedAnimalProductLevelFilter(animalProductLevel *int) *int {
 	if animalProductLevel == nil {
 		return nil
@@ -23,18 +37,18 @@ func normalizedAnimalProductLevelFilter(animalProductLevel *int) *int {
 	return nil
 }
 
-func filterHashForParams(mode RecipeCursorMode, query *string, userID *uuid.UUID, animalProductLevel *int) string {
+func filterHash(mode RecipeCursorMode, query *string, nf normalizedRecipeFilter) string {
 	q := ""
 	if query != nil {
 		q = *query
 	}
 	u := ""
-	if userID != nil {
-		u = userID.String()
+	if nf.UserID != nil {
+		u = nf.UserID.String()
 	}
 	a := ""
-	if animalProductLevel != nil {
-		a = fmt.Sprintf("%d", *animalProductLevel)
+	if nf.AnimalProductLevel != nil {
+		a = fmt.Sprintf("%d", *nf.AnimalProductLevel)
 	}
 	h := sha256.Sum256([]byte(fmt.Sprintf("mode=%s|q=%s|u=%s|a=%s", mode, q, u, a)))
 	return fmt.Sprintf("%x", h[:8]) // 8 bytes = 16 hex chars, compact but collision-safe enough
