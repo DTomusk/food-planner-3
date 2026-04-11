@@ -17,7 +17,10 @@ const meta = {
                 id: "user1",
                 username: "chef123",
             },
+            animalProductLevel: 1,
         },
+        dietLevel: 1,
+        onClick: () => alert("Recipe card clicked!"),
     },
     argTypes: {
         recipe: { control: "object" },
