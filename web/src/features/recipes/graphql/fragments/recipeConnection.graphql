@@ -8,6 +8,7 @@ fragment RecipeConnectionListFields on RecipeConnection {
         imgSrc
         description
         animalProductLevel
+        containsGluten
       }
       author {
         id

@@ -4,6 +4,7 @@ import ImageDisplay from "@/components/ui/ImageDisplay";
 import Heading from "@/components/ui/Heading";
 import SharedBy from "@/components/SharedBy";
 import DietLevelTag from "./DietLevelTag";
+import Tag from "@/components/ui/Tag";
 
 interface RecipeListingCardProps {
     recipe: RecipeSummary;
@@ -35,7 +36,10 @@ export default function RecipeListingCard({ recipe, onClick, actions, dietLevel 
                         <Text variant="muted">Created on {new Date(recipe.createdAt).toLocaleDateString()}</Text>
                     </div>
                     <Text variant="body">{recipe.description}</Text>
-                    <DietLevelTag level={dietLevel} /> 
+                    <Inline justify="start">
+                        <DietLevelTag level={dietLevel} /> 
+                        {!recipe.containsGluten && <Tag>Gluten free</Tag>}
+                    </Inline>
                     </Stack>
                 </div>
             </div>

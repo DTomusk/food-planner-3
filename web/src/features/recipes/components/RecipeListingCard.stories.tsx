@@ -18,6 +18,7 @@ const meta = {
                 username: "chef123",
             },
             animalProductLevel: 1,
+            containsGluten: true,
         },
         dietLevel: 1,
         onClick: () => alert("Recipe card clicked!"),

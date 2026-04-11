@@ -43,6 +43,7 @@ export default function RecipeContentSections({
                 versionNumber={versionNumber}
                 sharedBy={user ? { username: user.username, id: user.id } : undefined}
                 dietLevel={recipe.animalProductLevel}
+                containsGluten={recipe.containsGluten}
             />
 
             <BorderedSection title="Ingredients">

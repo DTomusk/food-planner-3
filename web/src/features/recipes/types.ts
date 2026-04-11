@@ -13,6 +13,7 @@ export type Recipe = {
     version: number;
     imageUrl: string | null;
     animalProductLevel: number;
+    containsGluten: boolean;
 };
 
 // TODO: move to user feature
@@ -52,6 +53,7 @@ export type RecipeSummary = {
     createdAt: string;
     author: User;
     animalProductLevel: number;
+    containsGluten: boolean;
 };
 
 export type RecipeFormValues = z.infer<typeof recipeFormSchema>;

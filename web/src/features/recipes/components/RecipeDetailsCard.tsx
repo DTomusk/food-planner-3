@@ -17,6 +17,7 @@ type RecipeDetailsCardProps = {
         id: string;
     },
     dietLevel: number;
+    containsGluten: boolean;
 };
 
 export default function RecipeDetailsCard({ 
@@ -29,6 +30,7 @@ export default function RecipeDetailsCard({
     versionNumber,
     sharedBy,
     dietLevel,
+    containsGluten,
 }: RecipeDetailsCardProps) {
     return (
         <div className="flex flex-col border border-black bg-white rounded shadow">
@@ -45,7 +47,10 @@ export default function RecipeDetailsCard({
                     <h2 className="text-3xl font-bold">{recipeTitle}</h2>
                     {sharedBy && <SharedBy user={sharedBy} />}
                     <p className="text-gray-700">{description}</p>
-                    <DietLevelTag level={dietLevel} /> 
+                    <Inline justify="start" gap="sm">
+                        <DietLevelTag level={dietLevel} /> 
+                        {!containsGluten && <Tag>Gluten free</Tag>}
+                    </Inline>
                 </Stack>
             </div>
             <div className="bg-primary-600 text-white rounded-b px-4 py-3 mt-[-1px]">
