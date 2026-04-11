@@ -373,7 +373,7 @@ func (s *Service) GetRecipes(ctx context.Context, params RecipeListParams) ([]*R
 	if query != nil {
 		mode = RecipeCursorModeRelevance
 	}
-	filterHash := filterHashForParams(mode, query, params.Filter.UserID)
+	filterHash := filterHashForParams(mode, query, params.Filter.UserID, params.Filter.AnimalProductLevel)
 
 	cursor := params.Pagination.After
 	c, err := ParseRecipeCursor(cursor)
@@ -391,10 +391,10 @@ func (s *Service) GetRecipes(ctx context.Context, params RecipeListParams) ([]*R
 	var rows []*RecipeListRow
 	switch mode {
 	case RecipeCursorModeNewest:
-		rows, err = s.recipeRepo.getRecipesByCreatedAt(ctx, s.txRunner.DB(), count+1, c, params.Filter.UserID)
+		rows, err = s.recipeRepo.getRecipesByCreatedAt(ctx, s.txRunner.DB(), count+1, c, params.Filter.UserID, params.Filter.AnimalProductLevel)
 	case RecipeCursorModeRelevance:
 		// query can be safely dereferenced as checked above
-		rows, err = s.recipeRepo.getRecipesByRelevance(ctx, s.txRunner.DB(), *query, count+1, c, params.Filter.UserID)
+		rows, err = s.recipeRepo.getRecipesByRelevance(ctx, s.txRunner.DB(), *query, count+1, c, params.Filter.UserID, params.Filter.AnimalProductLevel)
 	default:
 		return nil, nil, ErrInvalidCursor
 	}

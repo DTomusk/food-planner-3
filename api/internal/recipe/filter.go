@@ -8,11 +8,12 @@ import (
 )
 
 type RecipeFilter struct {
-	Query  *string
-	UserID *uuid.UUID
+	Query              *string
+	UserID             *uuid.UUID
+	AnimalProductLevel *int
 }
 
-func filterHashForParams(mode RecipeCursorMode, query *string, userID *uuid.UUID) string {
+func filterHashForParams(mode RecipeCursorMode, query *string, userID *uuid.UUID, animalProductLevel *int) string {
 	q := ""
 	if query != nil {
 		q = *query
@@ -21,6 +22,10 @@ func filterHashForParams(mode RecipeCursorMode, query *string, userID *uuid.UUID
 	if userID != nil {
 		u = userID.String()
 	}
-	h := sha256.Sum256([]byte(fmt.Sprintf("mode=%s|q=%s|u=%s", mode, q, u)))
+	a := ""
+	if animalProductLevel != nil {
+		a = fmt.Sprintf("%d", *animalProductLevel)
+	}
+	h := sha256.Sum256([]byte(fmt.Sprintf("mode=%s|q=%s|u=%s|a=%s", mode, q, u, a)))
 	return fmt.Sprintf("%x", h[:8]) // 8 bytes = 16 hex chars, compact but collision-safe enough
 }

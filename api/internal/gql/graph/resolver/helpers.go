@@ -90,6 +90,7 @@ func buildRecipeListParams(
 
 	var query *string
 	var userID *uuid.UUID
+	var animalProductLevel *int
 	if filter != nil {
 		query = filter.Query
 		if filter.UserID != nil {
@@ -99,6 +100,10 @@ func buildRecipeListParams(
 			}
 			userID = &parsed
 		}
+		if filter.AnimalProductLevel != nil {
+			animalProductLevel = new(int)
+			*animalProductLevel = int(*filter.AnimalProductLevel)
+		}
 	}
 
 	return recipe.RecipeListParams{
@@ -107,8 +112,9 @@ func buildRecipeListParams(
 			After: after,
 		},
 		Filter: recipe.RecipeFilter{
-			Query:  query,
-			UserID: userID,
+			Query:              query,
+			UserID:             userID,
+			AnimalProductLevel: animalProductLevel,
 		},
 	}, nil
 }

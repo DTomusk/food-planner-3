@@ -5241,7 +5241,7 @@ func (ec *executionContext) unmarshalInputRecipeFilterInput(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"query", "userID"}
+	fieldsInOrder := [...]string{"query", "userID", "animalProductLevel"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -5262,6 +5262,13 @@ func (ec *executionContext) unmarshalInputRecipeFilterInput(ctx context.Context,
 				return it, err
 			}
 			it.UserID = data
+		case "animalProductLevel":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("animalProductLevel"))
+			data, err := ec.unmarshalOInt2ᚖint32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AnimalProductLevel = data
 		}
 	}
 

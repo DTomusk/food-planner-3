@@ -1411,9 +1411,9 @@ func TestGetRecipes_PaginatesAcrossPages(t *testing.T) {
 		middleCreatedAt := newestCreatedAt.Add(-1 * time.Minute)
 		oldestCreatedAt := newestCreatedAt.Add(-2 * time.Minute)
 
-		newest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "Newest", newestCreatedAt, nil)
-		middle := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "Middle", middleCreatedAt, nil)
-		oldest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "Oldest", oldestCreatedAt, nil)
+		newest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "Newest", newestCreatedAt, nil, nil)
+		middle := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "Middle", middleCreatedAt, nil, nil)
+		oldest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "Oldest", oldestCreatedAt, nil, nil)
 
 		params := RecipeListParams{
 			Pagination: RecipePagination{
@@ -1514,14 +1514,14 @@ func TestGetRecipes_CursorIncludesModeAndFilterHashForNewest(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, edgeCursor)
 		require.Equal(t, RecipeCursorModeNewest, edgeCursor.Mode)
-		require.Equal(t, filterHashForParams(RecipeCursorModeNewest, nil, nil), edgeCursor.FilterHash)
+		require.Equal(t, filterHashForParams(RecipeCursorModeNewest, nil, nil, nil), edgeCursor.FilterHash)
 		require.Nil(t, edgeCursor.RelevanceScore)
 
 		pageCursor, err := ParseRecipeCursor(nextCursor)
 		require.NoError(t, err)
 		require.NotNil(t, pageCursor)
 		require.Equal(t, RecipeCursorModeNewest, pageCursor.Mode)
-		require.Equal(t, filterHashForParams(RecipeCursorModeNewest, nil, nil), pageCursor.FilterHash)
+		require.Equal(t, filterHashForParams(RecipeCursorModeNewest, nil, nil, nil), pageCursor.FilterHash)
 	})
 }
 
@@ -1533,7 +1533,7 @@ func TestGetRecipes_StaleCursorModeIsIgnored(t *testing.T) {
 		score := 0.8
 		staleCursor := (&RecipeCursor{
 			Mode:           RecipeCursorModeRelevance,
-			FilterHash:     filterHashForParams(RecipeCursorModeRelevance, &searchQuery, nil),
+			FilterHash:     filterHashForParams(RecipeCursorModeRelevance, &searchQuery, nil, nil),
 			CreatedAt:      newest.CreatedAt,
 			ID:             newest.RecipeID,
 			RelevanceScore: &score,
@@ -1588,7 +1588,7 @@ func TestGetRecipes_ValidCursorWithMatchingHashAppliesBoundary(t *testing.T) {
 
 		validCursor := (&RecipeCursor{
 			Mode:       RecipeCursorModeNewest,
-			FilterHash: filterHashForParams(RecipeCursorModeNewest, nil, nil),
+			FilterHash: filterHashForParams(RecipeCursorModeNewest, nil, nil, nil),
 			CreatedAt:  newest.CreatedAt,
 			ID:         newest.RecipeID,
 		}).String()
@@ -1629,7 +1629,7 @@ func TestGetRecipes_SearchQueryReturnsRelevanceCursorsAndPaginates(t *testing.T)
 		require.Equal(t, exactHigh.RecipeID, firstPage[0].Recipe.ID)
 		require.Equal(t, exactLow.RecipeID, firstPage[1].Recipe.ID)
 
-		expectedHash := filterHashForParams(RecipeCursorModeRelevance, &query, nil)
+		expectedHash := filterHashForParams(RecipeCursorModeRelevance, &query, nil, nil)
 		for _, edge := range firstPage {
 			parsed, err := ParseRecipeCursor(&edge.Cursor)
 			require.NoError(t, err)
@@ -1669,7 +1669,7 @@ func TestGetRecipes_SearchQueryWithStaleNewestCursorIsIgnored(t *testing.T) {
 
 		staleCursor := (&RecipeCursor{
 			Mode:       RecipeCursorModeNewest,
-			FilterHash: filterHashForParams(RecipeCursorModeNewest, nil, nil),
+			FilterHash: filterHashForParams(RecipeCursorModeNewest, nil, nil, nil),
 			CreatedAt:  exactHigh.CreatedAt,
 			ID:         exactHigh.RecipeID,
 		}).String()
@@ -1701,7 +1701,7 @@ func TestGetRecipes_SearchQueryWithStaleRelevanceHashIsIgnored(t *testing.T) {
 		score := 0.9
 		staleCursor := (&RecipeCursor{
 			Mode:           RecipeCursorModeRelevance,
-			FilterHash:     filterHashForParams(RecipeCursorModeRelevance, &otherQuery, nil),
+			FilterHash:     filterHashForParams(RecipeCursorModeRelevance, &otherQuery, nil, nil),
 			CreatedAt:      exactHigh.CreatedAt,
 			ID:             exactHigh.RecipeID,
 			RelevanceScore: &score,
@@ -1748,9 +1748,9 @@ func TestGetRecipes_FiltersByUserID(t *testing.T) {
 		require.NoError(t, err)
 
 		base := time.Date(2026, time.March, 17, 11, 42, 48, 147630000, time.UTC)
-		aNewest := seedRecipeForListTests(t, ctx, tx, userA.ID, uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "A Newest", base, nil)
-		aOlder := seedRecipeForListTests(t, ctx, tx, userA.ID, uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "A Older", base.Add(-1*time.Minute), nil)
-		_ = seedRecipeForListTests(t, ctx, tx, userB.ID, uuid.MustParse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "B Recipe", base.Add(-2*time.Minute), nil)
+		aNewest := seedRecipeForListTests(t, ctx, tx, userA.ID, uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "A Newest", base, nil, nil)
+		aOlder := seedRecipeForListTests(t, ctx, tx, userA.ID, uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "A Older", base.Add(-1*time.Minute), nil, nil)
+		_ = seedRecipeForListTests(t, ctx, tx, userB.ID, uuid.MustParse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "B Recipe", base.Add(-2*time.Minute), nil, nil)
 
 		userAID := userA.ID
 		params := RecipeListParams{
@@ -1772,7 +1772,7 @@ func TestGetRecipes_FiltersByUserID(t *testing.T) {
 		parsed, err := ParseRecipeCursor(&recipes[0].Cursor)
 		require.NoError(t, err)
 		require.NotNil(t, parsed)
-		require.Equal(t, filterHashForParams(RecipeCursorModeNewest, nil, &userAID), parsed.FilterHash)
+		require.Equal(t, filterHashForParams(RecipeCursorModeNewest, nil, &userAID, nil), parsed.FilterHash)
 	})
 }
 
@@ -1800,9 +1800,9 @@ func setupRecipeListFixture(t *testing.T, tx *sql.Tx) (context.Context, *Service
 	middleCreatedAt := newestCreatedAt.Add(-1 * time.Minute)
 	oldestCreatedAt := newestCreatedAt.Add(-2 * time.Minute)
 
-	newest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "Newest", newestCreatedAt, nil)
-	middle := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "Middle", middleCreatedAt, nil)
-	oldest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "Oldest", oldestCreatedAt, nil)
+	newest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "Newest", newestCreatedAt, nil, nil)
+	middle := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "Middle", middleCreatedAt, nil, nil)
+	oldest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "Oldest", oldestCreatedAt, nil, nil)
 
 	return ctx, s, newest, middle, oldest
 }
@@ -1830,10 +1830,10 @@ func setupRecipeSearchFixture(t *testing.T, tx *sql.Tx) (context.Context, *Servi
 	sameCreatedAt := time.Date(2026, time.March, 17, 11, 40, 48, 147630000, time.UTC)
 	olderCreatedAt := sameCreatedAt.Add(-1 * time.Minute)
 
-	exactHigh := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("ffffffff-ffff-ffff-ffff-fffffffffff1"), uuid.New(), "Chicken Soup", sameCreatedAt, nil)
-	exactLow := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("00000000-0000-0000-0000-000000000002"), uuid.New(), "Chicken Soup", sameCreatedAt, nil)
-	fuzzy := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("11111111-1111-1111-1111-111111111111"), uuid.New(), "Chikcen Soup", olderCreatedAt, nil)
-	seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("22222222-2222-2222-2222-222222222222"), uuid.New(), "Beef Chili", olderCreatedAt, nil)
+	exactHigh := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("ffffffff-ffff-ffff-ffff-fffffffffff1"), uuid.New(), "Chicken Soup", sameCreatedAt, nil, nil)
+	exactLow := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("00000000-0000-0000-0000-000000000002"), uuid.New(), "Chicken Soup", sameCreatedAt, nil, nil)
+	fuzzy := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("11111111-1111-1111-1111-111111111111"), uuid.New(), "Chikcen Soup", olderCreatedAt, nil, nil)
+	seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("22222222-2222-2222-2222-222222222222"), uuid.New(), "Beef Chili", olderCreatedAt, nil, nil)
 
 	return ctx, s, exactHigh, exactLow, fuzzy
 }

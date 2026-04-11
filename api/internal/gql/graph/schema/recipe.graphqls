@@ -70,6 +70,7 @@ type RecipeEdge {
 input RecipeFilterInput {
   query: String
   userID: ID
+  animalProductLevel: Int
 }
 
 input CreateRecipeInput {
