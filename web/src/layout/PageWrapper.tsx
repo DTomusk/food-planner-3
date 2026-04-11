@@ -30,7 +30,7 @@ export default function Page({children, toolbarLeft, toolbarActions}: PageProps)
     return (
         <>
             {(toolbarLeft || toolbarActions || hasBreadcrumbs) && (
-                <div className="sticky top-0 z-10 border-b border-black bg-white/80 backdrop-blur px-6 py-3">
+                <div className="sticky top-16 z-30 border-b border-black bg-white/80 px-6 py-3 backdrop-blur sm:top-0">
                     <Inline justify="between" className="w-full">
                         <div className="flex items-center gap-4">
                         {hasBreadcrumbs && (

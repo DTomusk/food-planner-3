@@ -37,9 +37,9 @@ export default function NavBar() {
     const title = <h1 className="cursor-pointer text-lg font-semibold tracking-tight" onClick={() => navigate("/")}>FoodSmash</h1>;
 
     return (
-        <nav className="w-full shrink-0 border-b border-black bg-white px-4 py-4 sm:sticky sm:top-0 sm:h-screen sm:w-48 md:w-64 sm:border-b-0 sm:border-r sm:py-6">
+        <nav className="sticky top-0 z-40 h-16 w-full shrink-0 border-b border-black bg-white px-4 py-3 sm:h-screen sm:w-48 sm:border-b-0 sm:border-r sm:py-6 md:w-64">
             {/* Mobile: brand + burger */}
-            <div className="flex items-center justify-between sm:hidden">
+            <div className="flex h-full items-center justify-between sm:hidden">
                 {title}
                 <IconButton onClick={() => setDrawerOpen(true)} variant="primary-outline" aria-label="Open menu">
                     <Menu size={16} />
