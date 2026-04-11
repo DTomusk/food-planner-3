@@ -3,14 +3,16 @@ import type { RecipeSummary } from "../types";
 import ImageDisplay from "@/components/ui/ImageDisplay";
 import Heading from "@/components/ui/Heading";
 import SharedBy from "@/components/SharedBy";
+import DietLevelTag from "./DietLevelTag";
 
 interface RecipeListingCardProps {
     recipe: RecipeSummary;
     onClick?: () => void;
     actions?: React.ReactNode;
+    dietLevel: number;
 }
 
-export default function RecipeListingCard({ recipe, onClick, actions }: RecipeListingCardProps) {
+export default function RecipeListingCard({ recipe, onClick, actions, dietLevel }: RecipeListingCardProps) {
     return (
         <div
             className="cursor-pointer overflow-hidden rounded border bg-white shadow transition-transform hover:scale-[1.02]"
@@ -33,6 +35,7 @@ export default function RecipeListingCard({ recipe, onClick, actions }: RecipeLi
                         <Text variant="muted">Created on {new Date(recipe.createdAt).toLocaleDateString()}</Text>
                     </div>
                     <Text variant="body">{recipe.description}</Text>
+                    <DietLevelTag level={dietLevel} /> 
                     </Stack>
                 </div>
             </div>

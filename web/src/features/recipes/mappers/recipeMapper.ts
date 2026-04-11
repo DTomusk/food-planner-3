@@ -90,6 +90,7 @@ export function mapRecipeSummary(
                 id: edge.node.author.id,
                 username: edge.node.author.username,
             },
+            animalProductLevel: edge.node.currentVersion.animalProductLevel,
         })),
         endCursor: gqlRecipes.pageInfo.endCursor || null,
         hasNextPage: gqlRecipes.pageInfo.hasNextPage,

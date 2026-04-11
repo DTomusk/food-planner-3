@@ -23,7 +23,9 @@ export default function RecipeList({ recipes, renderActions, onCardClick }: Reci
           <li key={recipe.id}>
             <RecipeListingCard recipe={recipe} 
               onClick={() => onCardClick ? onCardClick(recipe) : navigate(`/recipes/${recipe.id}`)}
-              actions={renderActions ? renderActions(recipe) : undefined}/>
+              actions={renderActions ? renderActions(recipe) : undefined}
+              dietLevel={recipe.animalProductLevel}
+              />
           </li>
         ))}
       </ul>
