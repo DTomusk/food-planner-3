@@ -40,3 +40,30 @@ func TestFilterHashForParams(t *testing.T) {
 		require.Len(t, h, 16)
 	})
 }
+
+func TestNormalizedAnimalProductLevelFilter(t *testing.T) {
+	t.Run("nil remains nil", func(t *testing.T) {
+		require.Nil(t, normalizedAnimalProductLevelFilter(nil))
+	})
+
+	t.Run("zero is kept", func(t *testing.T) {
+		v := 0
+		result := normalizedAnimalProductLevelFilter(&v)
+		require.NotNil(t, result)
+		require.Equal(t, 0, *result)
+	})
+
+	t.Run("one is kept", func(t *testing.T) {
+		v := 1
+		result := normalizedAnimalProductLevelFilter(&v)
+		require.NotNil(t, result)
+		require.Equal(t, 1, *result)
+	})
+
+	t.Run("unsupported values are treated as nil", func(t *testing.T) {
+		for _, v := range []int{-1, 2, 3, 99} {
+			value := v
+			require.Nil(t, normalizedAnimalProductLevelFilter(&value))
+		}
+	})
+}

@@ -347,6 +347,95 @@ func TestGetRecipesByRelevance_SupportsFuzzyMatching(t *testing.T) {
 	})
 }
 
+func TestGetRecipesByCreatedAt_FiltersByAnimalProductLevel(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		r, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		base := time.Date(2026, time.March, 17, 11, 40, 48, 147630000, time.UTC)
+		veganLevel := 0
+		vegetarianLevel := 1
+		meatLevel := 2
+
+		vegan := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "Vegan Soup", base, nil, &veganLevel)
+		vegetarian := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "Vegetarian Soup", base.Add(-1*time.Minute), nil, &vegetarianLevel)
+		meat := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "Meat Soup", base.Add(-2*time.Minute), nil, &meatLevel)
+
+		veganFilter := 0
+		recipes, err := r.getRecipesByCreatedAt(ctx, tx, 10, nil, nil, &veganFilter)
+		require.NoError(t, err)
+		require.Len(t, recipes, 1)
+		require.Equal(t, vegan.RecipeID, recipes[0].Recipe.ID)
+
+		vegetarianFilter := 1
+		recipes, err = r.getRecipesByCreatedAt(ctx, tx, 10, nil, nil, &vegetarianFilter)
+		require.NoError(t, err)
+		require.Len(t, recipes, 2)
+		require.Equal(t, vegan.RecipeID, recipes[0].Recipe.ID)
+		require.Equal(t, vegetarian.RecipeID, recipes[1].Recipe.ID)
+
+		anyFilter := 2
+		recipes, err = r.getRecipesByCreatedAt(ctx, tx, 10, nil, nil, &anyFilter)
+		require.NoError(t, err)
+		require.Len(t, recipes, 3)
+		require.Equal(t, vegan.RecipeID, recipes[0].Recipe.ID)
+		require.Equal(t, vegetarian.RecipeID, recipes[1].Recipe.ID)
+		require.Equal(t, meat.RecipeID, recipes[2].Recipe.ID)
+	})
+}
+
+func TestGetRecipesByRelevance_FiltersByAnimalProductLevel(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		r, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		base := time.Date(2026, time.March, 17, 11, 40, 48, 147630000, time.UTC)
+		veganLevel := 0
+		vegetarianLevel := 1
+		meatLevel := 2
+
+		vegan := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("dddddddd-dddd-dddd-dddd-ddddddddddd1"), uuid.New(), "Green Curry", base, nil, &veganLevel)
+		vegetarian := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee2"), uuid.New(), "Paneer Curry", base.Add(-1*time.Minute), nil, &vegetarianLevel)
+		meat := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("ffffffff-ffff-ffff-ffff-fffffffffff3"), uuid.New(), "Chicken Curry", base.Add(-2*time.Minute), nil, &meatLevel)
+
+		veganFilter := 0
+		recipes, err := r.getRecipesByRelevance(ctx, tx, "curry", 10, nil, nil, &veganFilter)
+		require.NoError(t, err)
+		require.Len(t, recipes, 1)
+		require.Equal(t, vegan.RecipeID, recipes[0].Recipe.ID)
+
+		vegetarianFilter := 1
+		recipes, err = r.getRecipesByRelevance(ctx, tx, "curry", 10, nil, nil, &vegetarianFilter)
+		require.NoError(t, err)
+		require.Len(t, recipes, 2)
+		require.Equal(t, vegan.RecipeID, recipes[0].Recipe.ID)
+		require.Equal(t, vegetarian.RecipeID, recipes[1].Recipe.ID)
+
+		anyFilter := 2
+		recipes, err = r.getRecipesByRelevance(ctx, tx, "curry", 10, nil, nil, &anyFilter)
+		require.NoError(t, err)
+		require.Len(t, recipes, 3)
+		actual := map[uuid.UUID]struct{}{}
+		for _, row := range recipes {
+			actual[row.Recipe.ID] = struct{}{}
+		}
+		_, hasVegan := actual[vegan.RecipeID]
+		_, hasVegetarian := actual[vegetarian.RecipeID]
+		_, hasMeat := actual[meat.RecipeID]
+		require.True(t, hasVegan)
+		require.True(t, hasVegetarian)
+		require.True(t, hasMeat)
+	})
+}
+
 func seedRecipeForListTests(
 	t *testing.T,
 	ctx context.Context,
@@ -373,6 +462,11 @@ func seedRecipeForListTests(
 
 	_, err = tx.ExecContext(ctx, `UPDATE recipe_versions SET created_at = $1 WHERE id = $2`, createdAt, versionID)
 	require.NoError(t, err)
+
+	if animalProductLevel != nil {
+		_, err = tx.ExecContext(ctx, `UPDATE recipe_versions SET animal_product_level = $1 WHERE id = $2`, *animalProductLevel, versionID)
+		require.NoError(t, err)
+	}
 
 	return listedRecipeSeed{
 		RecipeID:  recipeID,

@@ -84,6 +84,7 @@ func (r *recipeRepo) getRecipeByID(ctx context.Context, db db.DBTX, id uuid.UUID
 }
 
 func (r *recipeRepo) getRecipesByCreatedAt(ctx context.Context, db db.DBTX, limit int, cursor *RecipeCursor, userID *uuid.UUID, animalProductLevel *int) ([]*RecipeListRow, error) {
+	animalProductLevel = normalizedAnimalProductLevelFilter(animalProductLevel)
 	conditions := []string{"rc.deleted_on IS NULL"}
 	args := make([]any, 0, 4)
 
@@ -129,6 +130,7 @@ func (r *recipeRepo) getRecipesByCreatedAt(ctx context.Context, db db.DBTX, limi
 }
 
 func (r *recipeRepo) getRecipesByRelevance(ctx context.Context, db db.DBTX, query string, limit int, cursor *RecipeCursor, userID *uuid.UUID, animalProductLevel *int) ([]*RecipeListRow, error) {
+	animalProductLevel = normalizedAnimalProductLevelFilter(animalProductLevel)
 	// Relevance score is a mix of full-text search ranking and trigram similarity, weighted towards full-text search. Sorting is done by relevance score first, then created_at and id to ensure a deterministic order.
 	// this can be fine tuned in the future
 	scoreExpression := `

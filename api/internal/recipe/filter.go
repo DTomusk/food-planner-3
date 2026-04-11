@@ -13,6 +13,16 @@ type RecipeFilter struct {
 	AnimalProductLevel *int
 }
 
+func normalizedAnimalProductLevelFilter(animalProductLevel *int) *int {
+	if animalProductLevel == nil {
+		return nil
+	}
+	if *animalProductLevel == 0 || *animalProductLevel == 1 {
+		return animalProductLevel
+	}
+	return nil
+}
+
 func filterHashForParams(mode RecipeCursorMode, query *string, userID *uuid.UUID, animalProductLevel *int) string {
 	q := ""
 	if query != nil {

@@ -1776,6 +1776,90 @@ func TestGetRecipes_FiltersByUserID(t *testing.T) {
 	})
 }
 
+func TestGetRecipes_FiltersByAnimalProductLevel(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		txRunner := testutil.NewTestTxRunner(tx)
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		s := NewService(
+			txRunner,
+			repo,
+			NewRecipeVersionRepo(),
+			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
+			NewIngredientUsageRepo(),
+			nil,
+			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
+		)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		base := time.Date(2026, time.March, 17, 11, 42, 48, 147630000, time.UTC)
+		veganLevel := 0
+		vegetarianLevel := 1
+		meatLevel := 2
+
+		vegan := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("12345678-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "Vegan Bowl", base, nil, &veganLevel)
+		vegetarian := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("12345678-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "Vegetarian Bowl", base.Add(-1*time.Minute), nil, &vegetarianLevel)
+		meat := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("12345678-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "Meat Bowl", base.Add(-2*time.Minute), nil, &meatLevel)
+
+		veganFilter := 0
+		recipes, nextCursor, err := s.GetRecipes(ctx, RecipeListParams{
+			Pagination: RecipePagination{First: 10},
+			Filter:     RecipeFilter{AnimalProductLevel: &veganFilter},
+		})
+		require.NoError(t, err)
+		require.Nil(t, nextCursor)
+		require.Len(t, recipes, 1)
+		require.Equal(t, vegan.RecipeID, recipes[0].Recipe.ID)
+
+		vegetarianFilter := 1
+		recipes, nextCursor, err = s.GetRecipes(ctx, RecipeListParams{
+			Pagination: RecipePagination{First: 10},
+			Filter:     RecipeFilter{AnimalProductLevel: &vegetarianFilter},
+		})
+		require.NoError(t, err)
+		require.Nil(t, nextCursor)
+		require.Len(t, recipes, 2)
+		require.Equal(t, vegan.RecipeID, recipes[0].Recipe.ID)
+		require.Equal(t, vegetarian.RecipeID, recipes[1].Recipe.ID)
+
+		anyFilter := 2
+		recipes, nextCursor, err = s.GetRecipes(ctx, RecipeListParams{
+			Pagination: RecipePagination{First: 10},
+			Filter:     RecipeFilter{AnimalProductLevel: &anyFilter},
+		})
+		require.NoError(t, err)
+		require.Nil(t, nextCursor)
+		require.Len(t, recipes, 3)
+		require.Equal(t, vegan.RecipeID, recipes[0].Recipe.ID)
+		require.Equal(t, vegetarian.RecipeID, recipes[1].Recipe.ID)
+		require.Equal(t, meat.RecipeID, recipes[2].Recipe.ID)
+	})
+}
+
+func TestGetRecipes_UnsupportedAnimalProductLevelUsesUnfilteredCursorHash(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx, s, newest, middle, _ := setupRecipeListFixture(t, tx)
+
+		unsupportedAnimalLevel := 2
+		recipes, _, err := s.GetRecipes(ctx, RecipeListParams{
+			Pagination: RecipePagination{First: 2},
+			Filter:     RecipeFilter{AnimalProductLevel: &unsupportedAnimalLevel},
+		})
+		require.NoError(t, err)
+		require.Len(t, recipes, 2)
+		require.Equal(t, newest.RecipeID, recipes[0].Recipe.ID)
+		require.Equal(t, middle.RecipeID, recipes[1].Recipe.ID)
+
+		parsed, err := ParseRecipeCursor(&recipes[0].Cursor)
+		require.NoError(t, err)
+		require.NotNil(t, parsed)
+		require.Equal(t, filterHashForParams(RecipeCursorModeNewest, nil, nil, nil), parsed.FilterHash)
+	})
+}
+
 func setupRecipeListFixture(t *testing.T, tx *sql.Tx) (context.Context, *Service, listedRecipeSeed, listedRecipeSeed, listedRecipeSeed) {
 	t.Helper()
 
