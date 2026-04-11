@@ -1,6 +1,7 @@
 import { Alert, Button, PageTitle, Spinner } from "@/components";
 import Inline from "@/components/layout/Inline";
 import Stack from "@/components/layout/Stack";
+import BackToTop from "@/components/ui/BackToTop";
 import SearchBar from "@/components/ui/SearchBar";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { RecipeList, useRecipes } from "@/features/recipes";
@@ -37,6 +38,7 @@ export default function RecipeListingPage() {
     const query = searchParams.get("q")?.trim() ?? "";
     const hasQuery = query.length > 0;
     const [draftQuery, setDraftQuery] = useState(query);
+    const [showScrollTopButton, setShowScrollTopButton] = useState(false);
 
     const dietLevel = normalizeDietLevelParam(searchParams.get("dietLevel"));
 
@@ -44,6 +46,18 @@ export default function RecipeListingPage() {
     useEffect(() => {
         setDraftQuery(query);
     }, [query]);
+
+    useEffect(() => {
+        const threshold = 280;
+        const onScroll = () => {
+            const shouldShow = window.scrollY > threshold;
+            setShowScrollTopButton((prev) => (prev === shouldShow ? prev : shouldShow));
+        };
+
+        onScroll();
+        window.addEventListener("scroll", onScroll, { passive: true });
+        return () => window.removeEventListener("scroll", onScroll);
+    }, []);
 
     const handleSubmitSearch = () => {
         const nextQuery = draftQuery.trim();
@@ -99,6 +113,11 @@ export default function RecipeListingPage() {
     const { isAuthenticated } = useAuth();
     
     const navigate = useNavigate();
+
+    const scrollToTop = () => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
     return (
         <Page>
             <PageTitle text="Recipes" />
@@ -168,6 +187,8 @@ export default function RecipeListingPage() {
                 </Inline>
                 </Stack>
             </div>
+
+            <BackToTop showScrollTopButton={showScrollTopButton} scrollToTop={scrollToTop} />
         </Page>
     );
 }
