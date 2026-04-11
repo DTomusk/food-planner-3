@@ -2,18 +2,6 @@
 
 ## Ready
 
-- [ ] Dietary tags (gf, vegan etc.)
-    - Priority: high
-    - Area: recipes, ingredients, fullstack
-    - Type: feature
-    - Why: it should be easy for people with different dietary requirements to search recipes that meet their needs/wants
-    - DoD: 
-        - [x] animal product enum on ingredients (i.e. vegan, vegetarian, meat)
-        - [ ] gluten on ingredients 
-        - [x] recipe versions store whether they are whatever 
-        - [x] users can filter on dietary tags 
-        - [x] recipes show clearly in listing and detail what they are
-
 ## Planning
 
 - [ ] Manual content moderation
@@ -98,6 +86,13 @@
     - Why: right now, code coverage is checking files we can't test (e.g. gql generated files). This brings down the score and gives a false understanding of the actual coverage, making the coverage report much less useful
     - DoD: 
 
+- [ ] Save others' recipes
+    - Priority: 
+    - Area: 
+    - Type: (bug, tech debt, feature)
+    - Why: 
+    - DoD: 
+
 ## Item template 
 
 - [ ] Item name
@@ -108,6 +103,18 @@
     - DoD: 
 
 ## Done
+
+- [x] Dietary tags (gf, vegan etc.)
+    - Priority: high
+    - Area: recipes, ingredients, fullstack
+    - Type: feature
+    - Why: it should be easy for people with different dietary requirements to search recipes that meet their needs/wants
+    - DoD: 
+        - [x] animal product enum on ingredients (i.e. vegan, vegetarian, meat)
+        - [x] gluten on ingredients 
+        - [x] recipe versions store whether they are whatever 
+        - [x] users can filter on dietary tags 
+        - [x] recipes show clearly in listing and detail what they are
 
 - [x] Add description to recipes
     - Priority: medium
