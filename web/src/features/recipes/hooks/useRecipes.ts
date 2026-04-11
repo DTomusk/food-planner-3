@@ -8,15 +8,16 @@ import { mergeRecipePages, toRecipePage } from "./recipeConnectionPage";
 type UseRecipesParams = {
     first?: number;
     query?: string;
+    animalProductLevel?: number;
     enabled?: boolean;
 };
 
 export function useRecipes(params: UseRecipesParams = {}) {
-    const { first = 20, query, enabled = true } = params;
+    const { first = 20, query, animalProductLevel, enabled = true } = params;
     const normalizedQuery = query?.trim() || null;
 
-    return useInfiniteQuery<GetRecipesQuery, ClientError, RecipePage, readonly ["recipes", number, string | null], string | null>({
-        queryKey: ["recipes", first, normalizedQuery],
+    return useInfiniteQuery<GetRecipesQuery, ClientError, RecipePage, readonly ["recipes", number, string | null, number | null], string | null>({
+        queryKey: ["recipes", first, normalizedQuery, animalProductLevel ?? null],
         enabled,
         initialPageParam: null,
         queryFn: ({ pageParam }) => graphqlRequest(GetRecipesDocument, {
@@ -24,7 +25,12 @@ export function useRecipes(params: UseRecipesParams = {}) {
                 first,
                 after: pageParam ?? undefined,
             },
-            filter: normalizedQuery ? { query: normalizedQuery } : undefined,
+            filter: normalizedQuery || animalProductLevel !== undefined
+                ? {
+                    query: normalizedQuery ?? undefined,
+                    animalProductLevel,
+                }
+                : undefined,
         }),
         getNextPageParam: (lastPage) => {
             if (!lastPage.recipes.pageInfo.hasNextPage) {
