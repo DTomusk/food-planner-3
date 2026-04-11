@@ -116,13 +116,12 @@ export default function RecipeListingPage() {
                         </Button>
                     </Stack>
                 </Inline>}
-                {isLoading && <Spinner/>}
                 {error && <Alert message={extractErrorMessage(error)} closable />}
                 <Inline align="start" justify="start" wrap className="w-full" gap="lg">
                     {/* Filters */}
                     <RecipeFilters dietLevel={dietLevel} onDietLevelChange={handleDietLevelChange} />
                     {/* Search bar and list */}
-                    <Stack className="min-w-0 flex-1">
+                    <Stack className="min-w-0 flex-1" space="lg">
                         <SearchBar
                             value={draftQuery}
                             onChange={setDraftQuery}
@@ -146,6 +145,7 @@ export default function RecipeListingPage() {
                                 </button>
                             </Inline>
                         )}
+                        {isLoading && <Spinner/>}
                         {data && (
                         <>
                             <RecipeList recipes={data.recipes} />
