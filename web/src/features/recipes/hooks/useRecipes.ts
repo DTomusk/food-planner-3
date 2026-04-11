@@ -8,15 +8,17 @@ import { mergeRecipePages, toRecipePage } from "./recipeConnectionPage";
 type UseRecipesParams = {
     first?: number;
     query?: string;
+    animalProductLevel?: number;
+    containsGluten?: boolean;
     enabled?: boolean;
 };
 
 export function useRecipes(params: UseRecipesParams = {}) {
-    const { first = 20, query, enabled = true } = params;
+    const { first = 20, query, animalProductLevel, containsGluten, enabled = true } = params;
     const normalizedQuery = query?.trim() || null;
 
-    return useInfiniteQuery<GetRecipesQuery, ClientError, RecipePage, readonly ["recipes", number, string | null], string | null>({
-        queryKey: ["recipes", first, normalizedQuery],
+    return useInfiniteQuery<GetRecipesQuery, ClientError, RecipePage, readonly ["recipes", number, string | null, number | null, boolean | null], string | null>({
+        queryKey: ["recipes", first, normalizedQuery, animalProductLevel ?? null, containsGluten ?? null],
         enabled,
         initialPageParam: null,
         queryFn: ({ pageParam }) => graphqlRequest(GetRecipesDocument, {
@@ -24,7 +26,13 @@ export function useRecipes(params: UseRecipesParams = {}) {
                 first,
                 after: pageParam ?? undefined,
             },
-            filter: normalizedQuery ? { query: normalizedQuery } : undefined,
+            filter: normalizedQuery || animalProductLevel !== undefined || containsGluten !== undefined
+                ? {
+                    query: normalizedQuery ?? undefined,
+                    animalProductLevel,
+                    containsGluten,
+                }
+                : undefined,
         }),
         getNextPageParam: (lastPage) => {
             if (!lastPage.recipes.pageInfo.hasNextPage) {

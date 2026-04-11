@@ -3,41 +3,54 @@ ingredients:
     name: "Egg"
     preferred_unit: 1
     plural: "Eggs"
+    animal_product_level: 1
   - id: "egg_white"
     name: "Egg white"
     preferred_unit: 1
     plural: "Egg whites"
+    animal_product_level: 1
   - id: "egg_yolk"
     name: "Egg yolk"
     preferred_unit: 1
     plural: "Egg yolks"
+    animal_product_level: 1
   - id: "flour"
     name: "Flour"
     preferred_unit: 2
+    animal_product_level: 0
+    contains_gluten: true
   - id: "bacon_rasher"
     name: "Bacon"
     preferred_unit: 1
     counter: "rasher"
     counter_plural: "rashers"
+    animal_product_level: 2
   - id: "pasta"
     name: "Pasta"
     preferred_unit: 2
+    animal_product_level: 0
+    contains_gluten: true
   - id: "cheese"
     name: "Cheese"
     preferred_unit: 2
+    animal_product_level: 2
   - id: "cheese-cheddar"
     name: "Cheddar cheese"
     preferred_unit: 2
+    animal_product_level: 2
   - id: "cheese-cheddar-mature"
     name: "Mature cheddar cheese"
     preferred_unit: 2
+    animal_product_level: 2
   - id: "garlic_clove"
     name: "Garlic"
     preferred_unit: 1
     counter: "clove"
     counter_plural: "cloves"
+    animal_product_level: 0
   - id: "garlic_bulb"
     name: "Garlic"
     preferred_unit: 1
     counter: "bulb"
     counter_plural: "bulbs"
+    animal_product_level: 0

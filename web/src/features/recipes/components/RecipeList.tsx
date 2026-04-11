@@ -18,12 +18,14 @@ export default function RecipeList({ recipes, renderActions, onCardClick }: Reci
     }
 
     return (
-        <ul className="space-y-8">
+      <ul className="w-full space-y-8">
         {recipes.map((recipe: RecipeSummary) => (
-          <li key={recipe.id}>
+          <li key={recipe.id} className="mx-auto w-full max-w-md md:max-w-none">
             <RecipeListingCard recipe={recipe} 
               onClick={() => onCardClick ? onCardClick(recipe) : navigate(`/recipes/${recipe.id}`)}
-              actions={renderActions ? renderActions(recipe) : undefined}/>
+              actions={renderActions ? renderActions(recipe) : undefined}
+              dietLevel={recipe.animalProductLevel}
+            />
           </li>
         ))}
       </ul>

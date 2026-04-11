@@ -45,6 +45,8 @@ func (s *SyncService) SyncIngredientData(ctx context.Context) error {
 			fileIngredient.Counter,
 			fileIngredient.Plural,
 			fileIngredient.CounterPlural,
+			ingredient.AnimalProductLevel(fileIngredient.AnimalProductLevel),
+			fileIngredient.ContainsGluten,
 		)
 		if err != nil {
 			return err

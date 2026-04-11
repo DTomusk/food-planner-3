@@ -61,16 +61,18 @@ func mapRecipeVersion(recipeVersion *recipe.RecipeVersion) *model.RecipeVersion 
 		return nil
 	}
 	return &model.RecipeVersion{
-		ID:          recipeVersion.ID.String(),
-		RecipeID:    recipeVersion.RecipeID.String(),
-		Name:        recipeVersion.Name,
-		Description: recipeVersion.Description,
-		PrepMins:    int32(recipeVersion.PrepMins),
-		CookMins:    int32(recipeVersion.CookMins),
-		Portions:    int32(recipeVersion.Portions),
-		CreatedAt:   recipeVersion.CreatedAt,
-		Version:     int32(recipeVersion.Version),
-		ImgSrc:      recipeVersion.ImgSrc,
+		ID:                 recipeVersion.ID.String(),
+		RecipeID:           recipeVersion.RecipeID.String(),
+		Name:               recipeVersion.Name,
+		Description:        recipeVersion.Description,
+		PrepMins:           int32(recipeVersion.PrepMins),
+		CookMins:           int32(recipeVersion.CookMins),
+		Portions:           int32(recipeVersion.Portions),
+		CreatedAt:          recipeVersion.CreatedAt,
+		Version:            int32(recipeVersion.Version),
+		ImgSrc:             recipeVersion.ImgSrc,
+		AnimalProductLevel: int32(recipeVersion.AnimalProductLevel),
+		ContainsGluten:     recipeVersion.ContainsGluten,
 	}
 }
 
@@ -89,6 +91,8 @@ func buildRecipeListParams(
 
 	var query *string
 	var userID *uuid.UUID
+	var animalProductLevel *int
+	var containsGluten *bool
 	if filter != nil {
 		query = filter.Query
 		if filter.UserID != nil {
@@ -98,6 +102,14 @@ func buildRecipeListParams(
 			}
 			userID = &parsed
 		}
+		if filter.AnimalProductLevel != nil {
+			animalProductLevel = new(int)
+			*animalProductLevel = int(*filter.AnimalProductLevel)
+		}
+		if filter.ContainsGluten != nil {
+			containsGluten = new(bool)
+			*containsGluten = *filter.ContainsGluten
+		}
 	}
 
 	return recipe.RecipeListParams{
@@ -106,8 +118,10 @@ func buildRecipeListParams(
 			After: after,
 		},
 		Filter: recipe.RecipeFilter{
-			Query:  query,
-			UserID: userID,
+			Query:              query,
+			UserID:             userID,
+			AnimalProductLevel: animalProductLevel,
+			ContainsGluten:     containsGluten,
 		},
 	}, nil
 }

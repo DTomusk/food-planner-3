@@ -18,7 +18,7 @@ type recipeRepo struct {
 const (
 	selectRecipeContainerWithVersionBaseQuery = `SELECT 
 	rc.id, rc.user_id, rc.created_at, rc.current_version_id,
-	rv.id, rv.recipe_id, rv.name, rv.prep_mins, rv.cook_mins, rv.portions, rv.created_at, rv.version, rv.img_src, rv.description
+	rv.id, rv.recipe_id, rv.name, rv.prep_mins, rv.cook_mins, rv.portions, rv.created_at, rv.version, rv.img_src, rv.description, rv.animal_product_level, rv.contains_gluten
 	FROM recipe_containers rc
 	JOIN recipe_versions rv ON rc.current_version_id = rv.id`
 	selectRecipeContainerWithVersionByIDQuery = selectRecipeContainerWithVersionBaseQuery + `
@@ -83,14 +83,12 @@ func (r *recipeRepo) getRecipeByID(ctx context.Context, db db.DBTX, id uuid.UUID
 	return rc, nil
 }
 
-func (r *recipeRepo) getRecipesByCreatedAt(ctx context.Context, db db.DBTX, limit int, cursor *RecipeCursor, userID *uuid.UUID) ([]*RecipeListRow, error) {
+func (r *recipeRepo) getRecipesByCreatedAt(ctx context.Context, db db.DBTX, limit int, cursor *RecipeCursor, filter normalizedRecipeFilter) ([]*RecipeListRow, error) {
 	conditions := []string{"rc.deleted_on IS NULL"}
 	args := make([]any, 0, 4)
 
-	if userID != nil {
-		conditions = append(conditions, fmt.Sprintf("rc.user_id = $%d", len(args)+1))
-		args = append(args, *userID)
-	}
+	filterConditions, args := buildFilterConditions(filter, args)
+	conditions = append(conditions, filterConditions...)
 
 	if cursor != nil {
 		conditions = append(conditions, fmt.Sprintf("(rc.created_at, rc.id) < ($%d, $%d)", len(args)+1, len(args)+2))
@@ -123,7 +121,7 @@ func (r *recipeRepo) getRecipesByCreatedAt(ctx context.Context, db db.DBTX, limi
 	return recipes, nil
 }
 
-func (r *recipeRepo) getRecipesByRelevance(ctx context.Context, db db.DBTX, query string, limit int, cursor *RecipeCursor, userID *uuid.UUID) ([]*RecipeListRow, error) {
+func (r *recipeRepo) getRecipesByRelevance(ctx context.Context, db db.DBTX, query string, limit int, cursor *RecipeCursor, filter normalizedRecipeFilter) ([]*RecipeListRow, error) {
 	// Relevance score is a mix of full-text search ranking and trigram similarity, weighted towards full-text search. Sorting is done by relevance score first, then created_at and id to ensure a deterministic order.
 	// this can be fine tuned in the future
 	scoreExpression := `
@@ -131,14 +129,13 @@ func (r *recipeRepo) getRecipesByRelevance(ctx context.Context, db db.DBTX, quer
 		+ $2 * similarity(lower(rv.name), lower($3))) AS relevance_score
 	`
 
-	userFilterClause := ""
 	args := []any{r.fullTextWeight, r.trigramWeight, query}
-	nextArg := 4
-	if userID != nil {
-		userFilterClause = fmt.Sprintf("      AND rc.user_id = $%d\n", nextArg)
-		args = append(args, *userID)
-		nextArg++
+	filterConditions, args := buildFilterConditions(filter, args)
+	userFilterClause := ""
+	for _, c := range filterConditions {
+		userFilterClause += "      AND " + c + "\n"
 	}
+	nextArg := len(args) + 1
 
 	baseQuery := `
 WITH ranked AS (
@@ -157,6 +154,8 @@ WITH ranked AS (
         rv.created_at AS version_created_at,
         rv.version,
 		rv.img_src,
+		rv.animal_product_level,
+		rv.contains_gluten,
     ` + scoreExpression + `
     FROM recipe_containers rc
     JOIN recipe_versions rv ON rc.current_version_id = rv.id
@@ -182,6 +181,8 @@ SELECT
     version,
 	img_src,
     description,
+	animal_product_level,
+	contains_gluten,
     relevance_score
 FROM ranked
 `
@@ -237,6 +238,8 @@ FROM ranked
 			&rv.Version,
 			&rv.ImgSrc,
 			&rv.Description,
+			&rv.AnimalProductLevel,
+			&rv.ContainsGluten,
 			score,
 		)
 		if err != nil {
@@ -251,28 +254,23 @@ FROM ranked
 	return results, nil
 }
 
-func (r *recipeRepo) getRecipesByUserID(ctx context.Context, db db.DBTX, userID uuid.UUID) ([]*RecipeContainer, error) {
-	rows, err := db.QueryContext(ctx,
-		selectRecipeContainerWithVersionByUserIDQuery,
-		userID,
-	)
-	if err != nil {
-		return nil, err
+// buildFilterConditions appends SQL WHERE conditions and args for nf, starting
+// from the current position in args. Returns the new conditions and extended args.
+func buildFilterConditions(nf normalizedRecipeFilter, args []any) ([]string, []any) {
+	var conditions []string
+	if nf.UserID != nil {
+		conditions = append(conditions, fmt.Sprintf("rc.user_id = $%d", len(args)+1))
+		args = append(args, *nf.UserID)
 	}
-	defer rows.Close()
-
-	var recipes []*RecipeContainer
-	if err := rows.Err(); err != nil {
-		return nil, err
+	if nf.AnimalProductLevel != nil {
+		conditions = append(conditions, fmt.Sprintf("rv.animal_product_level <= $%d", len(args)+1))
+		args = append(args, *nf.AnimalProductLevel)
 	}
-	for rows.Next() {
-		rc, err := scanRecipeContainerWithVersion(rows)
-		if err != nil {
-			return nil, err
-		}
-		recipes = append(recipes, rc)
+	if nf.ContainsGluten != nil {
+		conditions = append(conditions, fmt.Sprintf("rv.contains_gluten = $%d", len(args)+1))
+		args = append(args, *nf.ContainsGluten)
 	}
-	return recipes, nil
+	return conditions, args
 }
 
 func scanRecipeContainerWithVersion(
@@ -297,6 +295,8 @@ func scanRecipeContainerWithVersion(
 		&rv.Version,
 		&rv.ImgSrc,
 		&rv.Description,
+		&rv.AnimalProductLevel,
+		&rv.ContainsGluten,
 	)
 	if err != nil {
 		return nil, err

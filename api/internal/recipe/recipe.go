@@ -21,14 +21,16 @@ type RecipeVersion struct {
 	RecipeID uuid.UUID
 	Version  int
 
-	Name        string
-	Description string
-	Ingredients []*IngredientUsage
-	PrepMins    int
-	CookMins    int
-	Portions    int
-	Source      *RecipeSource
-	ImgSrc      *string
+	Name               string
+	Description        string
+	Ingredients        []*IngredientUsage
+	PrepMins           int
+	CookMins           int
+	Portions           int
+	Source             *RecipeSource
+	ImgSrc             *string
+	AnimalProductLevel int
+	ContainsGluten     bool
 
 	CreatedAt time.Time
 }
@@ -43,11 +45,13 @@ func NewRecipe(
 	portions int,
 	source *RecipeSource,
 	imgSrc *string,
+	animalProductLevel int,
+	containsGluten bool,
 ) (*RecipeContainer, error) {
 	recipeID := uuid.New()
 	now := time.Now()
 
-	version, err := NewRecipeVersion(recipeID, 1, name, description, ingredients, prepMins, cookMins, portions, source, imgSrc)
+	version, err := NewRecipeVersion(recipeID, 1, name, description, ingredients, prepMins, cookMins, portions, source, imgSrc, animalProductLevel, containsGluten)
 	if err != nil {
 		return nil, err
 	}
@@ -74,6 +78,8 @@ func NewRecipeVersion(
 	portions int,
 	source *RecipeSource,
 	imgSrc *string,
+	animalProductLevel int,
+	containsGluten bool,
 ) (*RecipeVersion, error) {
 	if name == "" {
 		return nil, ErrEmptyName
@@ -103,18 +109,20 @@ func NewRecipeVersion(
 
 	now := time.Now()
 	return &RecipeVersion{
-		ID:          uuid.New(),
-		RecipeID:    recipeID,
-		Version:     version,
-		Name:        name,
-		Description: description,
-		Ingredients: ingredients,
-		PrepMins:    prepMins,
-		CookMins:    cookMins,
-		Portions:    portions,
-		Source:      source,
-		CreatedAt:   now,
-		ImgSrc:      imgSrc,
+		ID:                 uuid.New(),
+		RecipeID:           recipeID,
+		Version:            version,
+		Name:               name,
+		Description:        description,
+		Ingredients:        ingredients,
+		PrepMins:           prepMins,
+		CookMins:           cookMins,
+		Portions:           portions,
+		Source:             source,
+		CreatedAt:          now,
+		ImgSrc:             imgSrc,
+		AnimalProductLevel: animalProductLevel,
+		ContainsGluten:     containsGluten,
 	}, nil
 }
 

@@ -147,6 +147,77 @@ func TestCreateRecipe_PersistsDescription(t *testing.T) {
 	})
 }
 
+func TestCreateRecipe_SetsAnimalProductLevelFromIngredients(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+
+		veganIngredientID := uuid.New()
+		veganIngredient := ingredient.Ingredient{
+			ID:                 veganIngredientID,
+			FileKey:            "vegan_ingredient",
+			Name:               "Tofu",
+			PreferredUnit:      1,
+			AnimalProductLevel: ingredient.Vegan,
+		}
+		err := seeds.InsertIngredient(ctx, tx, &veganIngredient)
+		require.NoError(t, err)
+
+		meatIngredientID := uuid.New()
+		meatIngredient := ingredient.Ingredient{
+			ID:                 meatIngredientID,
+			FileKey:            "meat_ingredient",
+			Name:               "Chicken",
+			PreferredUnit:      1,
+			AnimalProductLevel: ingredient.Meat,
+		}
+		err = seeds.InsertIngredient(ctx, tx, &meatIngredient)
+		require.NoError(t, err)
+
+		_, err = tx.ExecContext(ctx, `UPDATE reference.ingredients SET animal_product_level = $1 WHERE id = $2`, int(ingredient.Vegan), veganIngredientID)
+		require.NoError(t, err)
+		_, err = tx.ExecContext(ctx, `UPDATE reference.ingredients SET animal_product_level = $1 WHERE id = $2`, int(ingredient.Meat), meatIngredientID)
+		require.NoError(t, err)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		s := NewService(
+			txRunner,
+			repo,
+			NewRecipeVersionRepo(),
+			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
+			NewIngredientUsageRepo(),
+			nil,
+			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
+		)
+
+		request := CreateRecipeRequest{
+			Name: "Mixed Dish",
+			Ingredients: []CreateIngredientUsageRequest{
+				{IngredientID: veganIngredientID.String(), Quantity: 1, Unit: 1},
+				{IngredientID: meatIngredientID.String(), Quantity: 1, Unit: 1},
+			},
+			UserID:   testUser.ID.String(),
+			PrepMins: 10,
+			CookMins: 15,
+			Portions: 2,
+		}
+
+		recipeContainer, err := s.CreateRecipe(ctx, request)
+		require.NoError(t, err)
+		require.NotNil(t, recipeContainer)
+		require.Equal(t, int(ingredient.Meat), recipeContainer.CurrentVersion.AnimalProductLevel)
+
+		var persistedAnimalProductLevel int
+		err = tx.QueryRowContext(ctx, `SELECT animal_product_level FROM recipe_versions WHERE id = $1`, recipeContainer.CurrentVersionID).Scan(&persistedAnimalProductLevel)
+		require.NoError(t, err)
+		require.Equal(t, int(ingredient.Meat), persistedAnimalProductLevel)
+	})
+}
+
 func TestCreateRecipe_WithImageUploadID_PersistsAndRetrievesImageURL(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		txRunner := testutil.NewTestTxRunner(tx)
@@ -548,6 +619,258 @@ func TestUpdateRecipe_PersistsDescriptionOnNewVersion(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, originalVersion)
 		require.Equal(t, createDescription, originalVersion.Description)
+	})
+}
+
+func TestUpdateRecipe_SetsAnimalProductLevelOnNewVersionFromIngredients(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+
+		veganIngredientID := uuid.New()
+		veganIngredient := ingredient.Ingredient{
+			ID:                 veganIngredientID,
+			FileKey:            "vegan_ingredient_update",
+			Name:               "Spinach",
+			PreferredUnit:      1,
+			AnimalProductLevel: ingredient.Vegan,
+		}
+		err := seeds.InsertIngredient(ctx, tx, &veganIngredient)
+		require.NoError(t, err)
+
+		vegetarianIngredientID := uuid.New()
+		vegetarianIngredient := ingredient.Ingredient{
+			ID:                 vegetarianIngredientID,
+			FileKey:            "vegetarian_ingredient_update",
+			Name:               "Cheese",
+			PreferredUnit:      1,
+			AnimalProductLevel: ingredient.Vegetarian,
+		}
+		err = seeds.InsertIngredient(ctx, tx, &vegetarianIngredient)
+		require.NoError(t, err)
+
+		_, err = tx.ExecContext(ctx, `UPDATE reference.ingredients SET animal_product_level = $1 WHERE id = $2`, int(ingredient.Vegan), veganIngredientID)
+		require.NoError(t, err)
+		_, err = tx.ExecContext(ctx, `UPDATE reference.ingredients SET animal_product_level = $1 WHERE id = $2`, int(ingredient.Vegetarian), vegetarianIngredientID)
+		require.NoError(t, err)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		s := NewService(
+			txRunner,
+			repo,
+			NewRecipeVersionRepo(),
+			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
+			NewIngredientUsageRepo(),
+			nil,
+			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
+		)
+
+		createReq := CreateRecipeRequest{
+			Name: "Salad",
+			Ingredients: []CreateIngredientUsageRequest{
+				{IngredientID: veganIngredientID.String(), Quantity: 1, Unit: 1},
+			},
+			UserID:   testUser.ID.String(),
+			PrepMins: 5,
+			CookMins: 0,
+			Portions: 1,
+		}
+
+		createdRecipe, err := s.CreateRecipe(ctx, createReq)
+		require.NoError(t, err)
+		require.NotNil(t, createdRecipe)
+		require.Equal(t, int(ingredient.Vegan), createdRecipe.CurrentVersion.AnimalProductLevel)
+
+		updateReq := UpdateRecipeRequest{
+			RecipeId: createdRecipe.ID.String(),
+			Request: CreateRecipeRequest{
+				Name: "Salad With Cheese",
+				Ingredients: []CreateIngredientUsageRequest{
+					{IngredientID: veganIngredientID.String(), Quantity: 1, Unit: 1},
+					{IngredientID: vegetarianIngredientID.String(), Quantity: 1, Unit: 1},
+				},
+				UserID:   testUser.ID.String(),
+				PrepMins: 5,
+				CookMins: 0,
+				Portions: 1,
+			},
+		}
+
+		updatedRecipe, err := s.UpdateRecipe(ctx, updateReq)
+		require.NoError(t, err)
+		require.NotNil(t, updatedRecipe)
+		require.Equal(t, int(ingredient.Vegetarian), updatedRecipe.CurrentVersion.AnimalProductLevel)
+
+		var persistedAnimalProductLevel int
+		err = tx.QueryRowContext(ctx, `SELECT animal_product_level FROM recipe_versions WHERE id = $1`, updatedRecipe.CurrentVersionID).Scan(&persistedAnimalProductLevel)
+		require.NoError(t, err)
+		require.Equal(t, int(ingredient.Vegetarian), persistedAnimalProductLevel)
+
+		originalVersion, err := s.GetRecipeVersionByRecipeIDAndVersion(ctx, updatedRecipe.ID, 1)
+		require.NoError(t, err)
+		require.NotNil(t, originalVersion)
+		require.Equal(t, int(ingredient.Vegan), originalVersion.AnimalProductLevel)
+	})
+}
+
+func TestCreateRecipe_SetsContainsGlutenFromIngredients(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+
+		glutenFreeIngredientID := uuid.New()
+		glutenFreeIngredient := ingredient.Ingredient{
+			ID:            glutenFreeIngredientID,
+			FileKey:       "gluten_free_ingredient",
+			Name:          "Rice",
+			PreferredUnit: 1,
+		}
+		err := seeds.InsertIngredient(ctx, tx, &glutenFreeIngredient)
+		require.NoError(t, err)
+
+		glutenIngredientID := uuid.New()
+		glutenIngredient := ingredient.Ingredient{
+			ID:            glutenIngredientID,
+			FileKey:       "gluten_ingredient",
+			Name:          "Flour",
+			PreferredUnit: 1,
+		}
+		err = seeds.InsertIngredient(ctx, tx, &glutenIngredient)
+		require.NoError(t, err)
+
+		_, err = tx.ExecContext(ctx, `UPDATE reference.ingredients SET contains_gluten = $1 WHERE id = $2`, false, glutenFreeIngredientID)
+		require.NoError(t, err)
+		_, err = tx.ExecContext(ctx, `UPDATE reference.ingredients SET contains_gluten = $1 WHERE id = $2`, true, glutenIngredientID)
+		require.NoError(t, err)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		s := NewService(
+			txRunner,
+			repo,
+			NewRecipeVersionRepo(),
+			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
+			NewIngredientUsageRepo(),
+			nil,
+			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
+		)
+
+		request := CreateRecipeRequest{
+			Name: "Gluten Dish",
+			Ingredients: []CreateIngredientUsageRequest{
+				{IngredientID: glutenFreeIngredientID.String(), Quantity: 1, Unit: 1},
+				{IngredientID: glutenIngredientID.String(), Quantity: 1, Unit: 1},
+			},
+			UserID:   testUser.ID.String(),
+			PrepMins: 10,
+			CookMins: 15,
+			Portions: 2,
+		}
+
+		recipeContainer, err := s.CreateRecipe(ctx, request)
+		require.NoError(t, err)
+		require.NotNil(t, recipeContainer)
+		require.True(t, recipeContainer.CurrentVersion.ContainsGluten)
+
+		var persistedContainsGluten bool
+		err = tx.QueryRowContext(ctx, `SELECT contains_gluten FROM recipe_versions WHERE id = $1`, recipeContainer.CurrentVersionID).Scan(&persistedContainsGluten)
+		require.NoError(t, err)
+		require.True(t, persistedContainsGluten)
+	})
+}
+
+func TestUpdateRecipe_SetsContainsGlutenOnNewVersionFromIngredients(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+
+		glutenFreeIngredientID := uuid.New()
+		glutenFreeIngredient := ingredient.Ingredient{
+			ID:            glutenFreeIngredientID,
+			FileKey:       "gluten_free_ingredient_update",
+			Name:          "Rice",
+			PreferredUnit: 1,
+		}
+		err := seeds.InsertIngredient(ctx, tx, &glutenFreeIngredient)
+		require.NoError(t, err)
+
+		glutenIngredientID := uuid.New()
+		glutenIngredient := ingredient.Ingredient{
+			ID:            glutenIngredientID,
+			FileKey:       "gluten_ingredient_update",
+			Name:          "Wheat",
+			PreferredUnit: 1,
+		}
+		err = seeds.InsertIngredient(ctx, tx, &glutenIngredient)
+		require.NoError(t, err)
+
+		_, err = tx.ExecContext(ctx, `UPDATE reference.ingredients SET contains_gluten = $1 WHERE id = $2`, false, glutenFreeIngredientID)
+		require.NoError(t, err)
+		_, err = tx.ExecContext(ctx, `UPDATE reference.ingredients SET contains_gluten = $1 WHERE id = $2`, true, glutenIngredientID)
+		require.NoError(t, err)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		s := NewService(
+			txRunner,
+			repo,
+			NewRecipeVersionRepo(),
+			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
+			NewIngredientUsageRepo(),
+			nil,
+			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
+		)
+
+		createReq := CreateRecipeRequest{
+			Name: "Gluten Free Dish",
+			Ingredients: []CreateIngredientUsageRequest{
+				{IngredientID: glutenFreeIngredientID.String(), Quantity: 1, Unit: 1},
+			},
+			UserID:   testUser.ID.String(),
+			PrepMins: 5,
+			CookMins: 10,
+			Portions: 1,
+		}
+
+		createdRecipe, err := s.CreateRecipe(ctx, createReq)
+		require.NoError(t, err)
+		require.NotNil(t, createdRecipe)
+		require.False(t, createdRecipe.CurrentVersion.ContainsGluten)
+
+		updateReq := UpdateRecipeRequest{
+			RecipeId: createdRecipe.ID.String(),
+			Request: CreateRecipeRequest{
+				Name: "Now With Wheat",
+				Ingredients: []CreateIngredientUsageRequest{
+					{IngredientID: glutenFreeIngredientID.String(), Quantity: 1, Unit: 1},
+					{IngredientID: glutenIngredientID.String(), Quantity: 1, Unit: 1},
+				},
+				UserID:   testUser.ID.String(),
+				PrepMins: 5,
+				CookMins: 10,
+				Portions: 1,
+			},
+		}
+
+		updatedRecipe, err := s.UpdateRecipe(ctx, updateReq)
+		require.NoError(t, err)
+		require.NotNil(t, updatedRecipe)
+		require.True(t, updatedRecipe.CurrentVersion.ContainsGluten)
+
+		var persistedContainsGluten bool
+		err = tx.QueryRowContext(ctx, `SELECT contains_gluten FROM recipe_versions WHERE id = $1`, updatedRecipe.CurrentVersionID).Scan(&persistedContainsGluten)
+		require.NoError(t, err)
+		require.True(t, persistedContainsGluten)
 	})
 }
 
@@ -1245,9 +1568,9 @@ func TestGetRecipes_PaginatesAcrossPages(t *testing.T) {
 		middleCreatedAt := newestCreatedAt.Add(-1 * time.Minute)
 		oldestCreatedAt := newestCreatedAt.Add(-2 * time.Minute)
 
-		newest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "Newest", newestCreatedAt, nil)
-		middle := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "Middle", middleCreatedAt, nil)
-		oldest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "Oldest", oldestCreatedAt, nil)
+		newest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "Newest", newestCreatedAt, nil, nil)
+		middle := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "Middle", middleCreatedAt, nil, nil)
+		oldest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "Oldest", oldestCreatedAt, nil, nil)
 
 		params := RecipeListParams{
 			Pagination: RecipePagination{
@@ -1348,14 +1671,14 @@ func TestGetRecipes_CursorIncludesModeAndFilterHashForNewest(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, edgeCursor)
 		require.Equal(t, RecipeCursorModeNewest, edgeCursor.Mode)
-		require.Equal(t, filterHashForParams(RecipeCursorModeNewest, nil, nil), edgeCursor.FilterHash)
+		require.Equal(t, filterHash(RecipeCursorModeNewest, nil, normalizedRecipeFilter{}), edgeCursor.FilterHash)
 		require.Nil(t, edgeCursor.RelevanceScore)
 
 		pageCursor, err := ParseRecipeCursor(nextCursor)
 		require.NoError(t, err)
 		require.NotNil(t, pageCursor)
 		require.Equal(t, RecipeCursorModeNewest, pageCursor.Mode)
-		require.Equal(t, filterHashForParams(RecipeCursorModeNewest, nil, nil), pageCursor.FilterHash)
+		require.Equal(t, filterHash(RecipeCursorModeNewest, nil, normalizedRecipeFilter{}), pageCursor.FilterHash)
 	})
 }
 
@@ -1367,7 +1690,7 @@ func TestGetRecipes_StaleCursorModeIsIgnored(t *testing.T) {
 		score := 0.8
 		staleCursor := (&RecipeCursor{
 			Mode:           RecipeCursorModeRelevance,
-			FilterHash:     filterHashForParams(RecipeCursorModeRelevance, &searchQuery, nil),
+			FilterHash:     filterHash(RecipeCursorModeRelevance, &searchQuery, normalizedRecipeFilter{}),
 			CreatedAt:      newest.CreatedAt,
 			ID:             newest.RecipeID,
 			RelevanceScore: &score,
@@ -1422,7 +1745,7 @@ func TestGetRecipes_ValidCursorWithMatchingHashAppliesBoundary(t *testing.T) {
 
 		validCursor := (&RecipeCursor{
 			Mode:       RecipeCursorModeNewest,
-			FilterHash: filterHashForParams(RecipeCursorModeNewest, nil, nil),
+			FilterHash: filterHash(RecipeCursorModeNewest, nil, normalizedRecipeFilter{}),
 			CreatedAt:  newest.CreatedAt,
 			ID:         newest.RecipeID,
 		}).String()
@@ -1463,7 +1786,7 @@ func TestGetRecipes_SearchQueryReturnsRelevanceCursorsAndPaginates(t *testing.T)
 		require.Equal(t, exactHigh.RecipeID, firstPage[0].Recipe.ID)
 		require.Equal(t, exactLow.RecipeID, firstPage[1].Recipe.ID)
 
-		expectedHash := filterHashForParams(RecipeCursorModeRelevance, &query, nil)
+		expectedHash := filterHash(RecipeCursorModeRelevance, &query, normalizedRecipeFilter{})
 		for _, edge := range firstPage {
 			parsed, err := ParseRecipeCursor(&edge.Cursor)
 			require.NoError(t, err)
@@ -1503,7 +1826,7 @@ func TestGetRecipes_SearchQueryWithStaleNewestCursorIsIgnored(t *testing.T) {
 
 		staleCursor := (&RecipeCursor{
 			Mode:       RecipeCursorModeNewest,
-			FilterHash: filterHashForParams(RecipeCursorModeNewest, nil, nil),
+			FilterHash: filterHash(RecipeCursorModeNewest, nil, normalizedRecipeFilter{}),
 			CreatedAt:  exactHigh.CreatedAt,
 			ID:         exactHigh.RecipeID,
 		}).String()
@@ -1535,7 +1858,7 @@ func TestGetRecipes_SearchQueryWithStaleRelevanceHashIsIgnored(t *testing.T) {
 		score := 0.9
 		staleCursor := (&RecipeCursor{
 			Mode:           RecipeCursorModeRelevance,
-			FilterHash:     filterHashForParams(RecipeCursorModeRelevance, &otherQuery, nil),
+			FilterHash:     filterHash(RecipeCursorModeRelevance, &otherQuery, normalizedRecipeFilter{}),
 			CreatedAt:      exactHigh.CreatedAt,
 			ID:             exactHigh.RecipeID,
 			RelevanceScore: &score,
@@ -1582,9 +1905,9 @@ func TestGetRecipes_FiltersByUserID(t *testing.T) {
 		require.NoError(t, err)
 
 		base := time.Date(2026, time.March, 17, 11, 42, 48, 147630000, time.UTC)
-		aNewest := seedRecipeForListTests(t, ctx, tx, userA.ID, uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "A Newest", base, nil)
-		aOlder := seedRecipeForListTests(t, ctx, tx, userA.ID, uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "A Older", base.Add(-1*time.Minute), nil)
-		_ = seedRecipeForListTests(t, ctx, tx, userB.ID, uuid.MustParse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "B Recipe", base.Add(-2*time.Minute), nil)
+		aNewest := seedRecipeForListTests(t, ctx, tx, userA.ID, uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "A Newest", base, nil, nil)
+		aOlder := seedRecipeForListTests(t, ctx, tx, userA.ID, uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "A Older", base.Add(-1*time.Minute), nil, nil)
+		_ = seedRecipeForListTests(t, ctx, tx, userB.ID, uuid.MustParse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "B Recipe", base.Add(-2*time.Minute), nil, nil)
 
 		userAID := userA.ID
 		params := RecipeListParams{
@@ -1606,7 +1929,144 @@ func TestGetRecipes_FiltersByUserID(t *testing.T) {
 		parsed, err := ParseRecipeCursor(&recipes[0].Cursor)
 		require.NoError(t, err)
 		require.NotNil(t, parsed)
-		require.Equal(t, filterHashForParams(RecipeCursorModeNewest, nil, &userAID), parsed.FilterHash)
+		require.Equal(t, filterHash(RecipeCursorModeNewest, nil, normalizedRecipeFilter{UserID: &userAID}), parsed.FilterHash)
+	})
+}
+
+func TestGetRecipes_FiltersByAnimalProductLevel(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		txRunner := testutil.NewTestTxRunner(tx)
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		s := NewService(
+			txRunner,
+			repo,
+			NewRecipeVersionRepo(),
+			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
+			NewIngredientUsageRepo(),
+			nil,
+			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
+		)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		base := time.Date(2026, time.March, 17, 11, 42, 48, 147630000, time.UTC)
+		veganLevel := 0
+		vegetarianLevel := 1
+		meatLevel := 2
+
+		vegan := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("12345678-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "Vegan Bowl", base, nil, &veganLevel)
+		vegetarian := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("12345678-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "Vegetarian Bowl", base.Add(-1*time.Minute), nil, &vegetarianLevel)
+		meat := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("12345678-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "Meat Bowl", base.Add(-2*time.Minute), nil, &meatLevel)
+
+		veganFilter := 0
+		recipes, nextCursor, err := s.GetRecipes(ctx, RecipeListParams{
+			Pagination: RecipePagination{First: 10},
+			Filter:     RecipeFilter{AnimalProductLevel: &veganFilter},
+		})
+		require.NoError(t, err)
+		require.Nil(t, nextCursor)
+		require.Len(t, recipes, 1)
+		require.Equal(t, vegan.RecipeID, recipes[0].Recipe.ID)
+
+		vegetarianFilter := 1
+		recipes, nextCursor, err = s.GetRecipes(ctx, RecipeListParams{
+			Pagination: RecipePagination{First: 10},
+			Filter:     RecipeFilter{AnimalProductLevel: &vegetarianFilter},
+		})
+		require.NoError(t, err)
+		require.Nil(t, nextCursor)
+		require.Len(t, recipes, 2)
+		require.Equal(t, vegan.RecipeID, recipes[0].Recipe.ID)
+		require.Equal(t, vegetarian.RecipeID, recipes[1].Recipe.ID)
+
+		anyFilter := 2
+		recipes, nextCursor, err = s.GetRecipes(ctx, RecipeListParams{
+			Pagination: RecipePagination{First: 10},
+			Filter:     RecipeFilter{AnimalProductLevel: &anyFilter},
+		})
+		require.NoError(t, err)
+		require.Nil(t, nextCursor)
+		require.Len(t, recipes, 3)
+		require.Equal(t, vegan.RecipeID, recipes[0].Recipe.ID)
+		require.Equal(t, vegetarian.RecipeID, recipes[1].Recipe.ID)
+		require.Equal(t, meat.RecipeID, recipes[2].Recipe.ID)
+	})
+}
+
+func TestGetRecipes_UnsupportedAnimalProductLevelUsesUnfilteredCursorHash(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx, s, newest, middle, _ := setupRecipeListFixture(t, tx)
+
+		unsupportedAnimalLevel := 2
+		recipes, _, err := s.GetRecipes(ctx, RecipeListParams{
+			Pagination: RecipePagination{First: 2},
+			Filter:     RecipeFilter{AnimalProductLevel: &unsupportedAnimalLevel},
+		})
+		require.NoError(t, err)
+		require.Len(t, recipes, 2)
+		require.Equal(t, newest.RecipeID, recipes[0].Recipe.ID)
+		require.Equal(t, middle.RecipeID, recipes[1].Recipe.ID)
+
+		parsed, err := ParseRecipeCursor(&recipes[0].Cursor)
+		require.NoError(t, err)
+		require.NotNil(t, parsed)
+		require.Equal(t, filterHash(RecipeCursorModeNewest, nil, normalizedRecipeFilter{}), parsed.FilterHash)
+	})
+}
+
+func TestGetRecipes_FiltersByContainsGluten(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx, s, newest, middle, _ := setupRecipeListFixture(t, tx)
+
+		_, err := tx.ExecContext(ctx, `UPDATE recipe_versions SET contains_gluten = $1 WHERE id = $2`, false, newest.VersionID)
+		require.NoError(t, err)
+		_, err = tx.ExecContext(ctx, `UPDATE recipe_versions SET contains_gluten = $1 WHERE id = $2`, true, middle.VersionID)
+		require.NoError(t, err)
+
+		containsGluten := true
+		recipes, nextCursor, err := s.GetRecipes(ctx, RecipeListParams{
+			Pagination: RecipePagination{First: 10},
+			Filter:     RecipeFilter{ContainsGluten: &containsGluten},
+		})
+		require.NoError(t, err)
+		require.Nil(t, nextCursor)
+		require.Len(t, recipes, 1)
+		require.Equal(t, middle.RecipeID, recipes[0].Recipe.ID)
+
+		glutenFree := false
+		recipes, nextCursor, err = s.GetRecipes(ctx, RecipeListParams{
+			Pagination: RecipePagination{First: 10},
+			Filter:     RecipeFilter{ContainsGluten: &glutenFree},
+		})
+		require.NoError(t, err)
+		require.Nil(t, nextCursor)
+		require.Len(t, recipes, 2)
+		require.Equal(t, newest.RecipeID, recipes[0].Recipe.ID)
+	})
+}
+
+func TestGetRecipes_ContainsGlutenFilterAffectsCursorHash(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx, s, newest, _, _ := setupRecipeListFixture(t, tx)
+
+		_, err := tx.ExecContext(ctx, `UPDATE recipe_versions SET contains_gluten = $1 WHERE id = $2`, true, newest.VersionID)
+		require.NoError(t, err)
+
+		containsGluten := true
+		recipes, _, err := s.GetRecipes(ctx, RecipeListParams{
+			Pagination: RecipePagination{First: 2},
+			Filter:     RecipeFilter{ContainsGluten: &containsGluten},
+		})
+		require.NoError(t, err)
+		require.NotEmpty(t, recipes)
+
+		parsed, err := ParseRecipeCursor(&recipes[0].Cursor)
+		require.NoError(t, err)
+		require.NotNil(t, parsed)
+		require.Equal(t, filterHash(RecipeCursorModeNewest, nil, normalizedRecipeFilter{ContainsGluten: &containsGluten}), parsed.FilterHash)
 	})
 }
 
@@ -1634,9 +2094,9 @@ func setupRecipeListFixture(t *testing.T, tx *sql.Tx) (context.Context, *Service
 	middleCreatedAt := newestCreatedAt.Add(-1 * time.Minute)
 	oldestCreatedAt := newestCreatedAt.Add(-2 * time.Minute)
 
-	newest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "Newest", newestCreatedAt, nil)
-	middle := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "Middle", middleCreatedAt, nil)
-	oldest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "Oldest", oldestCreatedAt, nil)
+	newest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "Newest", newestCreatedAt, nil, nil)
+	middle := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "Middle", middleCreatedAt, nil, nil)
+	oldest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "Oldest", oldestCreatedAt, nil, nil)
 
 	return ctx, s, newest, middle, oldest
 }
@@ -1664,10 +2124,10 @@ func setupRecipeSearchFixture(t *testing.T, tx *sql.Tx) (context.Context, *Servi
 	sameCreatedAt := time.Date(2026, time.March, 17, 11, 40, 48, 147630000, time.UTC)
 	olderCreatedAt := sameCreatedAt.Add(-1 * time.Minute)
 
-	exactHigh := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("ffffffff-ffff-ffff-ffff-fffffffffff1"), uuid.New(), "Chicken Soup", sameCreatedAt, nil)
-	exactLow := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("00000000-0000-0000-0000-000000000002"), uuid.New(), "Chicken Soup", sameCreatedAt, nil)
-	fuzzy := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("11111111-1111-1111-1111-111111111111"), uuid.New(), "Chikcen Soup", olderCreatedAt, nil)
-	seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("22222222-2222-2222-2222-222222222222"), uuid.New(), "Beef Chili", olderCreatedAt, nil)
+	exactHigh := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("ffffffff-ffff-ffff-ffff-fffffffffff1"), uuid.New(), "Chicken Soup", sameCreatedAt, nil, nil)
+	exactLow := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("00000000-0000-0000-0000-000000000002"), uuid.New(), "Chicken Soup", sameCreatedAt, nil, nil)
+	fuzzy := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("11111111-1111-1111-1111-111111111111"), uuid.New(), "Chikcen Soup", olderCreatedAt, nil, nil)
+	seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("22222222-2222-2222-2222-222222222222"), uuid.New(), "Beef Chili", olderCreatedAt, nil, nil)
 
 	return ctx, s, exactHigh, exactLow, fuzzy
 }

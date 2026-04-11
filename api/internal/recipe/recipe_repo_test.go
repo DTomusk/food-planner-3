@@ -83,65 +83,69 @@ func TestGetRecipeByID_ReturnsCurrentVersionImgSrc(t *testing.T) {
 	})
 }
 
-func TestGetRecipesByUserID(t *testing.T) {
+func TestGetRecipeByID_ReturnsCurrentVersionAnimalProductLevel(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
-		// Arrange
 		ctx := context.Background()
 		r, err := NewRecipeRepo(0.15, 0.85)
 		require.NoError(t, err)
 
 		testUser, err := seeds.SeedTestUser(ctx, tx)
-		require.NoError(t, err, "Failed to seed test user")
-
-		otherUser, err := seeds.SeedTestUser(ctx, tx)
-		require.NoError(t, err, "Failed to seed other test user")
-
-		expectedRecipeNames := []string{"Test Recipe 0", "Test Recipe 1"}
-		for _, recipeName := range expectedRecipeNames {
-			recipeID := uuid.New()
-			versionID := uuid.New()
-
-			err = seeds.InsertRecipeContainer(ctx, tx, recipeID, testUser.ID)
-			require.NoError(t, err)
-
-			err = seeds.InsertRecipeVersion(ctx, tx, versionID, recipeID, recipeName, 30, 60, 8, 1)
-			require.NoError(t, err)
-
-			err = seeds.SetRecipeContainerCurrentVersion(ctx, tx, recipeID, versionID)
-			require.NoError(t, err)
-		}
-
-		otherRecipeID := uuid.New()
-		otherVersionID := uuid.New()
-
-		err = seeds.InsertRecipeContainer(ctx, tx, otherRecipeID, otherUser.ID)
 		require.NoError(t, err)
 
-		err = seeds.InsertRecipeVersion(ctx, tx, otherVersionID, otherRecipeID, "Other User Recipe", 30, 60, 8, 1)
+		recipeID := uuid.New()
+		versionID := uuid.New()
+		expectedAnimalProductLevel := 2
+
+		err = seeds.InsertRecipeContainer(ctx, tx, recipeID, testUser.ID)
 		require.NoError(t, err)
 
-		err = seeds.SetRecipeContainerCurrentVersion(ctx, tx, otherRecipeID, otherVersionID)
+		err = seeds.InsertRecipeVersion(ctx, tx, versionID, recipeID, "Animal Level Recipe", 30, 60, 8, 1)
 		require.NoError(t, err)
 
-		// Act
-		recipes, err := r.getRecipesByUserID(ctx, tx, testUser.ID)
-
-		// Assert
+		_, err = tx.ExecContext(ctx, `UPDATE recipe_versions SET animal_product_level = $1 WHERE id = $2`, expectedAnimalProductLevel, versionID)
 		require.NoError(t, err)
-		require.Len(t, recipes, 2, "Expected to find 2 recipes for test user")
 
-		actualNames := make(map[string]struct{}, len(recipes))
-		for _, recipe := range recipes {
-			require.Equal(t, testUser.ID, recipe.UserID, "Expected all recipes to belong to test user")
-			require.NotNil(t, recipe.CurrentVersion, "Expected recipe to include current version")
-			require.Equal(t, recipe.ID, recipe.CurrentVersion.RecipeID, "Expected current version to point to recipe container")
-			actualNames[recipe.CurrentVersion.Name] = struct{}{}
-		}
+		err = seeds.SetRecipeContainerCurrentVersion(ctx, tx, recipeID, versionID)
+		require.NoError(t, err)
 
-		for _, expectedName := range expectedRecipeNames {
-			_, found := actualNames[expectedName]
-			require.True(t, found, "Expected recipe name to be present")
-		}
+		recipeContainer, err := r.getRecipeByID(ctx, tx, recipeID)
+		require.NoError(t, err)
+		require.NotNil(t, recipeContainer)
+		require.NotNil(t, recipeContainer.CurrentVersion)
+		require.Equal(t, expectedAnimalProductLevel, recipeContainer.CurrentVersion.AnimalProductLevel)
+	})
+}
+
+func TestGetRecipeByID_ReturnsCurrentVersionContainsGluten(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		r, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		recipeID := uuid.New()
+		versionID := uuid.New()
+		expectedContainsGluten := true
+
+		err = seeds.InsertRecipeContainer(ctx, tx, recipeID, testUser.ID)
+		require.NoError(t, err)
+
+		err = seeds.InsertRecipeVersion(ctx, tx, versionID, recipeID, "Gluten Recipe", 30, 60, 8, 1)
+		require.NoError(t, err)
+
+		_, err = tx.ExecContext(ctx, `UPDATE recipe_versions SET contains_gluten = $1 WHERE id = $2`, expectedContainsGluten, versionID)
+		require.NoError(t, err)
+
+		err = seeds.SetRecipeContainerCurrentVersion(ctx, tx, recipeID, versionID)
+		require.NoError(t, err)
+
+		recipeContainer, err := r.getRecipeByID(ctx, tx, recipeID)
+		require.NoError(t, err)
+		require.NotNil(t, recipeContainer)
+		require.NotNil(t, recipeContainer.CurrentVersion)
+		require.Equal(t, expectedContainsGluten, recipeContainer.CurrentVersion.ContainsGluten)
 	})
 }
 
@@ -164,12 +168,12 @@ func TestGetRecipes_ReturnsActiveRecipesOrderedByCreatedAtAndIDDesc(t *testing.T
 		olderID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
 		deletedID := uuid.MustParse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee")
 
-		newestHigh := seedRecipeForListTests(t, ctx, tx, testUser.ID, newestHighID, uuid.New(), "Newest High", sameCreatedAt, nil)
-		newestLow := seedRecipeForListTests(t, ctx, tx, testUser.ID, newestLowID, uuid.New(), "Newest Low", sameCreatedAt, nil)
-		older := seedRecipeForListTests(t, ctx, tx, testUser.ID, olderID, uuid.New(), "Older", olderCreatedAt, nil)
-		seedRecipeForListTests(t, ctx, tx, testUser.ID, deletedID, uuid.New(), "Deleted", deletedCreatedAt, &deletedOn)
+		newestHigh := seedRecipeForListTests(t, ctx, tx, testUser.ID, newestHighID, uuid.New(), "Newest High", sameCreatedAt, nil, nil)
+		newestLow := seedRecipeForListTests(t, ctx, tx, testUser.ID, newestLowID, uuid.New(), "Newest Low", sameCreatedAt, nil, nil)
+		older := seedRecipeForListTests(t, ctx, tx, testUser.ID, olderID, uuid.New(), "Older", olderCreatedAt, nil, nil)
+		seedRecipeForListTests(t, ctx, tx, testUser.ID, deletedID, uuid.New(), "Deleted", deletedCreatedAt, &deletedOn, nil)
 
-		recipes, err := r.getRecipesByCreatedAt(ctx, tx, 10, nil, nil)
+		recipes, err := r.getRecipesByCreatedAt(ctx, tx, 10, nil, normalizedRecipeFilter{})
 
 		require.NoError(t, err)
 		require.Len(t, recipes, 3)
@@ -191,16 +195,16 @@ func TestGetRecipes_AppliesCursorBoundary(t *testing.T) {
 		sameCreatedAt := time.Date(2026, time.March, 17, 11, 40, 48, 147630000, time.UTC)
 		olderCreatedAt := sameCreatedAt.Add(-1 * time.Minute)
 
-		newestHigh := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("ffffffff-ffff-ffff-ffff-fffffffffff1"), uuid.New(), "Newest High", sameCreatedAt, nil)
-		newestLow := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("00000000-0000-0000-0000-000000000002"), uuid.New(), "Newest Low", sameCreatedAt, nil)
-		older := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("11111111-1111-1111-1111-111111111111"), uuid.New(), "Older", olderCreatedAt, nil)
+		newestHigh := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("ffffffff-ffff-ffff-ffff-fffffffffff1"), uuid.New(), "Newest High", sameCreatedAt, nil, nil)
+		newestLow := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("00000000-0000-0000-0000-000000000002"), uuid.New(), "Newest Low", sameCreatedAt, nil, nil)
+		older := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("11111111-1111-1111-1111-111111111111"), uuid.New(), "Older", olderCreatedAt, nil, nil)
 
 		cursor := &RecipeCursor{
 			CreatedAt: newestHigh.CreatedAt,
 			ID:        newestHigh.RecipeID,
 		}
 
-		recipes, err := r.getRecipesByCreatedAt(ctx, tx, 10, cursor, nil)
+		recipes, err := r.getRecipesByCreatedAt(ctx, tx, 10, cursor, normalizedRecipeFilter{})
 
 		require.NoError(t, err)
 		require.Len(t, recipes, 2)
@@ -221,12 +225,12 @@ func TestGetRecipesByRelevance_ReturnsMatchesOrderedByScoreThenCreatedAtThenIDDe
 		sameCreatedAt := time.Date(2026, time.March, 17, 11, 40, 48, 147630000, time.UTC)
 		olderCreatedAt := sameCreatedAt.Add(-1 * time.Minute)
 
-		exactHigh := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("ffffffff-ffff-ffff-ffff-fffffffffff1"), uuid.New(), "Chicken Soup", sameCreatedAt, nil)
-		exactLow := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("00000000-0000-0000-0000-000000000002"), uuid.New(), "Chicken Soup", sameCreatedAt, nil)
-		fuzzy := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("11111111-1111-1111-1111-111111111111"), uuid.New(), "Chikcen Soup", olderCreatedAt, nil)
-		seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("22222222-2222-2222-2222-222222222222"), uuid.New(), "Beef Chili", olderCreatedAt, nil)
+		exactHigh := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("ffffffff-ffff-ffff-ffff-fffffffffff1"), uuid.New(), "Chicken Soup", sameCreatedAt, nil, nil)
+		exactLow := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("00000000-0000-0000-0000-000000000002"), uuid.New(), "Chicken Soup", sameCreatedAt, nil, nil)
+		fuzzy := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("11111111-1111-1111-1111-111111111111"), uuid.New(), "Chikcen Soup", olderCreatedAt, nil, nil)
+		seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("22222222-2222-2222-2222-222222222222"), uuid.New(), "Beef Chili", olderCreatedAt, nil, nil)
 
-		recipes, err := r.getRecipesByRelevance(ctx, tx, "chicken soup", 10, nil, nil)
+		recipes, err := r.getRecipesByRelevance(ctx, tx, "chicken soup", 10, nil, normalizedRecipeFilter{})
 
 		require.NoError(t, err)
 		require.Len(t, recipes, 3)
@@ -252,11 +256,11 @@ func TestGetRecipesByRelevance_AppliesCursorBoundary(t *testing.T) {
 		sameCreatedAt := time.Date(2026, time.March, 17, 11, 40, 48, 147630000, time.UTC)
 		olderCreatedAt := sameCreatedAt.Add(-1 * time.Minute)
 
-		seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("ffffffff-ffff-ffff-ffff-fffffffffff1"), uuid.New(), "Chicken Soup", sameCreatedAt, nil)
-		seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("00000000-0000-0000-0000-000000000002"), uuid.New(), "Chicken Soup", sameCreatedAt, nil)
-		fuzzy := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("11111111-1111-1111-1111-111111111111"), uuid.New(), "Chikcen Soup", olderCreatedAt, nil)
+		seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("ffffffff-ffff-ffff-ffff-fffffffffff1"), uuid.New(), "Chicken Soup", sameCreatedAt, nil, nil)
+		seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("00000000-0000-0000-0000-000000000002"), uuid.New(), "Chicken Soup", sameCreatedAt, nil, nil)
+		fuzzy := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("11111111-1111-1111-1111-111111111111"), uuid.New(), "Chikcen Soup", olderCreatedAt, nil, nil)
 
-		firstPage, err := r.getRecipesByRelevance(ctx, tx, "chicken soup", 2, nil, nil)
+		firstPage, err := r.getRecipesByRelevance(ctx, tx, "chicken soup", 2, nil, normalizedRecipeFilter{})
 		require.NoError(t, err)
 		require.Len(t, firstPage, 2)
 		require.NotNil(t, firstPage[1].RelevanceScore)
@@ -267,7 +271,7 @@ func TestGetRecipesByRelevance_AppliesCursorBoundary(t *testing.T) {
 			RelevanceScore: firstPage[1].RelevanceScore,
 		}
 
-		secondPage, err := r.getRecipesByRelevance(ctx, tx, "chicken soup", 10, cursor, nil)
+		secondPage, err := r.getRecipesByRelevance(ctx, tx, "chicken soup", 10, cursor, normalizedRecipeFilter{})
 
 		require.NoError(t, err)
 		require.Len(t, secondPage, 1)
@@ -286,7 +290,7 @@ func TestGetRecipesByRelevance_ReturnsErrInvalidCursorWhenScoreMissing(t *testin
 			ID:        uuid.New(),
 		}
 
-		recipes, err := r.getRecipesByRelevance(ctx, tx, "chicken", 10, cursor, nil)
+		recipes, err := r.getRecipesByRelevance(ctx, tx, "chicken", 10, cursor, normalizedRecipeFilter{})
 
 		require.ErrorIs(t, err, ErrInvalidCursor)
 		require.Nil(t, recipes)
@@ -303,14 +307,165 @@ func TestGetRecipesByRelevance_SupportsFuzzyMatching(t *testing.T) {
 		require.NoError(t, err, "Failed to seed test user")
 
 		createdAt := time.Date(2026, time.March, 17, 11, 40, 48, 147630000, time.UTC)
-		expected := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("33333333-3333-3333-3333-333333333333"), uuid.New(), "Chicken Soup", createdAt, nil)
+		expected := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("33333333-3333-3333-3333-333333333333"), uuid.New(), "Chicken Soup", createdAt, nil, nil)
 
-		recipes, err := r.getRecipesByRelevance(ctx, tx, "chikcen soup", 10, nil, nil)
+		recipes, err := r.getRecipesByRelevance(ctx, tx, "chikcen soup", 10, nil, normalizedRecipeFilter{})
 
 		require.NoError(t, err)
 		require.NotEmpty(t, recipes)
 		require.Equal(t, expected.RecipeID, recipes[0].Recipe.ID)
 		require.NotNil(t, recipes[0].RelevanceScore)
+	})
+}
+
+func TestGetRecipesByCreatedAt_FiltersByAnimalProductLevel(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		r, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		base := time.Date(2026, time.March, 17, 11, 40, 48, 147630000, time.UTC)
+		veganLevel := 0
+		vegetarianLevel := 1
+		meatLevel := 2
+
+		vegan := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "Vegan Soup", base, nil, &veganLevel)
+		vegetarian := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "Vegetarian Soup", base.Add(-1*time.Minute), nil, &vegetarianLevel)
+		meat := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "Meat Soup", base.Add(-2*time.Minute), nil, &meatLevel)
+
+		veganFilter := 0
+		recipes, err := r.getRecipesByCreatedAt(ctx, tx, 10, nil, normalizedRecipeFilter{AnimalProductLevel: &veganFilter})
+		require.NoError(t, err)
+		require.Len(t, recipes, 1)
+		require.Equal(t, vegan.RecipeID, recipes[0].Recipe.ID)
+
+		vegetarianFilter := 1
+		recipes, err = r.getRecipesByCreatedAt(ctx, tx, 10, nil, normalizedRecipeFilter{AnimalProductLevel: &vegetarianFilter})
+		require.NoError(t, err)
+		require.Len(t, recipes, 2)
+		require.Equal(t, vegan.RecipeID, recipes[0].Recipe.ID)
+		require.Equal(t, vegetarian.RecipeID, recipes[1].Recipe.ID)
+
+		recipes, err = r.getRecipesByCreatedAt(ctx, tx, 10, nil, normalizedRecipeFilter{})
+		require.NoError(t, err)
+		require.Len(t, recipes, 3)
+		require.Equal(t, vegan.RecipeID, recipes[0].Recipe.ID)
+		require.Equal(t, vegetarian.RecipeID, recipes[1].Recipe.ID)
+		require.Equal(t, meat.RecipeID, recipes[2].Recipe.ID)
+	})
+}
+
+func TestGetRecipesByRelevance_FiltersByAnimalProductLevel(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		r, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		base := time.Date(2026, time.March, 17, 11, 40, 48, 147630000, time.UTC)
+		veganLevel := 0
+		vegetarianLevel := 1
+		meatLevel := 2
+
+		vegan := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("dddddddd-dddd-dddd-dddd-ddddddddddd1"), uuid.New(), "Green Curry", base, nil, &veganLevel)
+		vegetarian := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee2"), uuid.New(), "Paneer Curry", base.Add(-1*time.Minute), nil, &vegetarianLevel)
+		meat := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("ffffffff-ffff-ffff-ffff-fffffffffff3"), uuid.New(), "Chicken Curry", base.Add(-2*time.Minute), nil, &meatLevel)
+
+		veganFilter := 0
+		recipes, err := r.getRecipesByRelevance(ctx, tx, "curry", 10, nil, normalizedRecipeFilter{AnimalProductLevel: &veganFilter})
+		require.NoError(t, err)
+		require.Len(t, recipes, 1)
+		require.Equal(t, vegan.RecipeID, recipes[0].Recipe.ID)
+
+		vegetarianFilter := 1
+		recipes, err = r.getRecipesByRelevance(ctx, tx, "curry", 10, nil, normalizedRecipeFilter{AnimalProductLevel: &vegetarianFilter})
+		require.NoError(t, err)
+		require.Len(t, recipes, 2)
+		require.Equal(t, vegan.RecipeID, recipes[0].Recipe.ID)
+		require.Equal(t, vegetarian.RecipeID, recipes[1].Recipe.ID)
+
+		recipes, err = r.getRecipesByRelevance(ctx, tx, "curry", 10, nil, normalizedRecipeFilter{})
+		require.NoError(t, err)
+		require.Len(t, recipes, 3)
+		actual := map[uuid.UUID]struct{}{}
+		for _, row := range recipes {
+			actual[row.Recipe.ID] = struct{}{}
+		}
+		_, hasVegan := actual[vegan.RecipeID]
+		_, hasVegetarian := actual[vegetarian.RecipeID]
+		_, hasMeat := actual[meat.RecipeID]
+		require.True(t, hasVegan)
+		require.True(t, hasVegetarian)
+		require.True(t, hasMeat)
+	})
+}
+
+func TestGetRecipesByCreatedAt_FiltersByContainsGluten(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		r, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		base := time.Date(2026, time.March, 17, 11, 40, 48, 147630000, time.UTC)
+		glutenFree := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("12341234-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "Gluten Free Soup", base, nil, nil)
+		containsGluten := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("12341234-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "Wheat Soup", base.Add(-1*time.Minute), nil, nil)
+
+		_, err = tx.ExecContext(ctx, `UPDATE recipe_versions SET contains_gluten = $1 WHERE id = $2`, false, glutenFree.VersionID)
+		require.NoError(t, err)
+		_, err = tx.ExecContext(ctx, `UPDATE recipe_versions SET contains_gluten = $1 WHERE id = $2`, true, containsGluten.VersionID)
+		require.NoError(t, err)
+
+		trueFilter := true
+		recipes, err := r.getRecipesByCreatedAt(ctx, tx, 10, nil, normalizedRecipeFilter{ContainsGluten: &trueFilter})
+		require.NoError(t, err)
+		require.Len(t, recipes, 1)
+		require.Equal(t, containsGluten.RecipeID, recipes[0].Recipe.ID)
+
+		falseFilter := false
+		recipes, err = r.getRecipesByCreatedAt(ctx, tx, 10, nil, normalizedRecipeFilter{ContainsGluten: &falseFilter})
+		require.NoError(t, err)
+		require.Len(t, recipes, 1)
+		require.Equal(t, glutenFree.RecipeID, recipes[0].Recipe.ID)
+	})
+}
+
+func TestGetRecipesByRelevance_FiltersByContainsGluten(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		r, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		base := time.Date(2026, time.March, 17, 11, 40, 48, 147630000, time.UTC)
+		glutenFree := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("12341234-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "Rice Curry", base, nil, nil)
+		containsGluten := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("12341234-dddd-dddd-dddd-ddddddddddd4"), uuid.New(), "Naan Curry", base.Add(-1*time.Minute), nil, nil)
+
+		_, err = tx.ExecContext(ctx, `UPDATE recipe_versions SET contains_gluten = $1 WHERE id = $2`, false, glutenFree.VersionID)
+		require.NoError(t, err)
+		_, err = tx.ExecContext(ctx, `UPDATE recipe_versions SET contains_gluten = $1 WHERE id = $2`, true, containsGluten.VersionID)
+		require.NoError(t, err)
+
+		trueFilter := true
+		recipes, err := r.getRecipesByRelevance(ctx, tx, "curry", 10, nil, normalizedRecipeFilter{ContainsGluten: &trueFilter})
+		require.NoError(t, err)
+		require.Len(t, recipes, 1)
+		require.Equal(t, containsGluten.RecipeID, recipes[0].Recipe.ID)
+
+		falseFilter := false
+		recipes, err = r.getRecipesByRelevance(ctx, tx, "curry", 10, nil, normalizedRecipeFilter{ContainsGluten: &falseFilter})
+		require.NoError(t, err)
+		require.Len(t, recipes, 1)
+		require.Equal(t, glutenFree.RecipeID, recipes[0].Recipe.ID)
 	})
 }
 
@@ -322,6 +477,7 @@ func seedRecipeForListTests(
 	name string,
 	createdAt time.Time,
 	deletedOn *time.Time,
+	animalProductLevel *int,
 ) listedRecipeSeed {
 	t.Helper()
 
@@ -339,6 +495,11 @@ func seedRecipeForListTests(
 
 	_, err = tx.ExecContext(ctx, `UPDATE recipe_versions SET created_at = $1 WHERE id = $2`, createdAt, versionID)
 	require.NoError(t, err)
+
+	if animalProductLevel != nil {
+		_, err = tx.ExecContext(ctx, `UPDATE recipe_versions SET animal_product_level = $1 WHERE id = $2`, *animalProductLevel, versionID)
+		require.NoError(t, err)
+	}
 
 	return listedRecipeSeed{
 		RecipeID:  recipeID,
