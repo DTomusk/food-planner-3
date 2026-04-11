@@ -9,6 +9,8 @@ type RecipeDietLevelFilter = "all" | "0" | "1";
 type RecipeFiltersProps = {
     dietLevel: RecipeDietLevelFilter;
     onDietLevelChange: (dietLevel: RecipeDietLevelFilter) => void;
+    glutenFreeOnly: boolean;
+    onGlutenFreeOnlyChange: (glutenFreeOnly: boolean) => void;
     mobile?: boolean;
 };
 
@@ -27,7 +29,7 @@ const dietLevelOptions: Array<{ value: RecipeDietLevelFilter; label: string; }> 
     },
 ];
 
-export default function RecipeFilters({ dietLevel, onDietLevelChange, mobile = false }: RecipeFiltersProps) {
+export default function RecipeFilters({ dietLevel, onDietLevelChange, glutenFreeOnly, onGlutenFreeOnlyChange, mobile = false }: RecipeFiltersProps) {
     const [collapsed, setCollapsed] = useState(false);
     return (
         <>
@@ -44,6 +46,15 @@ export default function RecipeFilters({ dietLevel, onDietLevelChange, mobile = f
                     </option>
                 ))}
             </Select>
+            <label htmlFor="glutenFreeOnlyMobile" className="flex items-center gap-2 text-sm text-gray-900">
+                <input
+                    id="glutenFreeOnlyMobile"
+                    type="checkbox"
+                    checked={glutenFreeOnly}
+                    onChange={(e) => onGlutenFreeOnlyChange(e.target.checked)}
+                />
+                Gluten-free only
+            </label>
         </Stack>)
         }
         {!mobile && <aside className="w-full rounded-md border border-black bg-white p-3 md:w-56 md:shrink-0">
@@ -63,6 +74,16 @@ export default function RecipeFilters({ dietLevel, onDietLevelChange, mobile = f
                             </option>
                         ))}
                     </Select>
+
+                    <label htmlFor="glutenFreeOnlyDesktop" className="flex items-center gap-2 text-sm text-gray-900">
+                        <input
+                            id="glutenFreeOnlyDesktop"
+                            type="checkbox"
+                            checked={glutenFreeOnly}
+                            onChange={(e) => onGlutenFreeOnlyChange(e.target.checked)}
+                        />
+                        Gluten-free only
+                    </label>
                     </Stack>
                     </>
                 )}

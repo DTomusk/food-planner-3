@@ -44,6 +44,8 @@ export default function RecipeListingPage() {
     const [showFilterDrawer, setShowFilterDrawer] = useState(false);
 
     const dietLevel = normalizeDietLevelParam(searchParams.get("dietLevel"));
+    const glutenFree = searchParams.get("gf") === "1";
+
 
     // Keep input value in sync when URL changes via navigation/back-forward.
     useEffect(() => {
@@ -97,24 +99,41 @@ export default function RecipeListingPage() {
         setSearchParams(nextParams);
     };
 
+    const clearGlutenFreeFilter = () => {
+        const nextParams = new URLSearchParams(searchParams);
+        nextParams.delete("gf");
+        setSearchParams(nextParams);
+    };
+
     const clearAllFilters = () => {
         const nextParams = new URLSearchParams(searchParams);
         nextParams.delete("q");
         nextParams.delete("dietLevel");
+        nextParams.delete("gf");
         setSearchParams(nextParams);
     };
 
     const animalProductLevel = dietLevel === "all" ? undefined : Number(dietLevel);
+    const containsGluten = glutenFree ? false : undefined;
     const activeDietLabel = dietLevelLabel(dietLevel);
-    const hasActiveFilters = hasQuery || activeDietLabel !== null;
+    const hasActiveFilters = hasQuery || activeDietLabel !== null || glutenFree;
 
     const { data, isLoading, error, hasNextPage, fetchNextPage, isFetchingNextPage } = useRecipes({
         first: 20,
         query,
         animalProductLevel,
+        containsGluten,
     });
     const { isAuthenticated } = useAuth();
-    
+    const handleGlutenFreeOnlyChange = (glutenFreeOnly: boolean) => {
+        const nextParams = new URLSearchParams(searchParams);
+        if (glutenFreeOnly) {
+            nextParams.set("gf", "1");
+        } else {
+            nextParams.delete("gf");
+        }
+        setSearchParams(nextParams);
+    }
     const navigate = useNavigate();
 
     const scrollToTop = () => {
@@ -142,7 +161,7 @@ export default function RecipeListingPage() {
                 <Inline align="start" justify="start" wrap className="w-full" gap="lg">
                     {/* Filters */}
                     <div className="hidden lg:block">
-                        <RecipeFilters dietLevel={dietLevel} onDietLevelChange={handleDietLevelChange} />
+                        <RecipeFilters dietLevel={dietLevel} onDietLevelChange={handleDietLevelChange} glutenFreeOnly={glutenFree} onGlutenFreeOnlyChange={handleGlutenFreeOnlyChange} />
                     </div>
                     {/* Search bar and list */}
                     <Stack className="min-w-0 w-full flex-1" space="lg">
@@ -168,6 +187,9 @@ export default function RecipeListingPage() {
                                 )}
                                 {activeDietLabel && (
                                     <FilterChip label={`Diet: ${activeDietLabel}`} onClear={clearDietFilter} />
+                                )}
+                                {glutenFree && (
+                                    <FilterChip label="Gluten-free only" onClear={clearGlutenFreeFilter} />
                                 )}
                                 <button
                                     type="button"
@@ -205,7 +227,7 @@ export default function RecipeListingPage() {
             <BackToTop showScrollTopButton={showScrollTopButton} scrollToTop={scrollToTop} />
             {showFilterDrawer && (
                 <MobileNavDrawer open={showFilterDrawer} onClose={() => setShowFilterDrawer(false)}>
-                    <RecipeFilters mobile dietLevel={dietLevel} onDietLevelChange={handleDietLevelChange} />
+                    <RecipeFilters mobile dietLevel={dietLevel} onDietLevelChange={handleDietLevelChange} glutenFreeOnly={glutenFree} onGlutenFreeOnlyChange={handleGlutenFreeOnlyChange} />
                 </MobileNavDrawer>
             )}
         </Page>
