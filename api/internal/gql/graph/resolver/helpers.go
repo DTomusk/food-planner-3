@@ -72,6 +72,7 @@ func mapRecipeVersion(recipeVersion *recipe.RecipeVersion) *model.RecipeVersion 
 		Version:            int32(recipeVersion.Version),
 		ImgSrc:             recipeVersion.ImgSrc,
 		AnimalProductLevel: int32(recipeVersion.AnimalProductLevel),
+		ContainsGluten:     recipeVersion.ContainsGluten,
 	}
 }
 
@@ -91,6 +92,7 @@ func buildRecipeListParams(
 	var query *string
 	var userID *uuid.UUID
 	var animalProductLevel *int
+	var containsGluten *bool
 	if filter != nil {
 		query = filter.Query
 		if filter.UserID != nil {
@@ -104,6 +106,10 @@ func buildRecipeListParams(
 			animalProductLevel = new(int)
 			*animalProductLevel = int(*filter.AnimalProductLevel)
 		}
+		if filter.ContainsGluten != nil {
+			containsGluten = new(bool)
+			*containsGluten = *filter.ContainsGluten
+		}
 	}
 
 	return recipe.RecipeListParams{
@@ -115,6 +121,7 @@ func buildRecipeListParams(
 			Query:              query,
 			UserID:             userID,
 			AnimalProductLevel: animalProductLevel,
+			ContainsGluten:     containsGluten,
 		},
 	}, nil
 }

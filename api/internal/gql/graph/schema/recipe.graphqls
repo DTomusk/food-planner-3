@@ -22,6 +22,7 @@ type RecipeVersion {
   portions: Int!
   imgSrc: String
   animalProductLevel: Int!
+  containsGluten: Boolean!
   source: RecipeSource! @goField(forceResolver: true)
 
   createdAt: Time!
@@ -71,6 +72,7 @@ input RecipeFilterInput {
   query: String
   userID: ID
   animalProductLevel: Int
+  containsGluten: Boolean
 }
 
 input CreateRecipeInput {

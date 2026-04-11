@@ -134,6 +134,7 @@ type ComplexityRoot struct {
 
 	RecipeVersion struct {
 		AnimalProductLevel func(childComplexity int) int
+		ContainsGluten     func(childComplexity int) int
 		CookMins           func(childComplexity int) int
 		CreatedAt          func(childComplexity int) int
 		Description        func(childComplexity int) int
@@ -561,6 +562,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.RecipeVersion.AnimalProductLevel(childComplexity), true
+	case "RecipeVersion.containsGluten":
+		if e.complexity.RecipeVersion.ContainsGluten == nil {
+			break
+		}
+
+		return e.complexity.RecipeVersion.ContainsGluten(childComplexity), true
 	case "RecipeVersion.cookMins":
 		if e.complexity.RecipeVersion.CookMins == nil {
 			break
@@ -2452,6 +2459,8 @@ func (ec *executionContext) fieldContext_Recipe_currentVersion(_ context.Context
 				return ec.fieldContext_RecipeVersion_imgSrc(ctx, field)
 			case "animalProductLevel":
 				return ec.fieldContext_RecipeVersion_animalProductLevel(ctx, field)
+			case "containsGluten":
+				return ec.fieldContext_RecipeVersion_containsGluten(ctx, field)
 			case "source":
 				return ec.fieldContext_RecipeVersion_source(ctx, field)
 			case "createdAt":
@@ -2509,6 +2518,8 @@ func (ec *executionContext) fieldContext_Recipe_versions(_ context.Context, fiel
 				return ec.fieldContext_RecipeVersion_imgSrc(ctx, field)
 			case "animalProductLevel":
 				return ec.fieldContext_RecipeVersion_animalProductLevel(ctx, field)
+			case "containsGluten":
+				return ec.fieldContext_RecipeVersion_containsGluten(ctx, field)
 			case "source":
 				return ec.fieldContext_RecipeVersion_source(ctx, field)
 			case "createdAt":
@@ -2567,6 +2578,8 @@ func (ec *executionContext) fieldContext_Recipe_version(ctx context.Context, fie
 				return ec.fieldContext_RecipeVersion_imgSrc(ctx, field)
 			case "animalProductLevel":
 				return ec.fieldContext_RecipeVersion_animalProductLevel(ctx, field)
+			case "containsGluten":
+				return ec.fieldContext_RecipeVersion_containsGluten(ctx, field)
 			case "source":
 				return ec.fieldContext_RecipeVersion_source(ctx, field)
 			case "createdAt":
@@ -3243,6 +3256,35 @@ func (ec *executionContext) fieldContext_RecipeVersion_animalProductLevel(_ cont
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RecipeVersion_containsGluten(ctx context.Context, field graphql.CollectedField, obj *model.RecipeVersion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RecipeVersion_containsGluten,
+		func(ctx context.Context) (any, error) {
+			return obj.ContainsGluten, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RecipeVersion_containsGluten(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RecipeVersion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -5241,7 +5283,7 @@ func (ec *executionContext) unmarshalInputRecipeFilterInput(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"query", "userID", "animalProductLevel"}
+	fieldsInOrder := [...]string{"query", "userID", "animalProductLevel", "containsGluten"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -5269,6 +5311,13 @@ func (ec *executionContext) unmarshalInputRecipeFilterInput(ctx context.Context,
 				return it, err
 			}
 			it.AnimalProductLevel = data
+		case "containsGluten":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("containsGluten"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ContainsGluten = data
 		}
 	}
 
@@ -6351,6 +6400,11 @@ func (ec *executionContext) _RecipeVersion(ctx context.Context, sel ast.Selectio
 			out.Values[i] = ec._RecipeVersion_imgSrc(ctx, field, obj)
 		case "animalProductLevel":
 			out.Values[i] = ec._RecipeVersion_animalProductLevel(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "containsGluten":
+			out.Values[i] = ec._RecipeVersion_containsGluten(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}

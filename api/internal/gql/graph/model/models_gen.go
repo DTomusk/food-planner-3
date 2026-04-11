@@ -98,6 +98,7 @@ type RecipeFilterInput struct {
 	Query              *string `json:"query,omitempty"`
 	UserID             *string `json:"userID,omitempty"`
 	AnimalProductLevel *int32  `json:"animalProductLevel,omitempty"`
+	ContainsGluten     *bool   `json:"containsGluten,omitempty"`
 }
 
 type RecipeSource struct {

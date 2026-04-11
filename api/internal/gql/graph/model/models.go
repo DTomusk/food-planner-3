@@ -25,4 +25,5 @@ type RecipeVersion struct {
 	CreatedAt          time.Time
 	ImgSrc             *string
 	AnimalProductLevel int32
+	ContainsGluten     bool
 }
