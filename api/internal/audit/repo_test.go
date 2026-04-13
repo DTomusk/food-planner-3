@@ -3,6 +3,7 @@ package audit
 import (
 	"context"
 	"database/sql"
+	"foodplanner/internal/testutil/seeds"
 	"testing"
 	"time"
 
@@ -17,8 +18,14 @@ func TestSave_PersistsAuditEntry(t *testing.T) {
 		ctx := context.Background()
 		repo := NewRepo()
 
-		actorID := uuid.New()
-		resourceID := uuid.New()
+		actorUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		resourceUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		actorID := actorUser.ID
+		resourceID := resourceUser.ID
 		reason := "user created account"
 		entry := &AuditEntry{
 			ID:            uuid.New(),
@@ -35,7 +42,7 @@ func TestSave_PersistsAuditEntry(t *testing.T) {
 			Context:       []byte(`{"source":"graphql","operation":"signup"}`),
 		}
 
-		err := repo.Save(ctx, tx, entry)
+		err = repo.Save(ctx, tx, entry)
 		require.NoError(t, err)
 
 		var (

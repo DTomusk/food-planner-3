@@ -3,6 +3,7 @@ package audit
 import (
 	"context"
 	"database/sql"
+	"foodplanner/internal/testutil/seeds"
 	"testing"
 
 	"foodplanner/internal/testutil"
@@ -16,7 +17,10 @@ func TestLog_PersistsAuditEntry(t *testing.T) {
 		ctx := context.Background()
 		service := NewAuditService(tx, NewRepo())
 
-		entry, err := NewUserSignupEvent(uuid.New(), uuid.New(), "test-user", "127.0.0.1")
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		entry, err := NewUserSignupEvent(uuid.New(), testUser.ID, testUser.Username, "127.0.0.1")
 		require.NoError(t, err)
 
 		err = service.Log(ctx, entry)

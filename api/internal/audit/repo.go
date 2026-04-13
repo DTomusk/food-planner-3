@@ -30,6 +30,14 @@ func NewRepo() *repo {
 }
 
 func (r *repo) Save(ctx context.Context, database db.DBTX, entry *AuditEntry) error {
+	// Helper to convert empty byte slices to NULL in the database, and non-empty slices to strings
+	jsonArg := func(v []byte) any {
+		if len(v) == 0 {
+			return nil
+		}
+		return string(v)
+	}
+
 	_, err := database.ExecContext(
 		ctx,
 		insertAuditQuery,
@@ -41,10 +49,10 @@ func (r *repo) Save(ctx context.Context, database db.DBTX, entry *AuditEntry) er
 		entry.Action,
 		entry.CreatedAt,
 		entry.Result,
-		entry.OldState,
-		entry.NewState,
+		jsonArg(entry.OldState),
+		jsonArg(entry.NewState),
 		entry.Reason,
-		entry.Context,
+		jsonArg(entry.Context),
 	)
 
 	return err
