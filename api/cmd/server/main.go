@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"foodplanner/internal/audit"
 	"foodplanner/internal/auth"
 	refreshtokens "foodplanner/internal/auth/refresh_tokens"
 	"foodplanner/internal/config"
@@ -55,6 +56,8 @@ func main() {
 
 	txRunner := db.NewDBTxRunner(database)
 
+	auditService := audit.NewAuditService(txRunner.DB(), audit.NewRepo())
+
 	ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), cfg.IngredientUpsertBatchSize)
 
 	recipeRepo, err := recipe.NewRecipeRepo(cfg.RecipeSearchTrigramWeight, cfg.RecipeSearchFullTextWeight)
@@ -65,7 +68,7 @@ func main() {
 	userService := user.NewUserService(txRunner.DB(), user.NewUserRepo())
 	jwtService := auth.NewJWTService(cfg.JWTSecret, cfg.JWTExpirationMinutes)
 	refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), cfg.RefreshTokenSecret, cfg.RefreshTokenExpirationDays)
-	authService := auth.NewAuthService(txRunner.DB(), userService, jwtService, refreshTokenService)
+	authService := auth.NewAuthService(txRunner.DB(), userService, jwtService, refreshTokenService, auditService)
 
 	uploadProvider, err := upload.NewR2UploadProvider(ctx, upload.R2UploadProviderConfig{
 		AccountID:       cfg.R2AccountID,

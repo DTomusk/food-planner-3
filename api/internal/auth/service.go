@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"foodplanner/internal/audit"
 	refreshtokens "foodplanner/internal/auth/refresh_tokens"
 	"foodplanner/internal/db"
 	"foodplanner/internal/user"
@@ -12,14 +13,22 @@ type AuthService struct {
 	userService         *user.UserService
 	jwtService          *JWTService
 	refreshTokenService *refreshtokens.RefreshTokenService
+	auditService        *audit.AuditService
 }
 
-func NewAuthService(db db.DBTX, userService *user.UserService, jwtService *JWTService, refreshTokenService *refreshtokens.RefreshTokenService) *AuthService {
+func NewAuthService(
+	db db.DBTX,
+	userService *user.UserService,
+	jwtService *JWTService,
+	refreshTokenService *refreshtokens.RefreshTokenService,
+	auditService *audit.AuditService,
+) *AuthService {
 	return &AuthService{
 		db:                  db,
 		userService:         userService,
 		jwtService:          jwtService,
 		refreshTokenService: refreshTokenService,
+		auditService:        auditService,
 	}
 }
 

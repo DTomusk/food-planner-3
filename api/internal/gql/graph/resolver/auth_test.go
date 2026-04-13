@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
+	"foodplanner/internal/audit"
 	"foodplanner/internal/auth"
 	refreshtokens "foodplanner/internal/auth/refresh_tokens"
 	"foodplanner/internal/gql/graph/model"
@@ -30,7 +31,8 @@ func setupAuthMutationResolver(tx *sql.Tx) (*mutationResolver, *auth.AuthService
 	jwtService := auth.NewJWTService("testsecret", 15)
 	txRunner := testutil.NewTestTxRunner(tx)
 	refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), testRefreshSecret, 7)
-	authService := auth.NewAuthService(tx, userService, jwtService, refreshTokenService)
+	auditService := audit.NewAuditService(tx, audit.NewRepo())
+	authService := auth.NewAuthService(tx, userService, jwtService, refreshTokenService, auditService)
 	resolver := &Resolver{
 		AuthService: authService,
 	}
