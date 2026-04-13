@@ -2,14 +2,71 @@
 
 ## Ready
 
-## Planning
+- [ ] Audit logging
+    - Priority: high
+    - Area: visibility for what's going on in the system
+    - Type: tech debt
+    - Why: we want to have an audit trail of what's going on in the site. This will record actions carried out. This will be useful for content moderation but also for other things 
+    - DoD: 
+        - audit_log table implemented with columns: actor_id, action, resource_type, resource_id, old_state, new_state, reason, result, context, created_at
+        - audit logging service created that can be called from services to record events
+        - user signup audit event implemented and recorded for all new signups
+        - dev can query audit log to see signup history
+
+## Planning 
+
+- [ ] Manual content moderation
+    - Depends on: Audit logging
+    - Priority: high
+    - Area: throughout 
+    - Type: feature 
+    - Why: since anyone can sign up to the site and post free-text (including recipe instructions and usernames, but also more stuff in the future), we should put guardrails in place to prevent offensive and restricted content being shared. This may involve some auto-moderation in the future, but as a first slice, we can add manual content reporting, content being hidden once reports exceed a configured number, and the facilities for devs (and system administrators in the future) to view and action content that's been reported beyond a certain threshold. 
+    - DoD:
+        - Users can report content 
+            - Limit to recipe versions 
+        - Users can select one of a number of reasons (reasons persisted as enum)
+        - Users can write in details of their complaint
+            - If reason is other than "Other", details are optional 
+            - If reason is "Other", then details are required
+        - Users can't report the same recipe version more than once
+        - System saves each report including:
+            - Reporting user
+            - Recipe version id and recipe id
+            - Reason
+            - Optional details
+            - Report timestamp 
+        - Recipe versions store report count
+        - Recipe versions above a configurable report threshold are hidden from non-moderator users
+            - Visible to the author and to moderators
+        - Moderation events (dismiss, restore, remove, note) are recorded to audit log with actor, action, reason, and timestamp
+        - Author is notified that their recipe is hidden
+        - Previous versions remain hidden when a new version is created and approved
+        - Dev can run scripts or use backend tools to review and resolve reports
 
 - [ ] Manual content moderation
     - Priority: high
     - Area: throughout 
     - Type: feature 
     - Why: since anyone can sign up to the site and post free-text (including recipe instructions and usernames, but also more stuff in the future), we should put guardrails in place to prevent offensive and restricted content being shared. This may involve some auto-moderation in the future, but as a first slice, we can add manual content reporting, content being hidden once reports exceed a configured number, and the facilities for devs (and system administrators in the future) to view and action content that's been reported beyond a certain threshold. 
-    - DoD: 
+    - DoD:
+        - Users can report content 
+            - Limit to recipe versions 
+        - Users can select one of a number of reasons (reasons persisted as enum)
+        - Users can write in details of their complaint
+            - If any reason other than other, details are optional 
+            - If Other, then must add details
+        - Users can't report the same content more than once
+        - System saves each report including:
+            - Reporting user
+            - Entity id
+            - Entity type 
+            - Content at time of reporting 
+            - Report timestamp 
+        - Entities store number of reports 
+        - Entities with a number of reports greater than a configured value are hidden from other users 
+            - What if a user has saved someone else's recipe?
+        - The user who created the entity is informed that it's been hidden?
+        - 
 
 - [ ] Private/public recipes 
     - Priority: 
@@ -106,6 +163,13 @@
     - Type: (bug, tech debt, feature)
     - Why: users can set dietary requirements that apply to all searches by default (but can be changed). Users can choose whether they prefer metric or imperial
     - DoD: 
+
+- [ ] RBAC
+    - Priority: 
+    - Area: 
+    - Type: (bug, tech debt, feature)
+    - Why: 
+    - DoD:
 
 ## Item template 
 
