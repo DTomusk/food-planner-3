@@ -5,7 +5,10 @@ import (
 	"foodplanner/internal/audit"
 	refreshtokens "foodplanner/internal/auth/refresh_tokens"
 	"foodplanner/internal/db"
+	"foodplanner/internal/logging"
 	"foodplanner/internal/user"
+
+	"github.com/google/uuid"
 )
 
 type AuthService struct {
@@ -33,6 +36,8 @@ func NewAuthService(
 }
 
 func (s *AuthService) SignUp(email, password, username, ipAddress string, ctx context.Context) (*user.User, string, *refreshtokens.RefreshToken, error) {
+	logger := logging.FromContext(ctx)
+
 	if err := validateEmail(email); err != nil {
 		return nil, "", nil, err
 	}
@@ -62,6 +67,17 @@ func (s *AuthService) SignUp(email, password, username, ipAddress string, ctx co
 	refresh_token, err := s.refreshTokenService.NewSession(ctx, user.ID, ipAddress)
 	if err != nil {
 		return nil, "", nil, err
+	}
+
+	correlationID := uuid.New()
+	entry, err := audit.NewUserSignupEvent(correlationID, user.ID, user.Username, ipAddress)
+	if err != nil {
+		logger.Warn("Failed to create signup audit event", "userID", user.ID, "err", err)
+		return user, token, refresh_token, nil
+	}
+
+	if err := s.auditService.Log(ctx, entry); err != nil {
+		logger.Warn("Failed to persist signup audit event", "userID", user.ID, "correlationID", correlationID, "err", err)
 	}
 
 	return user, token, refresh_token, nil
