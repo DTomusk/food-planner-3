@@ -2,9 +2,9 @@ package auth
 
 import (
 	"context"
-	"foodplanner/internal/audit"
 	refreshtokens "foodplanner/internal/auth/refresh_tokens"
 	"foodplanner/internal/db"
+	"foodplanner/internal/events"
 	"foodplanner/internal/logging"
 	"foodplanner/internal/user"
 
@@ -16,7 +16,7 @@ type AuthService struct {
 	userService         *user.UserService
 	jwtService          *JWTService
 	refreshTokenService *refreshtokens.RefreshTokenService
-	auditService        *audit.AuditService
+	eventBus            events.EventBus
 }
 
 func NewAuthService(
@@ -24,14 +24,14 @@ func NewAuthService(
 	userService *user.UserService,
 	jwtService *JWTService,
 	refreshTokenService *refreshtokens.RefreshTokenService,
-	auditService *audit.AuditService,
+	eventBus events.EventBus,
 ) *AuthService {
 	return &AuthService{
 		db:                  db,
 		userService:         userService,
 		jwtService:          jwtService,
 		refreshTokenService: refreshTokenService,
-		auditService:        auditService,
+		eventBus:            eventBus,
 	}
 }
 
@@ -70,14 +70,9 @@ func (s *AuthService) SignUp(email, password, username, ipAddress string, ctx co
 	}
 
 	correlationID := uuid.New()
-	entry, err := audit.NewUserSignupEvent(correlationID, user.ID, user.Username, ipAddress)
-	if err != nil {
-		logger.Warn("Failed to create signup audit event", "userID", user.ID, "err", err)
-		return user, token, refresh_token, nil
-	}
-
-	if err := s.auditService.Log(ctx, entry); err != nil {
-		logger.Warn("Failed to persist signup audit event", "userID", user.ID, "correlationID", correlationID, "err", err)
+	signupEvent := events.NewUserSignedUpEvent(correlationID, user.ID, user.Username, user.Email, ipAddress)
+	if err := s.eventBus.Publish(ctx, signupEvent); err != nil {
+		logger.Warn("Failed to publish signup event", "userID", user.ID, "correlationID", correlationID, "err", err)
 	}
 
 	return user, token, refresh_token, nil

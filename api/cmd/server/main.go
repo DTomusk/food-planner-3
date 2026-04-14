@@ -9,6 +9,7 @@ import (
 	refreshtokens "foodplanner/internal/auth/refresh_tokens"
 	"foodplanner/internal/config"
 	"foodplanner/internal/db"
+	"foodplanner/internal/events"
 	"foodplanner/internal/gql/graph"
 	"foodplanner/internal/gql/graph/directive"
 	"foodplanner/internal/gql/graph/resolver"
@@ -57,6 +58,10 @@ func main() {
 	txRunner := db.NewDBTxRunner(database)
 
 	auditService := audit.NewAuditService(txRunner.DB(), audit.NewRepo())
+	eventBus := events.NewInMemoryEventBus(2, 256)
+	if _, err := eventBus.Subscribe(events.UserSignedUpType, audit.NewSignupEventHandler(auditService)); err != nil {
+		log.Fatalf("Failed to subscribe signup audit handler: %v", err)
+	}
 
 	ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), cfg.IngredientUpsertBatchSize)
 
@@ -68,7 +73,7 @@ func main() {
 	userService := user.NewUserService(txRunner.DB(), user.NewUserRepo())
 	jwtService := auth.NewJWTService(cfg.JWTSecret, cfg.JWTExpirationMinutes)
 	refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), cfg.RefreshTokenSecret, cfg.RefreshTokenExpirationDays)
-	authService := auth.NewAuthService(txRunner.DB(), userService, jwtService, refreshTokenService, auditService)
+	authService := auth.NewAuthService(txRunner.DB(), userService, jwtService, refreshTokenService, eventBus)
 
 	uploadProvider, err := upload.NewR2UploadProvider(ctx, upload.R2UploadProviderConfig{
 		AccountID:       cfg.R2AccountID,
@@ -173,6 +178,10 @@ func main() {
 
 	if err := server.Shutdown(shutdownCtx); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatalf("HTTP shutdown failed: %v", err)
+	}
+
+	if err := eventBus.Close(shutdownCtx); err != nil {
+		log.Printf("Event bus shutdown failed: %v", err)
 	}
 
 	log.Println("HTTP server stopped cleanly")
