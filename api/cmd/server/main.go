@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"foodplanner/internal/audit"
 	"foodplanner/internal/auth"
 	refreshtokens "foodplanner/internal/auth/refresh_tokens"
 	"foodplanner/internal/config"
@@ -30,6 +29,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
 	_ "github.com/lib/pq"
+	"github.com/redis/go-redis/v9"
 	"github.com/rs/cors"
 	"github.com/vektah/gqlparser/v2/ast"
 )
@@ -57,15 +57,12 @@ func main() {
 
 	txRunner := db.NewDBTxRunner(database)
 
-	auditService := audit.NewAuditService(txRunner.DB(), audit.NewRepo())
-	eventBus := events.NewInMemoryEventBus(2, 256)
-
-	eventRegistry := events.NewRegistry()
-	eventRegistry.Register(events.UserSignedUpType, func() events.Event { return &events.UserSignedUpEvent{} })
-
-	if _, err := eventBus.Subscribe(events.UserSignedUpType, audit.NewSignupEventHandler(auditService)); err != nil {
-		log.Fatalf("Failed to subscribe signup audit handler: %v", err)
-	}
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     cfg.RedisAddress,
+		Password: cfg.RedisPassword,
+		DB:       cfg.RedisDB,
+	})
+	redisPublisher := events.NewRedisPublisher(redisClient, cfg.RedisStream, cfg.RedisStreamMaxLen)
 
 	ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), cfg.IngredientUpsertBatchSize)
 
@@ -77,7 +74,7 @@ func main() {
 	userService := user.NewUserService(txRunner.DB(), user.NewUserRepo())
 	jwtService := auth.NewJWTService(cfg.JWTSecret, cfg.JWTExpirationMinutes)
 	refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), cfg.RefreshTokenSecret, cfg.RefreshTokenExpirationDays)
-	authService := auth.NewAuthService(txRunner.DB(), userService, jwtService, refreshTokenService, eventBus)
+	authService := auth.NewAuthService(txRunner.DB(), userService, jwtService, refreshTokenService, redisPublisher)
 
 	uploadProvider, err := upload.NewR2UploadProvider(ctx, upload.R2UploadProviderConfig{
 		AccountID:       cfg.R2AccountID,
@@ -182,10 +179,6 @@ func main() {
 
 	if err := server.Shutdown(shutdownCtx); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatalf("HTTP shutdown failed: %v", err)
-	}
-
-	if err := eventBus.Close(shutdownCtx); err != nil {
-		log.Printf("Event bus shutdown failed: %v", err)
 	}
 
 	log.Println("HTTP server stopped cleanly")
