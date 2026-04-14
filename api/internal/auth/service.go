@@ -16,7 +16,7 @@ type AuthService struct {
 	userService         *user.UserService
 	jwtService          *JWTService
 	refreshTokenService *refreshtokens.RefreshTokenService
-	eventBus            events.EventBus
+	eventPublisher      events.Publisher
 }
 
 func NewAuthService(
@@ -24,14 +24,14 @@ func NewAuthService(
 	userService *user.UserService,
 	jwtService *JWTService,
 	refreshTokenService *refreshtokens.RefreshTokenService,
-	eventBus events.EventBus,
+	eventPublisher events.Publisher,
 ) *AuthService {
 	return &AuthService{
 		db:                  db,
 		userService:         userService,
 		jwtService:          jwtService,
 		refreshTokenService: refreshTokenService,
-		eventBus:            eventBus,
+		eventPublisher:      eventPublisher,
 	}
 }
 
@@ -71,7 +71,7 @@ func (s *AuthService) SignUp(email, password, username, ipAddress string, ctx co
 
 	correlationID := uuid.New()
 	signupEvent := events.NewUserSignedUpEvent(correlationID, user.ID, user.Username, user.Email, ipAddress)
-	if err := s.eventBus.Publish(ctx, signupEvent); err != nil {
+	if err := s.eventPublisher.Publish(ctx, signupEvent); err != nil {
 		logger.Warn("Failed to publish signup event", "userID", user.ID, "correlationID", correlationID, "err", err)
 	}
 
