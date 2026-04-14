@@ -59,6 +59,10 @@ func main() {
 
 	auditService := audit.NewAuditService(txRunner.DB(), audit.NewRepo())
 	eventBus := events.NewInMemoryEventBus(2, 256)
+
+	eventRegistry := events.NewRegistry()
+	eventRegistry.Register(events.UserSignedUpType, func() events.Event { return &events.UserSignedUpEvent{} })
+
 	if _, err := eventBus.Subscribe(events.UserSignedUpType, audit.NewSignupEventHandler(auditService)); err != nil {
 		log.Fatalf("Failed to subscribe signup audit handler: %v", err)
 	}
