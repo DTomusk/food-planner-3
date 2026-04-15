@@ -33,6 +33,7 @@ type Result string
 
 const (
 	ActionUserSignup Action = "user.signup"
+	ActionUserSignin Action = "user.signin"
 
 	ResourceTypeUser ResourceType = "user"
 

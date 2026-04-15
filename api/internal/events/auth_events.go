@@ -6,7 +6,10 @@ import (
 	"github.com/google/uuid"
 )
 
-const UserSignedUpType = "user.signed_up"
+const (
+	UserSignedUpType     = "user.signed_up"
+	UserSigninFailedType = "user.signin_failed"
+)
 
 type UserSignedUpEvent struct {
 	Meta      Metadata
@@ -37,5 +40,34 @@ func NewUserSignedUpEvent(correlationID, userID uuid.UUID, username, email, ipAd
 		Username:  username,
 		Email:     email,
 		IPAddress: ipAddress,
+	}
+}
+
+type UserSigninFailedEvent struct {
+	Meta          Metadata
+	UserID        *uuid.UUID
+	Email         string
+	IPAddress     string
+	FailureReason string
+}
+
+func (e UserSigninFailedEvent) Metadata() Metadata {
+	return e.Meta
+}
+
+func NewUserSigninFailedEvent(correlationID uuid.UUID, userID *uuid.UUID, email, ipAddress, failureReason string) UserSigninFailedEvent {
+	return UserSigninFailedEvent{
+		Meta: Metadata{
+			ID:            uuid.New(),
+			Type:          UserSigninFailedType,
+			Version:       1,
+			OccurredAtUTC: time.Now().UTC(),
+			CorrelationID: correlationID,
+			Source:        "auth.service",
+		},
+		UserID:        userID,
+		Email:         email,
+		IPAddress:     ipAddress,
+		FailureReason: failureReason,
 	}
 }

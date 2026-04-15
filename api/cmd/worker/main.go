@@ -47,8 +47,10 @@ func main() {
 	// Register event type strings and their corresponding event structs
 	registry := events.NewRegistry()
 	registry.Register(events.UserSignedUpType, func() events.Event { return &events.UserSignedUpEvent{} })
+	registry.Register(events.UserSigninFailedType, func() events.Event { return &events.UserSigninFailedEvent{} })
 	expectedVersions := map[string]int{
-		events.UserSignedUpType: 1,
+		events.UserSignedUpType:     1,
+		events.UserSigninFailedType: 1,
 	}
 	eventsRepo := events.NewEventsRepo()
 
@@ -68,6 +70,9 @@ func main() {
 	// Register handlers to handle events (can register multiple handlers to an event)
 	if err := worker.RegisterHandler(events.UserSignedUpType, audit.NewSignupEventHandler(auditService)); err != nil {
 		log.Fatalf("Failed to register signup audit handler: %v", err)
+	}
+	if err := worker.RegisterHandler(events.UserSigninFailedType, audit.NewSigninFailureEventHandler(auditService)); err != nil {
+		log.Fatalf("Failed to register signin failure audit handler: %v", err)
 	}
 
 	// Run worker

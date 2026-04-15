@@ -97,11 +97,31 @@ func NewRedisWorker(client *redis.Client, stream, group, consumerName string, re
 	}
 }
 
+func isContextShutdownError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
+
+	errText := strings.ToLower(err.Error())
+	return strings.Contains(errText, "context canceled") || strings.Contains(errText, "context deadline exceeded")
+}
+
 func (w *RedisWorker) Run(ctx context.Context) error {
 	logger := logging.FromContext(ctx)
 	logger.Info("Starting Redis worker", "stream", w.stream, "group", w.group, "consumer", w.consumerName)
-	err := w.ensureGroup(ctx)
+
+	startupCtx, cancelStartup := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	err := w.ensureGroup(startupCtx)
+	cancelStartup()
 	if err != nil {
+		if isContextShutdownError(err) && ctx.Err() != nil {
+			logger.Info("Redis worker stopped during startup", "stream", w.stream, "group", w.group, "consumer", w.consumerName)
+			return nil
+		}
 		logger.Error("Failed to ensure Redis group", "error", err)
 		return err
 	}
@@ -127,7 +147,7 @@ func (w *RedisWorker) Run(ctx context.Context) error {
 			Block: w.readBlock,
 		}).Result()
 		if err != nil {
-			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			if isContextShutdownError(err) {
 				return nil
 			}
 			if errors.Is(err, redis.Nil) {

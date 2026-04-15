@@ -49,3 +49,66 @@ func NewUserSignupEvent(correlationID uuid.UUID, userID uuid.UUID, username, ipA
 		Context:       contextData,
 	}, nil
 }
+
+func NewUserSigninEvent(correlationID uuid.UUID, userID uuid.UUID, username, ipAddress string) (*AuditEntry, error) {
+	createdAt := time.Now().UTC()
+
+	contextData, err := json.Marshal(struct {
+		Source    string `json:"source"`
+		Operation string `json:"operation"`
+		IPAddress string `json:"ip_address"`
+	}{
+		Source:    "graphql",
+		Operation: "signin",
+		IPAddress: ipAddress,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &AuditEntry{
+		ID:            uuid.New(),
+		CorrelationID: correlationID,
+		ActorID:       &userID,
+		ResourceType:  ResourceTypeUser,
+		ResourceID:    &userID,
+		Action:        ActionUserSignin,
+		Result:        ResultSuccess,
+		CreatedAt:     createdAt,
+		Context:       contextData,
+	}, nil
+}
+
+func NewUserSigninFailureEvent(correlationID uuid.UUID, userID *uuid.UUID, email, ipAddress, failureReason string) (*AuditEntry, error) {
+	createdAt := time.Now().UTC()
+
+	contextData, err := json.Marshal(struct {
+		Source        string `json:"source"`
+		Operation     string `json:"operation"`
+		IPAddress     string `json:"ip_address"`
+		Email         string `json:"email"`
+		FailureReason string `json:"failure_reason"`
+	}{
+		Source:        "graphql",
+		Operation:     "signin",
+		IPAddress:     ipAddress,
+		Email:         email,
+		FailureReason: failureReason,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &AuditEntry{
+		ID:            uuid.New(),
+		CorrelationID: correlationID,
+		ActorID:       userID,
+		ResourceType:  ResourceTypeUser,
+		ResourceID:    userID,
+		Action:        ActionUserSignin,
+		Result:        ResultFailure,
+		CreatedAt:     createdAt,
+		Reason:        &failureReason,
+		Context:       contextData,
+	}, nil
+}

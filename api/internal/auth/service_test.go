@@ -200,31 +200,61 @@ func TestSignIn_Success(t *testing.T) {
 func TestSignIn_NoUser(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
-		authService, _ := newTestAuthService(t, tx)
+		authService, eventBus := newTestAuthService(t, tx)
+		received := make(chan events.UserSigninFailedEvent, 1)
+		_, err := eventBus.Subscribe(events.UserSigninFailedType, events.HandlerFunc(func(ctx context.Context, tx db.DBTX, event events.Event) error {
+			signinFailedEvent, ok := event.(events.UserSigninFailedEvent)
+			if !ok {
+				return nil
+			}
+			received <- signinFailedEvent
+			return nil
+		}))
+		require.NoError(t, err)
 
 		email := "test@example.com"
 		password := "wrongpassword"
 		ipAddress := "127.0.0.1"
 
 		// Act
-		_, _, _, err := authService.SignIn(email, password, ipAddress, context.Background())
+		_, _, _, err = authService.SignIn(email, password, ipAddress, context.Background())
 
 		// Assert
 		require.Error(t, err)
 		require.Equal(t, ErrInvalidCredentials, err)
+
+		select {
+		case published := <-received:
+			require.Nil(t, published.UserID)
+			require.Equal(t, email, published.Email)
+			require.Equal(t, ipAddress, published.IPAddress)
+			require.Equal(t, "user_not_found", published.FailureReason)
+		case <-time.After(1 * time.Second):
+			t.Fatal("expected signin failure event to be published")
+		}
 	})
 }
 
 func TestSignIn_WrongPassword(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
-		authService, _ := newTestAuthService(t, tx)
+		authService, eventBus := newTestAuthService(t, tx)
+		received := make(chan events.UserSigninFailedEvent, 1)
+		_, err := eventBus.Subscribe(events.UserSigninFailedType, events.HandlerFunc(func(ctx context.Context, tx db.DBTX, event events.Event) error {
+			signinFailedEvent, ok := event.(events.UserSigninFailedEvent)
+			if !ok {
+				return nil
+			}
+			received <- signinFailedEvent
+			return nil
+		}))
+		require.NoError(t, err)
 		email := "example@test.com"
 		correctPassword := "correctpassword"
 		username := "testuser"
 		ipAddress := "127.0.0.1"
 
-		_, _, _, err := authService.SignUp(email, correctPassword, username, ipAddress, context.Background())
+		createdUser, _, _, err := authService.SignUp(email, correctPassword, username, ipAddress, context.Background())
 		require.NoError(t, err)
 
 		// Act
@@ -234,6 +264,17 @@ func TestSignIn_WrongPassword(t *testing.T) {
 		// Assert
 		require.Error(t, err)
 		require.Equal(t, ErrInvalidCredentials, err)
+
+		select {
+		case published := <-received:
+			require.NotNil(t, published.UserID)
+			require.Equal(t, createdUser.ID, *published.UserID)
+			require.Equal(t, email, published.Email)
+			require.Equal(t, ipAddress, published.IPAddress)
+			require.Equal(t, "invalid_password", published.FailureReason)
+		case <-time.After(1 * time.Second):
+			t.Fatal("expected signin failure event to be published")
+		}
 	})
 }
 
