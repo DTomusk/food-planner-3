@@ -87,6 +87,15 @@ func UnmarshalEvent(env Envelope, registry *Registry) (Event, error) {
 		return nil, ErrNilRegistryEvent
 	}
 
+	// Normalize pointer-backed decoded events to value events when the value
+	// also satisfies Event. This keeps downstream handlers consistent.
+	v := reflect.ValueOf(event)
+	if v.Kind() == reflect.Ptr && !v.IsNil() {
+		if normalized, ok := v.Elem().Interface().(Event); ok {
+			return normalized, nil
+		}
+	}
+
 	return event, nil
 }
 

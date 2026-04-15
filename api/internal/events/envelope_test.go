@@ -38,8 +38,8 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 	decodedEvent, err := UnmarshalEvent(decodedEnv, registry)
 	require.NoError(t, err, "unmarshal event failed: %v", err)
 
-	signup, ok := decodedEvent.(*UserSignedUpEvent)
-	require.True(t, ok, "expected *UserSignedUpEvent, got %T", decodedEvent)
+	signup, ok := decodedEvent.(UserSignedUpEvent)
+	require.True(t, ok, "expected UserSignedUpEvent, got %T", decodedEvent)
 	require.Equal(t, userID, signup.UserID, "expected userID %s, got %s", userID, signup.UserID)
 	require.Equal(t, correlationID, signup.Meta.CorrelationID, "expected correlationID %s, got %s", correlationID, signup.Meta.CorrelationID)
 	require.Equal(t, "demo@example.com", signup.Email, "unexpected email: %s", signup.Email)

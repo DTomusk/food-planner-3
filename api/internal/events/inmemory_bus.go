@@ -11,13 +11,10 @@ import (
 var ErrEventBusClosed = errors.New("event bus is closed")
 
 type InMemoryEventBus struct {
-	//
-	mu sync.RWMutex
-	//
-	subs    map[string]map[uint64]Handler
-	nextSub uint64
-	queue   chan Event
-	// Work
+	mu       sync.RWMutex
+	subs     map[string]map[uint64]Handler
+	nextSub  uint64
+	queue    chan Event
 	workers  sync.WaitGroup
 	closeBus sync.Once
 	closed   bool
