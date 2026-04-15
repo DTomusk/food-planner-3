@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	_ "github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -43,6 +44,7 @@ func main() {
 		DB:       cfg.RedisDB,
 	})
 
+	// Register event type strings and their corresponding event structs
 	registry := events.NewRegistry()
 	registry.Register(events.UserSignedUpType, func() events.Event { return &events.UserSignedUpEvent{} })
 
@@ -55,10 +57,13 @@ func main() {
 	)
 
 	auditService := audit.NewAuditService(txRunner.DB(), audit.NewRepo())
+
+	// Register handlers to handle events (can register multiple handlers to an event)
 	if err := worker.RegisterHandler(events.UserSignedUpType, audit.NewSignupEventHandler(auditService)); err != nil {
 		log.Fatalf("Failed to register signup audit handler: %v", err)
 	}
 
+	// Run worker
 	if err := worker.Run(ctx); err != nil {
 		log.Fatalf("Worker failed: %v", err)
 	}

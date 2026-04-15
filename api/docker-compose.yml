@@ -74,6 +74,20 @@ services:
       redis:
         condition: service_healthy
 
+  worker:
+    build:
+      context: .
+      dockerfile: ./cmd/worker/Dockerfile
+    env_file:
+      - ./.env
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
   delete-recipes:
     build:
       context: .

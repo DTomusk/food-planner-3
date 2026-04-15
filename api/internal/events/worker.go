@@ -53,20 +53,25 @@ func (w *RedisWorker) Run(ctx context.Context) error {
 		return err
 	}
 
+	// Infinite loop to read Redis stream and process messages
 	for {
 		select {
+		// Shutdown gracefully if context done
 		case <-ctx.Done():
 			logger.Info("Shutting down Redis worker", "stream", w.stream, "group", w.group, "consumer", w.consumerName)
 			return nil
 		default:
 		}
 
+		// Reads messages from Redis stream
 		streams, err := w.client.XReadGroup(ctx, &redis.XReadGroupArgs{
 			Group:    w.group,
 			Consumer: w.consumerName,
 			Streams:  []string{w.stream, ">"},
-			Count:    10,
-			Block:    5 * time.Second,
+			// Count controls how many messages are read at once
+			Count: 10,
+			// Block waits 5 seconds if there are no messages
+			Block: 5 * time.Second,
 		}).Result()
 		if err != nil {
 			if errors.Is(err, redis.Nil) {
@@ -76,13 +81,18 @@ func (w *RedisWorker) Run(ctx context.Context) error {
 			return err
 		}
 
+		// Streams contain messages, each message contains an event to process
 		for _, stream := range streams {
 			for _, message := range stream.Messages {
+				// Handle message
+				// What happens if this fails?
 				if err := w.handleMessage(ctx, message); err != nil {
 					logger.Error("failed to process message", "messageID", message.ID, "error", err)
 					continue
 				}
 
+				// Acknowledge message once it's done processing so that it only gets processed once
+				// What happens if this fails?
 				if err := w.client.XAck(ctx, w.stream, w.group, message.ID).Err(); err != nil {
 					logger.Error("failed to ack message", "messageID", message.ID, "error", err)
 				}
@@ -91,6 +101,7 @@ func (w *RedisWorker) Run(ctx context.Context) error {
 	}
 }
 
+// Get event data from json message and pass to relevant handlers
 func (w *RedisWorker) handleMessage(ctx context.Context, message redis.XMessage) error {
 	raw, ok := message.Values["data"].(string)
 	if !ok {
@@ -121,6 +132,9 @@ func (w *RedisWorker) handleMessage(ctx context.Context, message redis.XMessage)
 	return nil
 }
 
+// Ensure that the group and stream exist
+// Try creating
+// If already exists, return no error
 func (w *RedisWorker) ensureGroup(ctx context.Context) error {
 	err := w.client.XGroupCreateMkStream(ctx, w.stream, w.group, "$").Err()
 	if err == nil {
