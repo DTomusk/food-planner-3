@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"foodplanner/internal/db"
 	"log/slog"
 	"sync"
 )
@@ -18,9 +19,10 @@ type InMemoryEventBus struct {
 	workers  sync.WaitGroup
 	closeBus sync.Once
 	closed   bool
+	txRunner db.TxRunner
 }
 
-func NewInMemoryEventBus(workerCount, queueSize int) *InMemoryEventBus {
+func NewInMemoryEventBus(workerCount, queueSize int, txRunner db.TxRunner) *InMemoryEventBus {
 	if workerCount <= 0 {
 		workerCount = 1
 	}
@@ -29,8 +31,9 @@ func NewInMemoryEventBus(workerCount, queueSize int) *InMemoryEventBus {
 	}
 
 	b := &InMemoryEventBus{
-		subs:  make(map[string]map[uint64]Handler),
-		queue: make(chan Event, queueSize),
+		subs:     make(map[string]map[uint64]Handler),
+		queue:    make(chan Event, queueSize),
+		txRunner: txRunner,
 	}
 
 	for i := 0; i < workerCount; i++ {
@@ -139,7 +142,7 @@ func (b *InMemoryEventBus) runWorker() {
 						slog.Error("Event handler panicked", "eventType", meta.Type, "eventID", meta.ID, "panic", fmt.Sprint(r))
 					}
 				}()
-				if err := handler.Handle(handlerCtx, event); err != nil {
+				if err := handler.Handle(handlerCtx, b.txRunner.DB(), event); err != nil {
 					slog.Warn("Event handler failed", "eventType", meta.Type, "eventID", meta.ID, "err", err)
 				}
 			}()

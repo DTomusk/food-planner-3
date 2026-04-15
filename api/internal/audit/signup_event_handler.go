@@ -3,6 +3,7 @@ package audit
 import (
 	"context"
 
+	"foodplanner/internal/db"
 	"foodplanner/internal/events"
 )
 
@@ -14,7 +15,7 @@ func NewSignupEventHandler(auditService *AuditService) *SignupEventHandler {
 	return &SignupEventHandler{auditService: auditService}
 }
 
-func (h *SignupEventHandler) Handle(ctx context.Context, event events.Event) error {
+func (h *SignupEventHandler) Handle(ctx context.Context, tx db.DBTX, event events.Event) error {
 	signupEvent, ok := event.(events.UserSignedUpEvent)
 	if !ok {
 		return nil
@@ -25,5 +26,5 @@ func (h *SignupEventHandler) Handle(ctx context.Context, event events.Event) err
 		return err
 	}
 
-	return h.auditService.Log(context.WithoutCancel(ctx), entry)
+	return h.auditService.Log(context.WithoutCancel(ctx), tx, entry)
 }

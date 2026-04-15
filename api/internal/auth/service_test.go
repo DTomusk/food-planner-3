@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	refreshtokens "foodplanner/internal/auth/refresh_tokens"
+	"foodplanner/internal/db"
 	"foodplanner/internal/events"
 	"foodplanner/internal/testutil"
 	"foodplanner/internal/user"
@@ -20,7 +21,7 @@ func newTestAuthService(t *testing.T, tx *sql.Tx) (*AuthService, *events.InMemor
 	userService := user.NewUserService(tx, user.NewUserRepo())
 	jwtService := NewJWTService("testsecret", 15)
 	refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
-	eventBus := events.NewInMemoryEventBus(1, 32)
+	eventBus := events.NewInMemoryEventBus(1, 32, txRunner)
 	t.Cleanup(func() {
 		_ = eventBus.Close(context.Background())
 	})
@@ -62,7 +63,7 @@ func TestSignUp_PublishesSignupEvent(t *testing.T) {
 		// Arrange
 		authService, eventBus := newTestAuthService(t, tx)
 		received := make(chan events.UserSignedUpEvent, 1)
-		_, err := eventBus.Subscribe(events.UserSignedUpType, events.HandlerFunc(func(ctx context.Context, event events.Event) error {
+		_, err := eventBus.Subscribe(events.UserSignedUpType, events.HandlerFunc(func(ctx context.Context, tx db.DBTX, event events.Event) error {
 			signupEvent, ok := event.(events.UserSignedUpEvent)
 			if !ok {
 				return nil

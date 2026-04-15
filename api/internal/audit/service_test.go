@@ -15,7 +15,7 @@ import (
 func TestLog_PersistsAuditEntry(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		ctx := context.Background()
-		service := NewAuditService(tx, NewRepo())
+		service := NewAuditService(NewRepo())
 
 		testUser, err := seeds.SeedTestUser(ctx, tx)
 		require.NoError(t, err)
@@ -23,7 +23,7 @@ func TestLog_PersistsAuditEntry(t *testing.T) {
 		entry, err := NewUserSignupEvent(uuid.New(), testUser.ID, testUser.Username, "127.0.0.1")
 		require.NoError(t, err)
 
-		err = service.Log(ctx, entry)
+		err = service.Log(ctx, tx, entry)
 		require.NoError(t, err)
 
 		var storedCount int

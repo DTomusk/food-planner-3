@@ -47,6 +47,7 @@ func main() {
 	// Register event type strings and their corresponding event structs
 	registry := events.NewRegistry()
 	registry.Register(events.UserSignedUpType, func() events.Event { return &events.UserSignedUpEvent{} })
+	eventsRepo := events.NewEventsRepo()
 
 	worker := events.NewRedisWorker(
 		redisClient,
@@ -54,9 +55,11 @@ func main() {
 		"worker-group",
 		"worker-1",
 		registry,
+		eventsRepo,
+		txRunner,
 	)
 
-	auditService := audit.NewAuditService(txRunner.DB(), audit.NewRepo())
+	auditService := audit.NewAuditService(audit.NewRepo())
 
 	// Register handlers to handle events (can register multiple handlers to an event)
 	if err := worker.RegisterHandler(events.UserSignedUpType, audit.NewSignupEventHandler(auditService)); err != nil {

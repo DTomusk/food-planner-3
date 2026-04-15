@@ -2,8 +2,12 @@ package events
 
 import (
 	"context"
+	"database/sql"
 	"errors"
+	"foodplanner/internal/db"
 	"foodplanner/internal/logging"
+	"reflect"
+	"runtime"
 	"strings"
 	"time"
 
@@ -15,10 +19,14 @@ type RedisWorker struct {
 	stream       string
 	group        string
 	consumerName string
+	readBlock    time.Duration
 	// Gets event type from json, which then goes to the correct handlers
 	registry *Registry
 	// Maps event types to lists of handlers so an event can go to multiple
 	handlers map[string][]Handler
+	// Optional store for idempotency dedupe markers.
+	eventsRepo *EventsRepo
+	txRunner   db.TxRunner
 }
 
 func (w *RedisWorker) RegisterHandler(eventType string, handler Handler) error {
@@ -33,14 +41,17 @@ func (w *RedisWorker) RegisterHandler(eventType string, handler Handler) error {
 	return nil
 }
 
-func NewRedisWorker(client *redis.Client, stream, group, consumerName string, registry *Registry) *RedisWorker {
+func NewRedisWorker(client *redis.Client, stream, group, consumerName string, registry *Registry, eventsRepo *EventsRepo, txRunner db.TxRunner) *RedisWorker {
 	return &RedisWorker{
 		client:       client,
 		stream:       stream,
 		group:        group,
 		consumerName: consumerName,
+		readBlock:    1 * time.Second,
 		registry:     registry,
 		handlers:     make(map[string][]Handler),
+		eventsRepo:   eventsRepo,
+		txRunner:     txRunner,
 	}
 }
 
@@ -70,8 +81,8 @@ func (w *RedisWorker) Run(ctx context.Context) error {
 			Streams:  []string{w.stream, ">"},
 			// Count controls how many messages are read at once
 			Count: 10,
-			// Block waits 5 seconds if there are no messages
-			Block: 5 * time.Second,
+			// Keep this short so shutdown remains responsive.
+			Block: w.readBlock,
 		}).Result()
 		if err != nil {
 			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
@@ -87,9 +98,11 @@ func (w *RedisWorker) Run(ctx context.Context) error {
 		// Streams contain messages, each message contains an event to process
 		for _, stream := range streams {
 			for _, message := range stream.Messages {
+				msgCtx, cancelMsg := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
 				// Handle message
 				// What happens if this fails?
-				if err := w.handleMessage(ctx, message); err != nil {
+				if err := w.handleMessage(msgCtx, message); err != nil {
+					cancelMsg()
 					logger.Error("failed to process message", "messageID", message.ID, "error", err)
 					continue
 				}
@@ -101,6 +114,7 @@ func (w *RedisWorker) Run(ctx context.Context) error {
 					logger.Error("failed to ack message", "messageID", message.ID, "error", err)
 				}
 				cancelAck()
+				cancelMsg()
 			}
 		}
 	}
@@ -134,7 +148,34 @@ func (w *RedisWorker) handleMessage(ctx context.Context, message redis.XMessage)
 	}
 
 	for _, handler := range handlers {
-		if err := handler.Handle(ctx, event); err != nil {
+		handlerName := resolveHandlerName(handler)
+		eventID := event.Metadata().ID.String()
+
+		// Check idempotency key to see if event has already been processed by handler
+		processed, err := w.eventsRepo.checkEventProcessed(ctx, w.txRunner.DB(), eventID, w.group, handlerName)
+		if err != nil {
+			return err
+		}
+		// Skip if already processed
+		if processed {
+			continue
+		}
+
+		// Use a transaction to ensure that processing the event and marking it as processed are atomic
+		err = w.txRunner.WithTx(ctx, func(tx *sql.Tx) error {
+			if err := handler.Handle(ctx, tx, event); err != nil {
+				return err
+			}
+
+			// Save the fact that the event has been processed by this handler and group
+			if err := w.eventsRepo.markEventProcessed(ctx, tx, eventID, w.group, handlerName); err != nil {
+				return err
+			}
+
+			return nil
+		})
+
+		if err != nil {
 			return err
 		}
 	}
@@ -155,4 +196,19 @@ func (w *RedisWorker) ensureGroup(ctx context.Context) error {
 		return nil
 	}
 	return err
+}
+
+func resolveHandlerName(handler Handler) string {
+	v := reflect.ValueOf(handler)
+	if !v.IsValid() {
+		return "unknown-handler"
+	}
+
+	if v.Kind() == reflect.Func {
+		if fn := runtime.FuncForPC(v.Pointer()); fn != nil {
+			return fn.Name()
+		}
+	}
+
+	return reflect.TypeOf(handler).String()
 }
