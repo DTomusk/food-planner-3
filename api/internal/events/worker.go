@@ -29,6 +29,31 @@ type RedisWorker struct {
 	txRunner   db.TxRunner
 }
 
+type eventProcessingError struct {
+	eventType string
+	eventID   string
+	err       error
+}
+
+func (e *eventProcessingError) Error() string {
+	return e.err.Error()
+}
+
+func (e *eventProcessingError) Unwrap() error {
+	return e.err
+}
+
+func newEventProcessingError(eventType, eventID string, err error) error {
+	if err == nil {
+		return nil
+	}
+	return &eventProcessingError{
+		eventType: eventType,
+		eventID:   eventID,
+		err:       err,
+	}
+}
+
 func (w *RedisWorker) RegisterHandler(eventType string, handler Handler) error {
 	if eventType == "" {
 		return ErrEmptyEventType
@@ -103,7 +128,12 @@ func (w *RedisWorker) Run(ctx context.Context) error {
 				// What happens if this fails?
 				if err := w.handleMessage(msgCtx, message); err != nil {
 					cancelMsg()
-					logger.Error("failed to process message", "messageID", message.ID, "error", err)
+					var procErr *eventProcessingError
+					if errors.As(err, &procErr) {
+						logger.Error("failed to process message", "messageID", message.ID, "eventType", procErr.eventType, "eventID", procErr.eventID, "error", procErr.err)
+					} else {
+						logger.Error("failed to process message", "messageID", message.ID, "eventType", "unknown", "eventID", "unknown", "error", err)
+					}
 					continue
 				}
 
@@ -134,13 +164,15 @@ func (w *RedisWorker) handleMessage(ctx context.Context, message redis.XMessage)
 
 	env, err := UnmarshalEnvelope(payload)
 	if err != nil {
-		return err
+		return newEventProcessingError("unknown", "unknown", err)
 	}
 
 	event, err := UnmarshalEvent(env, w.registry)
 	if err != nil {
-		return err
+		return newEventProcessingError(env.Type, "unknown", err)
 	}
+	eventType := event.Metadata().Type
+	eventID := event.Metadata().ID.String()
 
 	handlers, ok := w.handlers[event.Metadata().Type]
 	if !ok {
@@ -149,12 +181,11 @@ func (w *RedisWorker) handleMessage(ctx context.Context, message redis.XMessage)
 
 	for _, handler := range handlers {
 		handlerName := resolveHandlerName(handler)
-		eventID := event.Metadata().ID.String()
 
 		// Check idempotency key to see if event has already been processed by handler
 		processed, err := w.eventsRepo.checkEventProcessed(ctx, w.txRunner.DB(), eventID, w.group, handlerName)
 		if err != nil {
-			return err
+			return newEventProcessingError(eventType, eventID, err)
 		}
 		// Skip if already processed
 		if processed {
@@ -176,7 +207,7 @@ func (w *RedisWorker) handleMessage(ctx context.Context, message redis.XMessage)
 		})
 
 		if err != nil {
-			return err
+			return newEventProcessingError(eventType, eventID, err)
 		}
 	}
 

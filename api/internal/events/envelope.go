@@ -3,6 +3,8 @@ package events
 import (
 	"encoding/json"
 	"reflect"
+
+	"github.com/google/uuid"
 )
 
 // The serialized form of an event stored in redis (or other provider)
@@ -18,9 +20,19 @@ func MarshalEvent(e Event) (Envelope, error) {
 		return Envelope{}, ErrNilEvent
 	}
 
-	eventType := e.Metadata().Type
+	meta := e.Metadata()
+	eventType := meta.Type
 	if eventType == "" {
 		return Envelope{}, ErrEmptyEventType
+	}
+	if meta.ID == uuid.Nil {
+		return Envelope{}, ErrEmptyEventID
+	}
+	if meta.Version <= 0 {
+		return Envelope{}, ErrInvalidEventVersion
+	}
+	if meta.OccurredAtUTC.IsZero() {
+		return Envelope{}, ErrEmptyEventOccurredAt
 	}
 
 	payload, err := json.Marshal(e)

@@ -24,17 +24,20 @@ func NewRedisPublisher(client *redis.Client, stream string, maxLen int64) *Redis
 
 func (p *RedisPublisher) Publish(ctx context.Context, event Event) error {
 	logger := logging.FromContext(ctx)
-	logger.Info("Publishing event to Redis stream", "stream", p.stream, "eventType", event.Metadata().Type, "eventID", event.Metadata().ID)
+	meta := event.Metadata()
+	logger.Info("Publishing event to Redis stream", "stream", p.stream, "eventType", meta.Type, "eventID", meta.ID)
 	env, err := MarshalEvent(event)
 	if err != nil {
+		logger.Error("Failed to marshal event", "stream", p.stream, "eventType", meta.Type, "eventID", meta.ID, "error", err)
 		return err
 	}
 	data, err := MarshalEnvelope(env)
 	if err != nil {
+		logger.Error("Failed to marshal envelope", "stream", p.stream, "eventType", meta.Type, "eventID", meta.ID, "error", err)
 		return err
 	}
 	// XAdd appens the serialized envelope to the redis stream
-	return p.client.XAdd(ctx, &redis.XAddArgs{
+	err = p.client.XAdd(ctx, &redis.XAddArgs{
 		Stream: p.stream,
 		// Prevents stream from growing indefinitely
 		MaxLen: p.maxLen,
@@ -43,4 +46,10 @@ func (p *RedisPublisher) Publish(ctx context.Context, event Event) error {
 			"data": string(data),
 		},
 	}).Err()
+	if err != nil {
+		logger.Error("Failed to publish event to Redis stream", "stream", p.stream, "eventType", meta.Type, "eventID", meta.ID, "error", err)
+		return err
+	}
+
+	return nil
 }

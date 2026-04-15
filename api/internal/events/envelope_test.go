@@ -2,6 +2,7 @@ package events
 
 import (
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -16,6 +17,46 @@ func TestMarshalEvent_EmptyType_ReturnsError(t *testing.T) {
 	e := UserSignedUpEvent{}
 	_, err := MarshalEvent(e)
 	require.ErrorIs(t, err, ErrEmptyEventType, "expected ErrEmptyEventType, got %v", err)
+}
+
+func TestMarshalEvent_EmptyID_ReturnsError(t *testing.T) {
+	e := UserSignedUpEvent{
+		Meta: Metadata{
+			Type:          UserSignedUpType,
+			Version:       1,
+			OccurredAtUTC: time.Now().UTC(),
+		},
+	}
+
+	_, err := MarshalEvent(e)
+	require.ErrorIs(t, err, ErrEmptyEventID, "expected ErrEmptyEventID, got %v", err)
+}
+
+func TestMarshalEvent_InvalidVersion_ReturnsError(t *testing.T) {
+	e := UserSignedUpEvent{
+		Meta: Metadata{
+			ID:            uuid.New(),
+			Type:          UserSignedUpType,
+			Version:       0,
+			OccurredAtUTC: time.Now().UTC(),
+		},
+	}
+
+	_, err := MarshalEvent(e)
+	require.ErrorIs(t, err, ErrInvalidEventVersion, "expected ErrInvalidEventVersion, got %v", err)
+}
+
+func TestMarshalEvent_EmptyOccurredAt_ReturnsError(t *testing.T) {
+	e := UserSignedUpEvent{
+		Meta: Metadata{
+			ID:      uuid.New(),
+			Type:    UserSignedUpType,
+			Version: 1,
+		},
+	}
+
+	_, err := MarshalEvent(e)
+	require.ErrorIs(t, err, ErrEmptyEventOccurredAt, "expected ErrEmptyEventOccurredAt, got %v", err)
 }
 
 func TestEnvelopeRoundTrip(t *testing.T) {
