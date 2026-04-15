@@ -18,22 +18,89 @@ import (
 func newWorkerForTx(tx *sql.Tx, client *redis.Client, registry *Registry) *RedisWorker {
 	repo := NewEventsRepo()
 	txRunner := testutil.NewTestTxRunner(tx)
-	return NewRedisWorker(client, "events.main", "worker-group", "worker-1", registry, repo, txRunner)
+	expectedVersions := map[string]int{
+		UserSignedUpType: 1,
+	}
+	return NewRedisWorker(client, "events.main", "worker-group", "worker-1", registry, expectedVersions, repo, txRunner)
 }
 
 func TestRegisterHandler_EmptyEventType_ReturnsError(t *testing.T) {
-	worker := NewRedisWorker(nil, "events.main", "worker-group", "worker-1", NewRegistry(), nil, nil)
+	worker := NewRedisWorker(nil, "events.main", "worker-group", "worker-1", NewRegistry(), nil, nil, nil)
 
 	err := worker.RegisterHandler("", HandlerFunc(func(context.Context, db.DBTX, Event) error { return nil }))
 	require.ErrorIs(t, err, ErrEmptyEventType)
 }
 
 func TestRegisterHandler_NilHandler_ReturnsError(t *testing.T) {
-	worker := NewRedisWorker(nil, "events.main", "worker-group", "worker-1", NewRegistry(), nil, nil)
+	worker := NewRedisWorker(nil, "events.main", "worker-group", "worker-1", NewRegistry(), nil, nil, nil)
 
 	err := worker.RegisterHandler(UserSignedUpType, nil)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "handler cannot be nil")
+}
+
+func TestRun_AcksUnsupportedVersionMessageWithoutProcessing(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		s := miniredis.RunT(t)
+		client := redis.NewClient(&redis.Options{Addr: s.Addr()})
+		t.Cleanup(func() { _ = client.Close() })
+
+		registry := NewRegistry()
+		registry.Register(UserSignedUpType, func() Event { return &UserSignedUpEvent{} })
+
+		worker := newWorkerForTx(tx, client, registry)
+		require.NoError(t, worker.ensureGroup(context.Background()))
+
+		e := NewUserSignedUpEvent(uuid.New(), uuid.New(), "demo", "user@example.com", "127.0.0.1")
+		e.Meta.Version = 2
+		env, err := MarshalEvent(e)
+		require.NoError(t, err)
+		data, err := MarshalEnvelope(env)
+		require.NoError(t, err)
+
+		_, err = client.XAdd(context.Background(), &redis.XAddArgs{
+			Stream: "events.main",
+			Values: map[string]any{"data": string(data)},
+		}).Result()
+		require.NoError(t, err)
+
+		runCtx, cancel := context.WithCancel(context.Background())
+		t.Cleanup(cancel)
+
+		called := 0
+		require.NoError(t, worker.RegisterHandler(UserSignedUpType, HandlerFunc(func(context.Context, db.DBTX, Event) error {
+			called++
+			return nil
+		})))
+
+		runDone := make(chan error, 1)
+		go func() {
+			runDone <- worker.Run(runCtx)
+		}()
+
+		deadline := time.Now().Add(3 * time.Second)
+		for {
+			pending, err := client.XPending(context.Background(), "events.main", "worker-group").Result()
+			require.NoError(t, err)
+			if pending.Count == 0 {
+				break
+			}
+			if time.Now().After(deadline) {
+				t.Fatal("unsupported-version message was not acknowledged")
+			}
+			time.Sleep(20 * time.Millisecond)
+		}
+
+		cancel()
+		select {
+		case err := <-runDone:
+			require.NoError(t, err)
+		case <-time.After(3 * time.Second):
+			t.Fatal("worker did not stop")
+		}
+
+		require.Equal(t, 0, called)
+	})
 }
 
 func TestHandleMessage_DispatchesToRegisteredHandler(t *testing.T) {

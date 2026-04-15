@@ -20,6 +20,8 @@ type RedisWorker struct {
 	group        string
 	consumerName string
 	readBlock    time.Duration
+	// Expected schema versions per event type.
+	expectedVersions map[string]int
 	// Gets event type from json, which then goes to the correct handlers
 	registry *Registry
 	// Maps event types to lists of handlers so an event can go to multiple
@@ -30,9 +32,11 @@ type RedisWorker struct {
 }
 
 type eventProcessingError struct {
-	eventType string
-	eventID   string
-	err       error
+	eventType       string
+	eventID         string
+	version         int
+	expectedVersion int
+	err             error
 }
 
 func (e *eventProcessingError) Error() string {
@@ -48,9 +52,21 @@ func newEventProcessingError(eventType, eventID string, err error) error {
 		return nil
 	}
 	return &eventProcessingError{
-		eventType: eventType,
-		eventID:   eventID,
-		err:       err,
+		eventType:       eventType,
+		eventID:         eventID,
+		version:         0,
+		expectedVersion: 0,
+		err:             err,
+	}
+}
+
+func newUnsupportedVersionError(eventType, eventID string, version, expectedVersion int) error {
+	return &eventProcessingError{
+		eventType:       eventType,
+		eventID:         eventID,
+		version:         version,
+		expectedVersion: expectedVersion,
+		err:             ErrUnsupportedEventVersion,
 	}
 }
 
@@ -66,17 +82,18 @@ func (w *RedisWorker) RegisterHandler(eventType string, handler Handler) error {
 	return nil
 }
 
-func NewRedisWorker(client *redis.Client, stream, group, consumerName string, registry *Registry, eventsRepo *EventsRepo, txRunner db.TxRunner) *RedisWorker {
+func NewRedisWorker(client *redis.Client, stream, group, consumerName string, registry *Registry, expectedVersions map[string]int, eventsRepo *EventsRepo, txRunner db.TxRunner) *RedisWorker {
 	return &RedisWorker{
-		client:       client,
-		stream:       stream,
-		group:        group,
-		consumerName: consumerName,
-		readBlock:    1 * time.Second,
-		registry:     registry,
-		handlers:     make(map[string][]Handler),
-		eventsRepo:   eventsRepo,
-		txRunner:     txRunner,
+		client:           client,
+		stream:           stream,
+		group:            group,
+		consumerName:     consumerName,
+		readBlock:        1 * time.Second,
+		expectedVersions: expectedVersions,
+		registry:         registry,
+		handlers:         make(map[string][]Handler),
+		eventsRepo:       eventsRepo,
+		txRunner:         txRunner,
 	}
 }
 
@@ -127,14 +144,36 @@ func (w *RedisWorker) Run(ctx context.Context) error {
 				// Handle message
 				// What happens if this fails?
 				if err := w.handleMessage(msgCtx, message); err != nil {
-					incrementWorkerHandlerFailure()
-					cancelMsg()
 					var procErr *eventProcessingError
 					if errors.As(err, &procErr) {
+						if errors.Is(procErr.err, ErrUnsupportedEventVersion) {
+							logger.Warn(
+								"unsupported event version, acknowledging without processing",
+								"messageID", message.ID,
+								"eventType", procErr.eventType,
+								"eventID", procErr.eventID,
+								"eventVersion", procErr.version,
+								"expectedVersion", procErr.expectedVersion,
+							)
+							ackCtx, cancelAck := context.WithTimeout(context.WithoutCancel(ctx), 2*time.Second)
+							if ackErr := w.client.XAck(ackCtx, w.stream, w.group, message.ID).Err(); ackErr != nil {
+								incrementWorkerAckFailure()
+								logger.Error("failed to ack unsupported-version message", "messageID", message.ID, "error", ackErr)
+							} else {
+								incrementWorkerProcessed()
+							}
+							cancelAck()
+							cancelMsg()
+							continue
+						}
+
+						incrementWorkerHandlerFailure()
 						logger.Error("failed to process message", "messageID", message.ID, "eventType", procErr.eventType, "eventID", procErr.eventID, "error", procErr.err)
 					} else {
+						incrementWorkerHandlerFailure()
 						logger.Error("failed to process message", "messageID", message.ID, "eventType", "unknown", "eventID", "unknown", "error", err)
 					}
+					cancelMsg()
 					continue
 				}
 
@@ -177,6 +216,11 @@ func (w *RedisWorker) handleMessage(ctx context.Context, message redis.XMessage)
 	}
 	eventType := event.Metadata().Type
 	eventID := event.Metadata().ID.String()
+	eventVersion := event.Metadata().Version
+
+	if expected, ok := w.expectedVersions[eventType]; ok && eventVersion != expected {
+		return newUnsupportedVersionError(eventType, eventID, eventVersion, expected)
+	}
 
 	handlers, ok := w.handlers[event.Metadata().Type]
 	if !ok {

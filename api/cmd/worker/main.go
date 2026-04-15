@@ -47,6 +47,9 @@ func main() {
 	// Register event type strings and their corresponding event structs
 	registry := events.NewRegistry()
 	registry.Register(events.UserSignedUpType, func() events.Event { return &events.UserSignedUpEvent{} })
+	expectedVersions := map[string]int{
+		events.UserSignedUpType: 1,
+	}
 	eventsRepo := events.NewEventsRepo()
 
 	worker := events.NewRedisWorker(
@@ -55,6 +58,7 @@ func main() {
 		"worker-group",
 		"worker-1",
 		registry,
+		expectedVersions,
 		eventsRepo,
 		txRunner,
 	)
