@@ -74,6 +74,9 @@ func (w *RedisWorker) Run(ctx context.Context) error {
 			Block: 5 * time.Second,
 		}).Result()
 		if err != nil {
+			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+				return nil
+			}
 			if errors.Is(err, redis.Nil) {
 				continue
 			}
@@ -91,11 +94,13 @@ func (w *RedisWorker) Run(ctx context.Context) error {
 					continue
 				}
 
-				// Acknowledge message once it's done processing so that it only gets processed once
-				// What happens if this fails?
-				if err := w.client.XAck(ctx, w.stream, w.group, message.ID).Err(); err != nil {
+				// Acknowledge with a context detached from cancellation so a successful
+				// handler can still be acked during shutdown.
+				ackCtx, cancelAck := context.WithTimeout(context.WithoutCancel(ctx), 2*time.Second)
+				if err := w.client.XAck(ackCtx, w.stream, w.group, message.ID).Err(); err != nil {
 					logger.Error("failed to ack message", "messageID", message.ID, "error", err)
 				}
+				cancelAck()
 			}
 		}
 	}
@@ -103,12 +108,17 @@ func (w *RedisWorker) Run(ctx context.Context) error {
 
 // Get event data from json message and pass to relevant handlers
 func (w *RedisWorker) handleMessage(ctx context.Context, message redis.XMessage) error {
-	raw, ok := message.Values["data"].(string)
-	if !ok {
+	var payload []byte
+	switch raw := message.Values["data"].(type) {
+	case string:
+		payload = []byte(raw)
+	case []byte:
+		payload = raw
+	default:
 		return errors.New("message missing 'data' field or 'data' is not a string")
 	}
 
-	env, err := UnmarshalEnvelope([]byte(raw))
+	env, err := UnmarshalEnvelope(payload)
 	if err != nil {
 		return err
 	}
