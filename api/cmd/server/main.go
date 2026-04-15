@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"foodplanner/internal/auth"
 	refreshtokens "foodplanner/internal/auth/refresh_tokens"
@@ -137,6 +138,65 @@ func main() {
 	requestMiddleware := middleware.RequestMiddleware
 
 	http.Handle("/query", ipMiddleware(authMiddleware(responseWriterMiddleware(requestMiddleware(srv)))))
+	// Check API health (process is running)
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"status": "ok",
+		})
+	})
+	// Check API dependencies, currently database and redis
+	http.HandleFunc("/ready", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+
+		readyCtx, cancelReady := context.WithTimeout(r.Context(), 2*time.Second)
+		defer cancelReady()
+
+		response := map[string]any{
+			"status":     "ready",
+			"database":   "ok",
+			"redis":      "ok",
+			"checked_at": time.Now().UTC(),
+		}
+
+		if err := database.PingContext(readyCtx); err != nil {
+			response["status"] = "not_ready"
+			response["database"] = "error"
+			response["database_error"] = err.Error()
+		}
+		if err := redisClient.Ping(readyCtx).Err(); err != nil {
+			response["status"] = "not_ready"
+			response["redis"] = "error"
+			response["redis_error"] = err.Error()
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if response["status"] != "ready" {
+			w.WriteHeader(http.StatusServiceUnavailable)
+		}
+		_ = json.NewEncoder(w).Encode(response)
+	})
+	http.HandleFunc("/metrics/events", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		snapshot := events.SnapshotMetrics()
+		if err := json.NewEncoder(w).Encode(snapshot); err != nil {
+			log.Printf("failed to encode metrics snapshot: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	})
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{

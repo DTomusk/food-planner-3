@@ -28,11 +28,13 @@ func (p *RedisPublisher) Publish(ctx context.Context, event Event) error {
 	logger.Info("Publishing event to Redis stream", "stream", p.stream, "eventType", meta.Type, "eventID", meta.ID)
 	env, err := MarshalEvent(event)
 	if err != nil {
+		incrementPublishFailure()
 		logger.Error("Failed to marshal event", "stream", p.stream, "eventType", meta.Type, "eventID", meta.ID, "error", err)
 		return err
 	}
 	data, err := MarshalEnvelope(env)
 	if err != nil {
+		incrementPublishFailure()
 		logger.Error("Failed to marshal envelope", "stream", p.stream, "eventType", meta.Type, "eventID", meta.ID, "error", err)
 		return err
 	}
@@ -47,9 +49,11 @@ func (p *RedisPublisher) Publish(ctx context.Context, event Event) error {
 		},
 	}).Err()
 	if err != nil {
+		incrementPublishFailure()
 		logger.Error("Failed to publish event to Redis stream", "stream", p.stream, "eventType", meta.Type, "eventID", meta.ID, "error", err)
 		return err
 	}
+	incrementPublishSuccess()
 
 	return nil
 }

@@ -127,6 +127,7 @@ func (w *RedisWorker) Run(ctx context.Context) error {
 				// Handle message
 				// What happens if this fails?
 				if err := w.handleMessage(msgCtx, message); err != nil {
+					incrementWorkerHandlerFailure()
 					cancelMsg()
 					var procErr *eventProcessingError
 					if errors.As(err, &procErr) {
@@ -141,7 +142,10 @@ func (w *RedisWorker) Run(ctx context.Context) error {
 				// handler can still be acked during shutdown.
 				ackCtx, cancelAck := context.WithTimeout(context.WithoutCancel(ctx), 2*time.Second)
 				if err := w.client.XAck(ackCtx, w.stream, w.group, message.ID).Err(); err != nil {
+					incrementWorkerAckFailure()
 					logger.Error("failed to ack message", "messageID", message.ID, "error", err)
+				} else {
+					incrementWorkerProcessed()
 				}
 				cancelAck()
 				cancelMsg()
