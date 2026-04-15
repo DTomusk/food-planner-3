@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+	"foodplanner/internal/logging"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -22,6 +23,8 @@ func NewRedisPublisher(client *redis.Client, stream string, maxLen int64) *Redis
 }
 
 func (p *RedisPublisher) Publish(ctx context.Context, event Event) error {
+	logger := logging.FromContext(ctx)
+	logger.Info("Publishing event to Redis stream", "stream", p.stream, "eventType", event.Metadata().Type, "eventID", event.Metadata().ID)
 	env, err := MarshalEvent(event)
 	if err != nil {
 		return err
