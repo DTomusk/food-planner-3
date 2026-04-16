@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"foodplanner/internal/auth"
+	"foodplanner/internal/events"
 	"foodplanner/internal/gql/graph/model"
 	"foodplanner/internal/ingredient"
 	"foodplanner/internal/recipe"
@@ -28,11 +29,39 @@ func ptrInt32(i int32) *int32 {
 	return &i
 }
 
+func newTestRecipeService(t *testing.T, tx *sql.Tx, txRunner *testutil.TestTxRunner, ingredientService *ingredient.IngredientService) *recipe.Service {
+	t.Helper()
+
+	effectiveIngredientService := ingredientService
+	if effectiveIngredientService == nil {
+		effectiveIngredientService = ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100)
+	}
+
+	repo, err := recipe.NewRecipeRepo(0.15, 0.85)
+	require.NoError(t, err)
+
+	eventBus := events.NewInMemoryEventBus(1, 32, txRunner)
+	t.Cleanup(func() {
+		_ = eventBus.Close(context.Background())
+	})
+
+	return recipe.NewService(
+		txRunner,
+		repo,
+		recipe.NewRecipeVersionRepo(),
+		effectiveIngredientService,
+		recipe.NewIngredientUsageRepo(),
+		nil,
+		upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
+		eventBus,
+	)
+}
+
 func TestRecipeResolver_CreateAndGetRecipe(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
 		txRunner := testutil.NewTestTxRunner(tx)
-		ctx := context.Background()
+		ctx := authContext(nil)
 
 		testIngredient, err := seeds.SeedTestIngredient(ctx, tx)
 		require.NoError(t, err, "Failed to seed test ingredient")
@@ -41,19 +70,7 @@ func TestRecipeResolver_CreateAndGetRecipe(t *testing.T) {
 		require.NoError(t, err, "Failed to seed test user")
 
 		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100)
-		repo, err := recipe.NewRecipeRepo(0.15, 0.85)
-		require.NoError(t, err)
-		service := recipe.NewService(
-			txRunner,
-			repo,
-			recipe.NewRecipeVersionRepo(),
-			ingredientService,
-			recipe.NewIngredientUsageRepo(),
-			nil,
-			upload.NewUploadServiceWithProvider(
-				tx,
-				upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
-		)
+		service := newTestRecipeService(t, tx, txRunner, ingredientService)
 		r := &Resolver{
 			RecipeService: service,
 		}
@@ -102,7 +119,7 @@ func TestRecipeResolver_CreateAndGetRecipe_WithResolver(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
 		txRunner := testutil.NewTestTxRunner(tx)
-		ctx := context.Background()
+		ctx := authContext(nil)
 
 		testIngredient, err := seeds.SeedTestIngredient(ctx, tx)
 		require.NoError(t, err, "Failed to seed test ingredient")
@@ -111,11 +128,7 @@ func TestRecipeResolver_CreateAndGetRecipe_WithResolver(t *testing.T) {
 		require.NoError(t, err, "Failed to seed test user")
 
 		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100)
-		repo, err := recipe.NewRecipeRepo(0.15, 0.85)
-		require.NoError(t, err)
-		service := recipe.NewService(txRunner, repo, recipe.NewRecipeVersionRepo(), ingredientService, recipe.NewIngredientUsageRepo(), nil,
-			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
-		)
+		service := newTestRecipeService(t, tx, txRunner, ingredientService)
 		r := &Resolver{
 			IngredientsService: ingredientService,
 			RecipeService:      service,
@@ -193,17 +206,13 @@ func TestRecipeResolver_CreateRecipe_Unauthenticated(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
 		txRunner := testutil.NewTestTxRunner(tx)
-		ctx := context.Background()
+		ctx := authContext(nil)
 
 		testIngredient, err := seeds.SeedTestIngredient(ctx, tx)
 		require.NoError(t, err, "Failed to seed test ingredient")
 
 		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100)
-		repo, err := recipe.NewRecipeRepo(0.15, 0.85)
-		require.NoError(t, err)
-		service := recipe.NewService(txRunner, repo, recipe.NewRecipeVersionRepo(), ingredientService, recipe.NewIngredientUsageRepo(), nil,
-			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
-		)
+		service := newTestRecipeService(t, tx, txRunner, ingredientService)
 
 		r := &Resolver{
 			RecipeService: service,
@@ -246,7 +255,7 @@ func TestRecipeResolver_UpdateRecipe_Unauthenticated(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
 		txRunner := testutil.NewTestTxRunner(tx)
-		ctx := context.Background()
+		ctx := authContext(nil)
 
 		testIngredient, err := seeds.SeedTestIngredient(ctx, tx)
 		require.NoError(t, err, "Failed to seed test ingredient")
@@ -255,11 +264,7 @@ func TestRecipeResolver_UpdateRecipe_Unauthenticated(t *testing.T) {
 		require.NoError(t, err, "Failed to seed test user")
 
 		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100)
-		repo, err := recipe.NewRecipeRepo(0.15, 0.85)
-		require.NoError(t, err)
-		service := recipe.NewService(txRunner, repo, recipe.NewRecipeVersionRepo(), ingredientService, recipe.NewIngredientUsageRepo(), nil,
-			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
-		)
+		service := newTestRecipeService(t, tx, txRunner, ingredientService)
 		r := &Resolver{
 			RecipeService: service,
 		}
@@ -326,7 +331,7 @@ func TestRecipeResolver_UpdateRecipe_WithVersionResolvers(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
 		txRunner := testutil.NewTestTxRunner(tx)
-		ctx := context.Background()
+		ctx := authContext(nil)
 
 		testIngredient, err := seeds.SeedTestIngredient(ctx, tx)
 		require.NoError(t, err, "Failed to seed test ingredient")
@@ -335,11 +340,7 @@ func TestRecipeResolver_UpdateRecipe_WithVersionResolvers(t *testing.T) {
 		require.NoError(t, err, "Failed to seed test user")
 
 		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100)
-		repo, err := recipe.NewRecipeRepo(0.15, 0.85)
-		require.NoError(t, err)
-		service := recipe.NewService(txRunner, repo, recipe.NewRecipeVersionRepo(), ingredientService, recipe.NewIngredientUsageRepo(), nil,
-			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
-		)
+		service := newTestRecipeService(t, tx, txRunner, ingredientService)
 		r := &Resolver{
 			IngredientsService: ingredientService,
 			RecipeService:      service,
@@ -457,13 +458,9 @@ func TestRecipeResolver_CurrentVersion_UsesPreloadedValue(t *testing.T) {
 func TestRecipeResolver_Recipes_EmptyConnection(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		txRunner := testutil.NewTestTxRunner(tx)
-		repo, err := recipe.NewRecipeRepo(0.15, 0.85)
-		require.NoError(t, err)
 
 		r := &Resolver{
-			RecipeService: recipe.NewService(txRunner, repo, recipe.NewRecipeVersionRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100), recipe.NewIngredientUsageRepo(), nil,
-				upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
-			),
+			RecipeService: newTestRecipeService(t, tx, txRunner, nil),
 		}
 		ctx := context.Background()
 
@@ -502,13 +499,8 @@ func TestRecipeResolver_Recipes_PaginatesEdges(t *testing.T) {
 			require.NoError(t, err)
 		}
 
-		repo, err := recipe.NewRecipeRepo(0.15, 0.85)
-		require.NoError(t, err)
-
 		r := &Resolver{
-			RecipeService: recipe.NewService(txRunner, repo, recipe.NewRecipeVersionRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100), recipe.NewIngredientUsageRepo(), nil,
-				upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
-			),
+			RecipeService: newTestRecipeService(t, tx, txRunner, nil),
 		}
 		qr := &queryResolver{r}
 
@@ -561,14 +553,11 @@ func TestRecipeVersionResolver_NoDataPaths(t *testing.T) {
 		err = seeds.SetRecipeContainerCurrentVersion(ctx, tx, recipeID, versionID)
 		require.NoError(t, err)
 
-		repo, err := recipe.NewRecipeRepo(0.15, 0.85)
-		require.NoError(t, err)
+		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100)
 
 		r := &Resolver{
-			RecipeService: recipe.NewService(txRunner, repo, recipe.NewRecipeVersionRepo(), ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100), recipe.NewIngredientUsageRepo(), nil,
-				upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
-			),
-			IngredientsService: ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
+			RecipeService:      newTestRecipeService(t, tx, txRunner, ingredientService),
+			IngredientsService: ingredientService,
 		}
 		recipeVersionResolver := &recipeVersionResolver{r}
 

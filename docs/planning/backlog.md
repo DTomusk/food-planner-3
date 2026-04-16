@@ -2,16 +2,15 @@
 
 ## Ready
 
-- [ ] Audit logging
+- [ ] Event pub/sub
     - Priority: high
-    - Area: visibility for what's going on in the system
+    - Area: backend, infrastructure
     - Type: tech debt
-    - Why: we want to have an audit trail of what's going on in the site. This will record actions carried out. This will be useful for content moderation but also for other things 
+    - Why: in the last story we added audit logging. Currently this happens in the same call as the action itself. However, this is a side effect that can be handled asynchronously, and if we want to add more side effects (which we will, e.g. notifications coming up), current services will be bloated by dependencies, responsibilities will be difficult to understand (e.g. what's in the critical path and needs to happen to return to the client and what's not) and things will be much harder to test and extend. We want to add a thin slice in the direction of having backgrounded workers and event infrastructure. In this first iteration, this can still run on the API service and in memory, we don't need message queues etc. yet, but we want to build it in a way that's easy to extend in the future (which we will need for retries, guaranteed delivery, and horizontal scaling)
     - DoD: 
-        - audit_log table implemented with columns: actor_id, action, resource_type, resource_id, old_state, new_state, reason, result, context, created_at
-        - audit logging service created that can be called from services to record events
-        - user signup audit event implemented and recorded for all new signups
-        - dev can query audit log to see signup history
+        - In memory event bus (pub) implemented that existing services can call to emit events
+        - Event consumers/handlers implemented that asynchronously handle side effects
+        - Audit logging moved to event handler, so the audit log from the previous story (user signed up successfully) gets created outside of the main flow
 
 ## Planning 
 
@@ -43,36 +42,18 @@
         - Previous versions remain hidden when a new version is created and approved
         - Dev can run scripts or use backend tools to review and resolve reports
 
-- [ ] Manual content moderation
-    - Priority: high
-    - Area: throughout 
-    - Type: feature 
-    - Why: since anyone can sign up to the site and post free-text (including recipe instructions and usernames, but also more stuff in the future), we should put guardrails in place to prevent offensive and restricted content being shared. This may involve some auto-moderation in the future, but as a first slice, we can add manual content reporting, content being hidden once reports exceed a configured number, and the facilities for devs (and system administrators in the future) to view and action content that's been reported beyond a certain threshold. 
-    - DoD:
-        - Users can report content 
-            - Limit to recipe versions 
-        - Users can select one of a number of reasons (reasons persisted as enum)
-        - Users can write in details of their complaint
-            - If any reason other than other, details are optional 
-            - If Other, then must add details
-        - Users can't report the same content more than once
-        - System saves each report including:
-            - Reporting user
-            - Entity id
-            - Entity type 
-            - Content at time of reporting 
-            - Report timestamp 
-        - Entities store number of reports 
-        - Entities with a number of reports greater than a configured value are hidden from other users 
-            - What if a user has saved someone else's recipe?
-        - The user who created the entity is informed that it's been hidden?
-        - 
-
 - [ ] Private/public recipes 
     - Priority: 
     - Area: 
     - Type: (bug, tech debt, feature)
     - Why: 
+    - DoD: 
+
+- [ ] Recipe drafts 
+    - Priority: 
+    - Area: 
+    - Type: (bug, tech debt, feature)
+    - Why: I could envisage the versioning system getting a bit annoying. If you make small edits and have to create a new recipe every time, then the recipe gets spread out and hard to track. It will make ratings and comments harder. We should make the versioning more in-your-face and allow users to create drafts before publishing a new version so they can make edits without a new version. We should only allow one draft at a time. 
     - DoD: 
 
 - [ ] Recipe rating 
@@ -181,6 +162,17 @@
     - DoD: 
 
 ## Done
+
+- [x] Audit logging
+    - Priority: high
+    - Area: visibility for what's going on in the system
+    - Type: tech debt
+    - Why: we want to have an audit trail of what's going on in the site. This will record actions carried out. This will be useful for content moderation but also for other things 
+    - DoD: 
+        - audit_log table implemented with columns: actor_id, action, resource_type, resource_id, old_state, new_state, reason, result, context, created_at
+        - audit logging service created that can be called from services to record events
+        - user signup audit event implemented and recorded for all new signups
+        - dev can query audit log to see signup history
 
 - [x] Dietary tags (gf, vegan etc.)
     - Priority: high

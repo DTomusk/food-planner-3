@@ -10,6 +10,8 @@ type CreateRecipeRequest struct {
 	Portions    int                            `json:"portions" validate:"required,gt=0"`
 	Source      CreateRecipeSourceRequest      `json:"source" validate:"required,dive"`
 	ImgUploadID *string                        `json:"img_upload_id,omitempty"`
+	IPAddress   string                         `json:"ip_address" validate:"required,ip"`
+	UserAgent   string                         `json:"user_agent" validate:"required"`
 }
 
 type CreateIngredientUsageRequest struct {

@@ -30,6 +30,11 @@ type Config struct {
 	R2PublicBaseURL            string
 	R2Region                   string
 	R2PresignExpiry            int
+	RedisAddress               string
+	RedisPassword              string
+	RedisDB                    int
+	RedisStream                string
+	RedisStreamMaxLen          int64
 }
 
 func Load() (*Config, error) {
@@ -177,6 +182,37 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("invalid R2_PRESIGN_EXPIRY: %v", err)
 	}
 
+	redisAddress := os.Getenv("REDIS_ADDRESS")
+	if redisAddress == "" {
+		return nil, fmt.Errorf("REDIS_ADDRESS not set in environment")
+	}
+
+	// REDIS_PASSWORD is optional — Redis may run without auth
+	redisPassword := os.Getenv("REDIS_PASSWORD")
+
+	// REDIS_DB is optional — defaults to 0
+	redisDB := 0
+	if redisDBStr := os.Getenv("REDIS_DB"); redisDBStr != "" {
+		redisDB, err = strconv.Atoi(redisDBStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid REDIS_DB: %v", err)
+		}
+	}
+
+	redisStream := os.Getenv("REDIS_STREAM")
+	if redisStream == "" {
+		return nil, fmt.Errorf("REDIS_STREAM not set in environment")
+	}
+
+	redisStreamMaxLenStr := os.Getenv("REDIS_STREAM_MAX_LEN")
+	if redisStreamMaxLenStr == "" {
+		return nil, fmt.Errorf("REDIS_STREAM_MAX_LEN not set in environment")
+	}
+	redisStreamMaxLen, err := strconv.ParseInt(redisStreamMaxLenStr, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid REDIS_STREAM_MAX_LEN: %v", err)
+	}
+
 	return &Config{
 		DatabaseURL:                db_url,
 		ServerPort:                 port,
@@ -199,5 +235,10 @@ func Load() (*Config, error) {
 		R2PublicBaseURL:            r2PublicBaseURL,
 		R2Region:                   r2Region,
 		R2PresignExpiry:            r2PresignExpiry,
+		RedisAddress:               redisAddress,
+		RedisPassword:              redisPassword,
+		RedisDB:                    redisDB,
+		RedisStream:                redisStream,
+		RedisStreamMaxLen:          redisStreamMaxLen,
 	}, nil
 }

@@ -3,12 +3,13 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
-	"foodplanner/internal/audit"
 	"foodplanner/internal/auth"
 	refreshtokens "foodplanner/internal/auth/refresh_tokens"
 	"foodplanner/internal/config"
 	"foodplanner/internal/db"
+	"foodplanner/internal/events"
 	"foodplanner/internal/gql/graph"
 	"foodplanner/internal/gql/graph/directive"
 	"foodplanner/internal/gql/graph/resolver"
@@ -29,6 +30,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
 	_ "github.com/lib/pq"
+	"github.com/redis/go-redis/v9"
 	"github.com/rs/cors"
 	"github.com/vektah/gqlparser/v2/ast"
 )
@@ -56,7 +58,12 @@ func main() {
 
 	txRunner := db.NewDBTxRunner(database)
 
-	auditService := audit.NewAuditService(txRunner.DB(), audit.NewRepo())
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     cfg.RedisAddress,
+		Password: cfg.RedisPassword,
+		DB:       cfg.RedisDB,
+	})
+	redisPublisher := events.NewRedisPublisher(redisClient, cfg.RedisStream, cfg.RedisStreamMaxLen)
 
 	ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), cfg.IngredientUpsertBatchSize)
 
@@ -68,7 +75,7 @@ func main() {
 	userService := user.NewUserService(txRunner.DB(), user.NewUserRepo())
 	jwtService := auth.NewJWTService(cfg.JWTSecret, cfg.JWTExpirationMinutes)
 	refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), cfg.RefreshTokenSecret, cfg.RefreshTokenExpirationDays)
-	authService := auth.NewAuthService(txRunner.DB(), userService, jwtService, refreshTokenService, auditService)
+	authService := auth.NewAuthService(txRunner.DB(), userService, jwtService, refreshTokenService, redisPublisher)
 
 	uploadProvider, err := upload.NewR2UploadProvider(ctx, upload.R2UploadProviderConfig{
 		AccountID:       cfg.R2AccountID,
@@ -93,6 +100,7 @@ func main() {
 		recipe.NewIngredientUsageRepo(),
 		nil,
 		uploadService,
+		redisPublisher,
 	)
 
 	srv := handler.New(
@@ -127,10 +135,70 @@ func main() {
 
 	authMiddleware := auth.Middleware(jwtService)
 	ipMiddleware := middleware.IPMiddleware
+	userAgentMiddleware := middleware.UserAgentMiddleware
 	responseWriterMiddleware := middleware.ResponseWriterMiddleware
 	requestMiddleware := middleware.RequestMiddleware
 
-	http.Handle("/query", ipMiddleware(authMiddleware(responseWriterMiddleware(requestMiddleware(srv)))))
+	http.Handle("/query", ipMiddleware(userAgentMiddleware(authMiddleware(responseWriterMiddleware(requestMiddleware(srv))))))
+	// Check API health (process is running)
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"status": "ok",
+		})
+	})
+	// Check API dependencies, currently database and redis
+	http.HandleFunc("/ready", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+
+		readyCtx, cancelReady := context.WithTimeout(r.Context(), 2*time.Second)
+		defer cancelReady()
+
+		response := map[string]any{
+			"status":     "ready",
+			"database":   "ok",
+			"redis":      "ok",
+			"checked_at": time.Now().UTC(),
+		}
+
+		if err := database.PingContext(readyCtx); err != nil {
+			response["status"] = "not_ready"
+			response["database"] = "error"
+			response["database_error"] = err.Error()
+		}
+		if err := redisClient.Ping(readyCtx).Err(); err != nil {
+			response["status"] = "not_ready"
+			response["redis"] = "error"
+			response["redis_error"] = err.Error()
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if response["status"] != "ready" {
+			w.WriteHeader(http.StatusServiceUnavailable)
+		}
+		_ = json.NewEncoder(w).Encode(response)
+	})
+	http.HandleFunc("/metrics/events", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		snapshot := events.SnapshotMetrics()
+		if err := json.NewEncoder(w).Encode(snapshot); err != nil {
+			log.Printf("failed to encode metrics snapshot: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	})
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{

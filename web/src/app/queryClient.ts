@@ -3,6 +3,7 @@ import {
   QueryCache,
   QueryClient,
 } from "@tanstack/react-query";
+import { ClientError } from "graphql-request";
 import {
   handleUnauthenticatedGraphQLError,
   isUnauthenticatedGraphQLError,
@@ -11,6 +12,16 @@ import {
 function shouldRetryRequest(failureCount: number, error: unknown) {
   if (isUnauthenticatedGraphQLError(error)) {
     return false;
+  }
+
+  if (error instanceof ClientError) {
+    const status = error.response.status;
+    const hasGraphQLErrors = (error.response.errors?.length ?? 0) > 0;
+
+    // Do not retry application-level GraphQL failures or client-side HTTP errors.
+    if (hasGraphQLErrors || (status >= 400 && status < 500)) {
+      return false;
+    }
   }
 
   return failureCount < 1;
@@ -28,7 +39,7 @@ export const queryClient = new QueryClient({
       handleUnauthenticatedGraphQLError(error);
     },
   }),
-    defaultOptions: {
+  defaultOptions: {
     queries: {
       retry: shouldRetryRequest,
       retryDelay: (attemptIndex) =>
@@ -36,7 +47,8 @@ export const queryClient = new QueryClient({
       staleTime: 1000 * 60,
     },
     mutations: {
-      retry: shouldRetryRequest,
+      // Mutations can have side effects, so avoid automatic retries.
+      retry: false,
     },
   },
 });

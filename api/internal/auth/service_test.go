@@ -3,9 +3,9 @@ package auth
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
-	"foodplanner/internal/audit"
 	refreshtokens "foodplanner/internal/auth/refresh_tokens"
+	"foodplanner/internal/db"
+	"foodplanner/internal/events"
 	"foodplanner/internal/testutil"
 	"foodplanner/internal/user"
 	"testing"
@@ -14,15 +14,26 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func newTestAuthService(t *testing.T, tx *sql.Tx) (*AuthService, *events.InMemoryEventBus) {
+	t.Helper()
+
+	txRunner := testutil.NewTestTxRunner(tx)
+	userService := user.NewUserService(tx, user.NewUserRepo())
+	jwtService := NewJWTService("testsecret", 15)
+	refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
+	eventBus := events.NewInMemoryEventBus(1, 32, txRunner)
+	t.Cleanup(func() {
+		_ = eventBus.Close(context.Background())
+	})
+
+	authService := NewAuthService(tx, userService, jwtService, refreshTokenService, eventBus)
+	return authService, eventBus
+}
+
 func TestSignUp_Success(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
-		txRunner := testutil.NewTestTxRunner(tx)
-		userService := user.NewUserService(tx, user.NewUserRepo())
-		jwtService := NewJWTService("testsecret", 15)
-		refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
-		auditService := audit.NewAuditService(tx, audit.NewRepo())
-		authService := NewAuthService(tx, userService, jwtService, refreshTokenService, auditService)
+		authService, _ := newTestAuthService(t, tx)
 
 		email := "blah@test.com"
 		password := "securepassword"
@@ -47,15 +58,20 @@ func TestSignUp_Success(t *testing.T) {
 	})
 }
 
-func TestSignUp_PersistsAuditEvent(t *testing.T) {
+func TestSignUp_PublishesSignupEvent(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
-		txRunner := testutil.NewTestTxRunner(tx)
-		userService := user.NewUserService(tx, user.NewUserRepo())
-		jwtService := NewJWTService("testsecret", 15)
-		refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
-		auditService := audit.NewAuditService(tx, audit.NewRepo())
-		authService := NewAuthService(tx, userService, jwtService, refreshTokenService, auditService)
+		authService, eventBus := newTestAuthService(t, tx)
+		received := make(chan events.UserSignedUpEvent, 1)
+		_, err := eventBus.Subscribe(events.UserSignedUpType, events.HandlerFunc(func(ctx context.Context, tx db.DBTX, event events.Event) error {
+			signupEvent, ok := event.(events.UserSignedUpEvent)
+			if !ok {
+				return nil
+			}
+			received <- signupEvent
+			return nil
+		}))
+		require.NoError(t, err)
 
 		email := "signup-audit@test.com"
 		password := "securepassword"
@@ -66,67 +82,22 @@ func TestSignUp_PersistsAuditEvent(t *testing.T) {
 		signedUpUser, _, _, err := authService.SignUp(email, password, username, ipAddress, context.Background())
 		require.NoError(t, err)
 
-		var (
-			storedActorID    string
-			storedResourceID string
-			storedAction     string
-			storedResult     string
-			storedNewState   []byte
-			storedContext    []byte
-		)
-
-		err = tx.QueryRowContext(context.Background(), `
-			SELECT actor_id::text, resource_id::text, action, result, new_state, context
-			FROM audits
-			WHERE action = $1 AND resource_id = $2
-			ORDER BY created_at DESC
-			LIMIT 1
-		`, audit.ActionUserSignup, signedUpUser.ID).Scan(
-			&storedActorID,
-			&storedResourceID,
-			&storedAction,
-			&storedResult,
-			&storedNewState,
-			&storedContext,
-		)
-		require.NoError(t, err)
-
-		require.Equal(t, signedUpUser.ID.String(), storedActorID)
-		require.Equal(t, signedUpUser.ID.String(), storedResourceID)
-		require.Equal(t, string(audit.ActionUserSignup), storedAction)
-		require.Equal(t, string(audit.ResultSuccess), storedResult)
-
-		var newState struct {
-			UserID   string `json:"user_id"`
-			Username string `json:"username"`
+		select {
+		case published := <-received:
+			require.Equal(t, signedUpUser.ID, published.UserID)
+			require.Equal(t, username, published.Username)
+			require.Equal(t, email, published.Email)
+			require.Equal(t, ipAddress, published.IPAddress)
+		case <-time.After(1 * time.Second):
+			t.Fatal("expected signup event to be published")
 		}
-		err = json.Unmarshal(storedNewState, &newState)
-		require.NoError(t, err)
-		require.Equal(t, signedUpUser.ID.String(), newState.UserID)
-		require.Equal(t, username, newState.Username)
-
-		var contextData struct {
-			Source    string `json:"source"`
-			Operation string `json:"operation"`
-			IPAddress string `json:"ip_address"`
-		}
-		err = json.Unmarshal(storedContext, &contextData)
-		require.NoError(t, err)
-		require.Equal(t, "graphql", contextData.Source)
-		require.Equal(t, "signup", contextData.Operation)
-		require.Equal(t, ipAddress, contextData.IPAddress)
 	})
 }
 
 func TestSignup_InvalidEmail(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
-		txRunner := testutil.NewTestTxRunner(tx)
-		userService := user.NewUserService(tx, user.NewUserRepo())
-		jwtService := NewJWTService("testsecret", 15)
-		refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
-		auditService := audit.NewAuditService(tx, audit.NewRepo())
-		authService := NewAuthService(tx, userService, jwtService, refreshTokenService, auditService)
+		authService, _ := newTestAuthService(t, tx)
 		invalidEmail := "invalid-email"
 		password := "securepassword"
 		username := "testuser"
@@ -144,12 +115,7 @@ func TestSignup_InvalidEmail(t *testing.T) {
 func TestSignup_ShortPassword(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
-		txRunner := testutil.NewTestTxRunner(tx)
-		userService := user.NewUserService(tx, user.NewUserRepo())
-		jwtService := NewJWTService("testsecret", 15)
-		refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
-		auditService := audit.NewAuditService(tx, audit.NewRepo())
-		authService := NewAuthService(tx, userService, jwtService, refreshTokenService, auditService)
+		authService, _ := newTestAuthService(t, tx)
 		email := "test@fun.com"
 		invalidPassword := "123"
 		ipAddress := "127.0.0.1"
@@ -166,12 +132,7 @@ func TestSignup_ShortPassword(t *testing.T) {
 func TestSignup_LongPassword(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
-		txRunner := testutil.NewTestTxRunner(tx)
-		userService := user.NewUserService(tx, user.NewUserRepo())
-		jwtService := NewJWTService("testsecret", 15)
-		refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
-		auditService := audit.NewAuditService(tx, audit.NewRepo())
-		authService := NewAuthService(tx, userService, jwtService, refreshTokenService, auditService)
+		authService, _ := newTestAuthService(t, tx)
 		email := "blah@baz.com"
 		// Note: password length limit is hardcoded 64 characters
 		invalidPassword := "12345678901234567890123456789012345678901234567890123456789012345"
@@ -189,12 +150,7 @@ func TestSignup_LongPassword(t *testing.T) {
 func TestSignUp_DuplicateEmail(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
-		txRunner := testutil.NewTestTxRunner(tx)
-		userService := user.NewUserService(tx, user.NewUserRepo())
-		jwtService := NewJWTService("testsecret", 15)
-		refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
-		auditService := audit.NewAuditService(tx, audit.NewRepo())
-		authService := NewAuthService(tx, userService, jwtService, refreshTokenService, auditService)
+		authService, _ := newTestAuthService(t, tx)
 
 		email := "blah@test.com"
 		password := "securepassword"
@@ -215,13 +171,9 @@ func TestSignUp_DuplicateEmail(t *testing.T) {
 func TestSignIn_Success(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
-		txRunner := testutil.NewTestTxRunner(tx)
-		userService := user.NewUserService(tx, user.NewUserRepo())
-		jwtService := NewJWTService("testsecret", 15)
-		refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
-		auditService := audit.NewAuditService(tx, audit.NewRepo())
-		authService := NewAuthService(tx, userService, jwtService, refreshTokenService, auditService)
+		authService, _ := newTestAuthService(t, tx)
 		ipAddress := "127.0.0.1"
+		userAgent := "test-agent/1.0"
 
 		email := "test@example.com"
 		password := "securepassword"
@@ -231,7 +183,7 @@ func TestSignIn_Success(t *testing.T) {
 		require.NoError(t, err)
 
 		// Act
-		user, token, refreshToken, err := authService.SignIn(email, password, ipAddress, context.Background())
+		user, token, refreshToken, err := authService.SignIn(email, password, ipAddress, userAgent, context.Background())
 
 		// Assert
 		require.NoError(t, err)
@@ -246,65 +198,136 @@ func TestSignIn_Success(t *testing.T) {
 	})
 }
 
+func TestSignIn_PublishesSigninEvent(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		// Arrange
+		authService, eventBus := newTestAuthService(t, tx)
+		received := make(chan events.UserSignedInEvent, 1)
+		_, err := eventBus.Subscribe(events.UserSignedInType, events.HandlerFunc(func(ctx context.Context, tx db.DBTX, event events.Event) error {
+			signinEvent, ok := event.(events.UserSignedInEvent)
+			if !ok {
+				return nil
+			}
+			received <- signinEvent
+			return nil
+		}))
+		require.NoError(t, err)
+
+		email := "signin-audit@test.com"
+		password := "securepassword"
+		username := "signin-audited-user"
+		ipAddress := "127.0.0.1"
+		userAgent := "test-agent/1.0"
+
+		signedUpUser, _, _, err := authService.SignUp(email, password, username, ipAddress, context.Background())
+		require.NoError(t, err)
+
+		// Act
+		_, _, _, err = authService.SignIn(email, password, ipAddress, userAgent, context.Background())
+		require.NoError(t, err)
+
+		select {
+		case published := <-received:
+			require.Equal(t, signedUpUser.ID, published.UserID)
+			require.Equal(t, username, published.Username)
+			require.Equal(t, email, published.Email)
+			require.Equal(t, ipAddress, published.IPAddress)
+			require.Equal(t, userAgent, published.UserAgent)
+		case <-time.After(1 * time.Second):
+			t.Fatal("expected signin event to be published")
+		}
+	})
+}
+
 func TestSignIn_NoUser(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
-		txRunner := testutil.NewTestTxRunner(tx)
-		userService := user.NewUserService(tx, user.NewUserRepo())
-		jwtService := NewJWTService("testsecret", 15)
-		refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
-		auditService := audit.NewAuditService(tx, audit.NewRepo())
-		authService := NewAuthService(tx, userService, jwtService, refreshTokenService, auditService)
+		authService, eventBus := newTestAuthService(t, tx)
+		received := make(chan events.UserSigninFailedEvent, 1)
+		_, err := eventBus.Subscribe(events.UserSigninFailedType, events.HandlerFunc(func(ctx context.Context, tx db.DBTX, event events.Event) error {
+			signinFailedEvent, ok := event.(events.UserSigninFailedEvent)
+			if !ok {
+				return nil
+			}
+			received <- signinFailedEvent
+			return nil
+		}))
+		require.NoError(t, err)
 
 		email := "test@example.com"
 		password := "wrongpassword"
 		ipAddress := "127.0.0.1"
+		userAgent := "test-agent/1.0"
 
 		// Act
-		_, _, _, err := authService.SignIn(email, password, ipAddress, context.Background())
+		_, _, _, err = authService.SignIn(email, password, ipAddress, userAgent, context.Background())
 
 		// Assert
 		require.Error(t, err)
 		require.Equal(t, ErrInvalidCredentials, err)
+
+		select {
+		case published := <-received:
+			require.Nil(t, published.UserID)
+			require.Equal(t, email, published.Email)
+			require.Equal(t, ipAddress, published.IPAddress)
+			require.Equal(t, userAgent, published.UserAgent)
+			require.Equal(t, "user_not_found", published.FailureReason)
+		case <-time.After(1 * time.Second):
+			t.Fatal("expected signin failure event to be published")
+		}
 	})
 }
 
 func TestSignIn_WrongPassword(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
-		txRunner := testutil.NewTestTxRunner(tx)
-		userService := user.NewUserService(tx, user.NewUserRepo())
-		jwtService := NewJWTService("testsecret", 15)
-		refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
-		auditService := audit.NewAuditService(tx, audit.NewRepo())
-		authService := NewAuthService(tx, userService, jwtService, refreshTokenService, auditService)
+		authService, eventBus := newTestAuthService(t, tx)
+		received := make(chan events.UserSigninFailedEvent, 1)
+		_, err := eventBus.Subscribe(events.UserSigninFailedType, events.HandlerFunc(func(ctx context.Context, tx db.DBTX, event events.Event) error {
+			signinFailedEvent, ok := event.(events.UserSigninFailedEvent)
+			if !ok {
+				return nil
+			}
+			received <- signinFailedEvent
+			return nil
+		}))
+		require.NoError(t, err)
 		email := "example@test.com"
 		correctPassword := "correctpassword"
 		username := "testuser"
 		ipAddress := "127.0.0.1"
+		userAgent := "test-agent/1.0"
 
-		_, _, _, err := authService.SignUp(email, correctPassword, username, ipAddress, context.Background())
+		createdUser, _, _, err := authService.SignUp(email, correctPassword, username, ipAddress, context.Background())
 		require.NoError(t, err)
 
 		// Act
 		wrongPassword := "wrongpassword"
-		_, _, _, err = authService.SignIn(email, wrongPassword, ipAddress, context.Background())
+		_, _, _, err = authService.SignIn(email, wrongPassword, ipAddress, userAgent, context.Background())
 
 		// Assert
 		require.Error(t, err)
 		require.Equal(t, ErrInvalidCredentials, err)
+
+		select {
+		case published := <-received:
+			require.NotNil(t, published.UserID)
+			require.Equal(t, createdUser.ID, *published.UserID)
+			require.Equal(t, email, published.Email)
+			require.Equal(t, ipAddress, published.IPAddress)
+			require.Equal(t, userAgent, published.UserAgent)
+			require.Equal(t, "invalid_password", published.FailureReason)
+		case <-time.After(1 * time.Second):
+			t.Fatal("expected signin failure event to be published")
+		}
 	})
 }
 
 func TestRefresh_Success(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
-		txRunner := testutil.NewTestTxRunner(tx)
-		userService := user.NewUserService(tx, user.NewUserRepo())
-		jwtService := NewJWTService("testsecret", 15)
-		refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
-		auditService := audit.NewAuditService(tx, audit.NewRepo())
-		authService := NewAuthService(tx, userService, jwtService, refreshTokenService, auditService)
+		authService, _ := newTestAuthService(t, tx)
 
 		email := "refresh-success@example.com"
 		password := "securepassword"
@@ -337,12 +360,7 @@ func TestRefresh_Success(t *testing.T) {
 func TestRefresh_InvalidToken(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
-		txRunner := testutil.NewTestTxRunner(tx)
-		userService := user.NewUserService(tx, user.NewUserRepo())
-		jwtService := NewJWTService("testsecret", 15)
-		refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
-		auditService := audit.NewAuditService(tx, audit.NewRepo())
-		authService := NewAuthService(tx, userService, jwtService, refreshTokenService, auditService)
+		authService, _ := newTestAuthService(t, tx)
 
 		// Act
 		user, jwt, refreshedToken, err := authService.Refresh(context.Background(), "missing-refresh-token", "127.0.0.1")
@@ -358,12 +376,7 @@ func TestRefresh_InvalidToken(t *testing.T) {
 func TestRefresh_ReusedTokenFails(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
-		txRunner := testutil.NewTestTxRunner(tx)
-		userService := user.NewUserService(tx, user.NewUserRepo())
-		jwtService := NewJWTService("testsecret", 15)
-		refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
-		auditService := audit.NewAuditService(tx, audit.NewRepo())
-		authService := NewAuthService(tx, userService, jwtService, refreshTokenService, auditService)
+		authService, _ := newTestAuthService(t, tx)
 
 		email := "refresh-reuse@example.com"
 		password := "securepassword"
@@ -390,12 +403,7 @@ func TestRefresh_ReusedTokenFails(t *testing.T) {
 func TestRevoke_Success(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
-		txRunner := testutil.NewTestTxRunner(tx)
-		userService := user.NewUserService(tx, user.NewUserRepo())
-		jwtService := NewJWTService("testsecret", 15)
-		refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
-		auditService := audit.NewAuditService(tx, audit.NewRepo())
-		authService := NewAuthService(tx, userService, jwtService, refreshTokenService, auditService)
+		authService, _ := newTestAuthService(t, tx)
 
 		email := "revoke-success@example.com"
 		password := "securepassword"
@@ -422,12 +430,7 @@ func TestRevoke_Success(t *testing.T) {
 func TestRevoke_MissingToken_NoError(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
-		txRunner := testutil.NewTestTxRunner(tx)
-		userService := user.NewUserService(tx, user.NewUserRepo())
-		jwtService := NewJWTService("testsecret", 15)
-		refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), "refresh-secret", 7)
-		auditService := audit.NewAuditService(tx, audit.NewRepo())
-		authService := NewAuthService(tx, userService, jwtService, refreshTokenService, auditService)
+		authService, _ := newTestAuthService(t, tx)
 
 		// Act
 		err := authService.Revoke(context.Background(), "missing-refresh-token")

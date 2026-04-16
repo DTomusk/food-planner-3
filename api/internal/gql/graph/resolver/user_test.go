@@ -125,6 +125,7 @@ func TestUserResolver_Recipes(t *testing.T) {
 
 		recipeService := recipe.NewService(txRunner, recipeRepo, recipe.NewRecipeVersionRepo(), ingredientService, recipe.NewIngredientUsageRepo(), nil,
 			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
+			nil,
 		)
 
 		r := &Resolver{
@@ -164,6 +165,7 @@ func TestUserResolver_Recipes_NoRecipes(t *testing.T) {
 		require.NoError(t, err)
 		recipeService := recipe.NewService(txRunner, recipeRepo, recipe.NewRecipeVersionRepo(), ingredientService, recipe.NewIngredientUsageRepo(), nil,
 			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
+			nil,
 		)
 
 		r := &Resolver{
@@ -213,6 +215,7 @@ func TestUserResolver_Recipes_ForcesParentUserScope(t *testing.T) {
 		require.NoError(t, err)
 		recipeService := recipe.NewService(txRunner, recipeRepo, recipe.NewRecipeVersionRepo(), ingredientService, recipe.NewIngredientUsageRepo(), nil,
 			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
+			nil,
 		)
 
 		r := &Resolver{RecipeService: recipeService}

@@ -1,0 +1,11 @@
+# Event architecture 
+Non-critical side effects of mutations are handled by events. Services in the API publish events which are transported via a redis stream to the Worker. Each event type can have many handlers associated with it. At startup, the worker registers all events and their handlers, it then runs a loop that reads the redis stream, decodes the events, and then sends them to each relevant handler. Currently, the event system is only used for auditing, but it's also intended to be used in the near future for updating metrics, notifications etc. 
+
+## Idempotency 
+Each event has an idempotency key which is an entry in the `events_processed` table. An event should only ever be processed once per stream group, event type, and handler (we only use one stream group so far, so this is effectively uniqueness on event type and handler). When the worker reads a message, it checks for each handler whether that idempotency key already exists and, if it does, it does a no-op. 
+
+## Versioning 
+Event types are versioned. Events with versions that are not supported are silently acknowledged to ensure they don't cause any changes and that they don't get processed again. 
+
+## Future work 
+Currently, there isn't guaranteed delivery from the API to the Worker. Events could get lost (i.e. published and never transported across to the worker) and we wouldn't know. The remedy for this would be to use a transactional outbox and a relay command that sits between the API and the Worker. The API would have no dependency on Redis (or any other transport mechanism) any more. Rather, it would write an entry to an events table in the same transaction as the associated mutation (e.g. creating a recipe). Then, the relay would poll the table, find pending events (including any that have failed fewer than the threshold amount), mark them as processing and publish them on redis. This is effectively the same system as we have now with an extra step that allows us to track the state of event delivery and retries. 

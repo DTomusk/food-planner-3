@@ -2,11 +2,12 @@ package auth
 
 import (
 	"context"
-	"foodplanner/internal/audit"
 	refreshtokens "foodplanner/internal/auth/refresh_tokens"
 	"foodplanner/internal/db"
+	"foodplanner/internal/events"
 	"foodplanner/internal/logging"
 	"foodplanner/internal/user"
+	"log/slog"
 
 	"github.com/google/uuid"
 )
@@ -16,7 +17,7 @@ type AuthService struct {
 	userService         *user.UserService
 	jwtService          *JWTService
 	refreshTokenService *refreshtokens.RefreshTokenService
-	auditService        *audit.AuditService
+	eventPublisher      events.Publisher
 }
 
 func NewAuthService(
@@ -24,14 +25,14 @@ func NewAuthService(
 	userService *user.UserService,
 	jwtService *JWTService,
 	refreshTokenService *refreshtokens.RefreshTokenService,
-	auditService *audit.AuditService,
+	eventPublisher events.Publisher,
 ) *AuthService {
 	return &AuthService{
 		db:                  db,
 		userService:         userService,
 		jwtService:          jwtService,
 		refreshTokenService: refreshTokenService,
-		auditService:        auditService,
+		eventPublisher:      eventPublisher,
 	}
 }
 
@@ -70,29 +71,28 @@ func (s *AuthService) SignUp(email, password, username, ipAddress string, ctx co
 	}
 
 	correlationID := uuid.New()
-	entry, err := audit.NewUserSignupEvent(correlationID, user.ID, user.Username, ipAddress)
-	if err != nil {
-		logger.Warn("Failed to create signup audit event", "userID", user.ID, "err", err)
-		return user, token, refresh_token, nil
-	}
-
-	if err := s.auditService.Log(ctx, entry); err != nil {
-		logger.Warn("Failed to persist signup audit event", "userID", user.ID, "correlationID", correlationID, "err", err)
+	signupEvent := events.NewUserSignedUpEvent(correlationID, user.ID, user.Username, user.Email, ipAddress)
+	if err := s.eventPublisher.Publish(ctx, signupEvent); err != nil {
+		logger.Warn("Failed to publish signup event", "userID", user.ID, "correlationID", correlationID, "err", err)
 	}
 
 	return user, token, refresh_token, nil
 }
 
-func (s *AuthService) SignIn(email, password, ipAddress string, ctx context.Context) (*user.User, string, *refreshtokens.RefreshToken, error) {
+func (s *AuthService) SignIn(email, password, ipAddress, userAgent string, ctx context.Context) (*user.User, string, *refreshtokens.RefreshToken, error) {
+	logger := logging.FromContext(ctx)
+
 	user, err := s.userService.GetUserByEmail(email, ctx)
 	if err != nil {
 		return nil, "", nil, err
 	}
 	if user == nil {
+		s.publishSigninFailure(ctx, logger, nil, email, ipAddress, userAgent, "user_not_found")
 		return nil, "", nil, ErrInvalidCredentials
 	}
 	err = comparePasswordHash(password, user.PasswordHash)
 	if err != nil {
+		s.publishSigninFailure(ctx, logger, &user.ID, email, ipAddress, userAgent, "invalid_password")
 		return nil, "", nil, ErrInvalidCredentials
 	}
 	token, err := s.jwtService.GenerateToken(user.ID.String())
@@ -103,7 +103,26 @@ func (s *AuthService) SignIn(email, password, ipAddress string, ctx context.Cont
 	if err != nil {
 		return nil, "", nil, err
 	}
+
+	s.publishSigninSuccess(ctx, logger, user.ID, user.Username, user.Email, ipAddress, userAgent)
+
 	return user, token, refresh_token, nil
+}
+
+func (s *AuthService) publishSigninSuccess(ctx context.Context, logger *slog.Logger, userID uuid.UUID, username, email, ipAddress, userAgent string) {
+	correlationID := uuid.New()
+	signinEvent := events.NewUserSignedInEvent(correlationID, userID, username, email, ipAddress, userAgent)
+	if err := s.eventPublisher.Publish(ctx, signinEvent); err != nil {
+		logger.Warn("Failed to publish signin event", "userID", userID, "correlationID", correlationID, "err", err)
+	}
+}
+
+func (s *AuthService) publishSigninFailure(ctx context.Context, logger *slog.Logger, userID *uuid.UUID, email, ipAddress, userAgent, failureReason string) {
+	correlationID := uuid.New()
+	signinFailureEvent := events.NewUserSigninFailedEvent(correlationID, userID, email, ipAddress, userAgent, failureReason)
+	if err := s.eventPublisher.Publish(ctx, signinFailureEvent); err != nil {
+		logger.Warn("Failed to publish signin failure event", "userID", userID, "email", email, "correlationID", correlationID, "err", err)
+	}
 }
 
 func (s *AuthService) Refresh(ctx context.Context, refreshToken, ipAddress string) (*user.User, string, *refreshtokens.RefreshToken, error) {

@@ -40,7 +40,11 @@ func (r *mutationResolver) Signin(ctx context.Context, input model.SignInInput) 
 	if err != nil {
 		return nil, err
 	}
-	user, token, refreshToken, err := r.AuthService.SignIn(input.Email, input.Password, ip, ctx)
+	userAgent, err := GetUserAgent(ctx)
+	if err != nil {
+		return nil, err
+	}
+	user, token, refreshToken, err := r.AuthService.SignIn(input.Email, input.Password, ip, userAgent, ctx)
 	if err != nil {
 		return nil, err
 	}

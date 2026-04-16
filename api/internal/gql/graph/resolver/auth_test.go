@@ -6,9 +6,9 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
-	"foodplanner/internal/audit"
 	"foodplanner/internal/auth"
 	refreshtokens "foodplanner/internal/auth/refresh_tokens"
+	"foodplanner/internal/events"
 	"foodplanner/internal/gql/graph/model"
 	"foodplanner/internal/middleware"
 	"foodplanner/internal/testutil"
@@ -31,8 +31,8 @@ func setupAuthMutationResolver(tx *sql.Tx) (*mutationResolver, *auth.AuthService
 	jwtService := auth.NewJWTService("testsecret", 15)
 	txRunner := testutil.NewTestTxRunner(tx)
 	refreshTokenService := refreshtokens.NewRefreshTokenService(txRunner, refreshtokens.NewRefreshTokenRepo(), testRefreshSecret, 7)
-	auditService := audit.NewAuditService(tx, audit.NewRepo())
-	authService := auth.NewAuthService(tx, userService, jwtService, refreshTokenService, auditService)
+	eventBus := events.NewInMemoryEventBus(1, 32, txRunner)
+	authService := auth.NewAuthService(tx, userService, jwtService, refreshTokenService, eventBus)
 	resolver := &Resolver{
 		AuthService: authService,
 	}
@@ -42,6 +42,7 @@ func setupAuthMutationResolver(tx *sql.Tx) (*mutationResolver, *auth.AuthService
 
 func authContext(w http.ResponseWriter) context.Context {
 	ctx := context.WithValue(context.Background(), middleware.IPKey, "127.0.0.1")
+	ctx = context.WithValue(ctx, middleware.UserAgentKey, "resolver-test-agent/1.0")
 	if w != nil {
 		ctx = context.WithValue(ctx, middleware.ResponseWriterKey, w)
 	}

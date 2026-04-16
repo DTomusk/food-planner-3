@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"foodplanner/internal/db"
+	"foodplanner/internal/events"
 	"foodplanner/internal/ingredient"
 	"foodplanner/internal/logging"
 	"foodplanner/internal/upload"
@@ -21,6 +22,7 @@ type Service struct {
 	ingredientUsageRepo *ingredientUsageRepo
 	recipeRetentionDays *int
 	uploadService       *upload.UploadService
+	eventPublisher      events.Publisher
 }
 
 func NewService(
@@ -31,6 +33,7 @@ func NewService(
 	ingredientUsageRepo *ingredientUsageRepo,
 	recipeRetentionDays *int,
 	uploadService *upload.UploadService,
+	eventPublisher events.Publisher,
 ) *Service {
 	return &Service{
 		txRunner:            txRunner,
@@ -40,6 +43,7 @@ func NewService(
 		ingredientUsageRepo: ingredientUsageRepo,
 		recipeRetentionDays: recipeRetentionDays,
 		uploadService:       uploadService,
+		eventPublisher:      eventPublisher,
 	}
 }
 
@@ -144,12 +148,17 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 				return err
 			}
 		}
-
 		return nil
 	})
 	if err != nil {
 		logger.Error("Error persisting recipe", "error", err)
 		return nil, err
+	}
+
+	correlationID := uuid.New()
+	recipeCreatedEvent := events.NewRecipeCreatedEvent(correlationID, recipeContainer.ID, recipeContainer.CurrentVersion.ID, userID, request.IPAddress, request.UserAgent)
+	if err := s.eventPublisher.Publish(ctx, recipeCreatedEvent); err != nil {
+		logger.Warn("Failed to publish recipe created event", "recipeID", recipeContainer.ID, "versionID", recipeContainer.CurrentVersion.ID, "correlationID", correlationID, "err", err)
 	}
 
 	// Consider returning values as they're inserted rather than doing a separate query
@@ -296,6 +305,12 @@ func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest)
 	if err != nil {
 		logger.Error("Error persisting recipe", "error", err)
 		return nil, err
+	}
+
+	correlationID := uuid.New()
+	recipeUpdatedEvent := events.NewRecipeUpdatedEvent(correlationID, existingRecipe.ID, recipeVersion.ID, existingRecipe.UserID, request.Request.IPAddress, request.Request.UserAgent)
+	if err := s.eventPublisher.Publish(ctx, recipeUpdatedEvent); err != nil {
+		logger.Warn("Failed to publish recipe updated event", "recipeID", existingRecipe.ID, "versionID", recipeVersion.ID, "correlationID", correlationID, "err", err)
 	}
 
 	// Return updated recipe container

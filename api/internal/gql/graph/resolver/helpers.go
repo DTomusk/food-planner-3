@@ -172,7 +172,7 @@ func (r *Resolver) listRecipes(
 	return buildRecipeConnection(recipes, endCursor)
 }
 
-func toCreateRecipeRequest(input *model.CreateRecipeInput, userID string) (recipe.CreateRecipeRequest, error) {
+func toCreateRecipeRequest(input *model.CreateRecipeInput, userID, ipAddress, userAgent string) (recipe.CreateRecipeRequest, error) {
 	if input == nil {
 		return recipe.CreateRecipeRequest{}, fmt.Errorf("recipe details are required")
 	}
@@ -203,6 +203,7 @@ func toCreateRecipeRequest(input *model.CreateRecipeInput, userID string) (recip
 		Portions:    int(input.Portions),
 		Source:      recipeSourceRequest,
 		ImgUploadID: input.ImgUploadID,
+		IPAddress:   ipAddress,
 	}, nil
 }
 
@@ -232,6 +233,14 @@ func GetIPAddress(ctx context.Context) (string, error) {
 		return "", errors.NewInternalError("failed to retrieve IP address from context")
 	}
 	return ip, nil
+}
+
+func GetUserAgent(ctx context.Context) (string, error) {
+	userAgent, ok := ctx.Value(middleware.UserAgentKey).(string)
+	if !ok {
+		return "", errors.NewInternalError("failed to retrieve user agent from context")
+	}
+	return userAgent, nil
 }
 
 func GetResponseWriter(ctx context.Context) http.ResponseWriter {
