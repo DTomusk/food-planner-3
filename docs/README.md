@@ -26,6 +26,7 @@ Backend
 - Go 
 - GraphQL 
 - PostgreSQL
+- Redis
 
 ## Quick start 
 
@@ -35,6 +36,7 @@ Prerequisites
 - NPM (or PNPM)
 
 1. Clone branch locally 
-2. Run `api` service in `docker-compose.yml` (starts up Postgres DB, migrates it, and then starts the API)
-3. Run `npm install` in `/web`
-4. Run `npm run dev` (starts up the front end)
+2. Run `api` service in `docker-compose.yml` (starts up Postgres DB, migrates it, starts up redis, and then starts the API)
+3. Run `worker` service in `docker-compose.yml` (starts up the background worker)
+4. Run `npm install` in `/web`
+5. Run `npm run dev` (starts up the front end)

@@ -42,36 +42,18 @@
         - Previous versions remain hidden when a new version is created and approved
         - Dev can run scripts or use backend tools to review and resolve reports
 
-- [ ] Manual content moderation
-    - Priority: high
-    - Area: throughout 
-    - Type: feature 
-    - Why: since anyone can sign up to the site and post free-text (including recipe instructions and usernames, but also more stuff in the future), we should put guardrails in place to prevent offensive and restricted content being shared. This may involve some auto-moderation in the future, but as a first slice, we can add manual content reporting, content being hidden once reports exceed a configured number, and the facilities for devs (and system administrators in the future) to view and action content that's been reported beyond a certain threshold. 
-    - DoD:
-        - Users can report content 
-            - Limit to recipe versions 
-        - Users can select one of a number of reasons (reasons persisted as enum)
-        - Users can write in details of their complaint
-            - If any reason other than other, details are optional 
-            - If Other, then must add details
-        - Users can't report the same content more than once
-        - System saves each report including:
-            - Reporting user
-            - Entity id
-            - Entity type 
-            - Content at time of reporting 
-            - Report timestamp 
-        - Entities store number of reports 
-        - Entities with a number of reports greater than a configured value are hidden from other users 
-            - What if a user has saved someone else's recipe?
-        - The user who created the entity is informed that it's been hidden?
-        - 
-
 - [ ] Private/public recipes 
     - Priority: 
     - Area: 
     - Type: (bug, tech debt, feature)
     - Why: 
+    - DoD: 
+
+- [ ] Recipe drafts 
+    - Priority: 
+    - Area: 
+    - Type: (bug, tech debt, feature)
+    - Why: I could envisage the versioning system getting a bit annoying. If you make small edits and have to create a new recipe every time, then the recipe gets spread out and hard to track. It will make ratings and comments harder. We should make the versioning more in-your-face and allow users to create drafts before publishing a new version so they can make edits without a new version. We should only allow one draft at a time. 
     - DoD: 
 
 - [ ] Recipe rating 
