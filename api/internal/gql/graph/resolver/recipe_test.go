@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"foodplanner/internal/auth"
+	"foodplanner/internal/events"
 	"foodplanner/internal/gql/graph/model"
 	"foodplanner/internal/ingredient"
 	"foodplanner/internal/recipe"
@@ -39,6 +40,11 @@ func newTestRecipeService(t *testing.T, tx *sql.Tx, txRunner *testutil.TestTxRun
 	repo, err := recipe.NewRecipeRepo(0.15, 0.85)
 	require.NoError(t, err)
 
+	eventBus := events.NewInMemoryEventBus(1, 32, txRunner)
+	t.Cleanup(func() {
+		_ = eventBus.Close(context.Background())
+	})
+
 	return recipe.NewService(
 		txRunner,
 		repo,
@@ -47,7 +53,7 @@ func newTestRecipeService(t *testing.T, tx *sql.Tx, txRunner *testutil.TestTxRun
 		recipe.NewIngredientUsageRepo(),
 		nil,
 		upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
-		nil,
+		eventBus,
 	)
 }
 
@@ -55,7 +61,7 @@ func TestRecipeResolver_CreateAndGetRecipe(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
 		txRunner := testutil.NewTestTxRunner(tx)
-		ctx := context.Background()
+		ctx := authContext(nil)
 
 		testIngredient, err := seeds.SeedTestIngredient(ctx, tx)
 		require.NoError(t, err, "Failed to seed test ingredient")
@@ -113,7 +119,7 @@ func TestRecipeResolver_CreateAndGetRecipe_WithResolver(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
 		txRunner := testutil.NewTestTxRunner(tx)
-		ctx := context.Background()
+		ctx := authContext(nil)
 
 		testIngredient, err := seeds.SeedTestIngredient(ctx, tx)
 		require.NoError(t, err, "Failed to seed test ingredient")
@@ -200,7 +206,7 @@ func TestRecipeResolver_CreateRecipe_Unauthenticated(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
 		txRunner := testutil.NewTestTxRunner(tx)
-		ctx := context.Background()
+		ctx := authContext(nil)
 
 		testIngredient, err := seeds.SeedTestIngredient(ctx, tx)
 		require.NoError(t, err, "Failed to seed test ingredient")
@@ -249,7 +255,7 @@ func TestRecipeResolver_UpdateRecipe_Unauthenticated(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
 		txRunner := testutil.NewTestTxRunner(tx)
-		ctx := context.Background()
+		ctx := authContext(nil)
 
 		testIngredient, err := seeds.SeedTestIngredient(ctx, tx)
 		require.NoError(t, err, "Failed to seed test ingredient")
@@ -325,7 +331,7 @@ func TestRecipeResolver_UpdateRecipe_WithVersionResolvers(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
 		txRunner := testutil.NewTestTxRunner(tx)
-		ctx := context.Background()
+		ctx := authContext(nil)
 
 		testIngredient, err := seeds.SeedTestIngredient(ctx, tx)
 		require.NoError(t, err, "Failed to seed test ingredient")

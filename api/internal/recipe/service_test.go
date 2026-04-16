@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"foodplanner/internal/db"
+	"foodplanner/internal/events"
 	"foodplanner/internal/ingredient"
 	"foodplanner/internal/testutil"
 	"foodplanner/internal/testutil/seeds"
@@ -23,6 +24,11 @@ func newTestRecipeService(t *testing.T, tx *sql.Tx, txRunner db.TxRunner, repo *
 		effectiveUploadService = upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo())
 	}
 
+	eventBus := events.NewInMemoryEventBus(1, 32, txRunner)
+	t.Cleanup(func() {
+		_ = eventBus.Close(context.Background())
+	})
+
 	return NewService(
 		txRunner,
 		repo,
@@ -31,7 +37,7 @@ func newTestRecipeService(t *testing.T, tx *sql.Tx, txRunner db.TxRunner, repo *
 		NewIngredientUsageRepo(),
 		nil,
 		effectiveUploadService,
-		nil,
+		eventBus,
 	)
 }
 
