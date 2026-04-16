@@ -26,6 +26,7 @@ func (h *SigninFailureEventHandler) Handle(ctx context.Context, tx db.DBTX, even
 		signinFailureEvent.UserID,
 		signinFailureEvent.Email,
 		signinFailureEvent.IPAddress,
+		signinFailureEvent.UserAgent,
 		signinFailureEvent.FailureReason,
 	)
 	if err != nil {

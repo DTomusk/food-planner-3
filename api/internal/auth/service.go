@@ -79,7 +79,7 @@ func (s *AuthService) SignUp(email, password, username, ipAddress string, ctx co
 	return user, token, refresh_token, nil
 }
 
-func (s *AuthService) SignIn(email, password, ipAddress string, ctx context.Context) (*user.User, string, *refreshtokens.RefreshToken, error) {
+func (s *AuthService) SignIn(email, password, ipAddress, userAgent string, ctx context.Context) (*user.User, string, *refreshtokens.RefreshToken, error) {
 	logger := logging.FromContext(ctx)
 
 	user, err := s.userService.GetUserByEmail(email, ctx)
@@ -87,12 +87,12 @@ func (s *AuthService) SignIn(email, password, ipAddress string, ctx context.Cont
 		return nil, "", nil, err
 	}
 	if user == nil {
-		s.publishSigninFailure(ctx, logger, nil, email, ipAddress, "user_not_found")
+		s.publishSigninFailure(ctx, logger, nil, email, ipAddress, userAgent, "user_not_found")
 		return nil, "", nil, ErrInvalidCredentials
 	}
 	err = comparePasswordHash(password, user.PasswordHash)
 	if err != nil {
-		s.publishSigninFailure(ctx, logger, &user.ID, email, ipAddress, "invalid_password")
+		s.publishSigninFailure(ctx, logger, &user.ID, email, ipAddress, userAgent, "invalid_password")
 		return nil, "", nil, ErrInvalidCredentials
 	}
 	token, err := s.jwtService.GenerateToken(user.ID.String())
@@ -106,9 +106,9 @@ func (s *AuthService) SignIn(email, password, ipAddress string, ctx context.Cont
 	return user, token, refresh_token, nil
 }
 
-func (s *AuthService) publishSigninFailure(ctx context.Context, logger *slog.Logger, userID *uuid.UUID, email, ipAddress, failureReason string) {
+func (s *AuthService) publishSigninFailure(ctx context.Context, logger *slog.Logger, userID *uuid.UUID, email, ipAddress, userAgent, failureReason string) {
 	correlationID := uuid.New()
-	signinFailureEvent := events.NewUserSigninFailedEvent(correlationID, userID, email, ipAddress, failureReason)
+	signinFailureEvent := events.NewUserSigninFailedEvent(correlationID, userID, email, ipAddress, userAgent, failureReason)
 	if err := s.eventPublisher.Publish(ctx, signinFailureEvent); err != nil {
 		logger.Warn("Failed to publish signin failure event", "userID", userID, "email", email, "correlationID", correlationID, "err", err)
 	}

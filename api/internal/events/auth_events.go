@@ -48,6 +48,7 @@ type UserSigninFailedEvent struct {
 	UserID        *uuid.UUID
 	Email         string
 	IPAddress     string
+	UserAgent     string
 	FailureReason string
 }
 
@@ -55,7 +56,7 @@ func (e UserSigninFailedEvent) Metadata() Metadata {
 	return e.Meta
 }
 
-func NewUserSigninFailedEvent(correlationID uuid.UUID, userID *uuid.UUID, email, ipAddress, failureReason string) UserSigninFailedEvent {
+func NewUserSigninFailedEvent(correlationID uuid.UUID, userID *uuid.UUID, email, ipAddress, userAgent, failureReason string) UserSigninFailedEvent {
 	return UserSigninFailedEvent{
 		Meta: Metadata{
 			ID:            uuid.New(),
@@ -68,6 +69,7 @@ func NewUserSigninFailedEvent(correlationID uuid.UUID, userID *uuid.UUID, email,
 		UserID:        userID,
 		Email:         email,
 		IPAddress:     ipAddress,
+		UserAgent:     userAgent,
 		FailureReason: failureReason,
 	}
 }

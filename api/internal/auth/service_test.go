@@ -173,6 +173,7 @@ func TestSignIn_Success(t *testing.T) {
 		// Arrange
 		authService, _ := newTestAuthService(t, tx)
 		ipAddress := "127.0.0.1"
+		userAgent := "test-agent/1.0"
 
 		email := "test@example.com"
 		password := "securepassword"
@@ -182,7 +183,7 @@ func TestSignIn_Success(t *testing.T) {
 		require.NoError(t, err)
 
 		// Act
-		user, token, refreshToken, err := authService.SignIn(email, password, ipAddress, context.Background())
+		user, token, refreshToken, err := authService.SignIn(email, password, ipAddress, userAgent, context.Background())
 
 		// Assert
 		require.NoError(t, err)
@@ -215,9 +216,10 @@ func TestSignIn_NoUser(t *testing.T) {
 		email := "test@example.com"
 		password := "wrongpassword"
 		ipAddress := "127.0.0.1"
+		userAgent := "test-agent/1.0"
 
 		// Act
-		_, _, _, err = authService.SignIn(email, password, ipAddress, context.Background())
+		_, _, _, err = authService.SignIn(email, password, ipAddress, userAgent, context.Background())
 
 		// Assert
 		require.Error(t, err)
@@ -228,6 +230,7 @@ func TestSignIn_NoUser(t *testing.T) {
 			require.Nil(t, published.UserID)
 			require.Equal(t, email, published.Email)
 			require.Equal(t, ipAddress, published.IPAddress)
+			require.Equal(t, userAgent, published.UserAgent)
 			require.Equal(t, "user_not_found", published.FailureReason)
 		case <-time.After(1 * time.Second):
 			t.Fatal("expected signin failure event to be published")
@@ -253,13 +256,14 @@ func TestSignIn_WrongPassword(t *testing.T) {
 		correctPassword := "correctpassword"
 		username := "testuser"
 		ipAddress := "127.0.0.1"
+		userAgent := "test-agent/1.0"
 
 		createdUser, _, _, err := authService.SignUp(email, correctPassword, username, ipAddress, context.Background())
 		require.NoError(t, err)
 
 		// Act
 		wrongPassword := "wrongpassword"
-		_, _, _, err = authService.SignIn(email, wrongPassword, ipAddress, context.Background())
+		_, _, _, err = authService.SignIn(email, wrongPassword, ipAddress, userAgent, context.Background())
 
 		// Assert
 		require.Error(t, err)
@@ -271,6 +275,7 @@ func TestSignIn_WrongPassword(t *testing.T) {
 			require.Equal(t, createdUser.ID, *published.UserID)
 			require.Equal(t, email, published.Email)
 			require.Equal(t, ipAddress, published.IPAddress)
+			require.Equal(t, userAgent, published.UserAgent)
 			require.Equal(t, "invalid_password", published.FailureReason)
 		case <-time.After(1 * time.Second):
 			t.Fatal("expected signin failure event to be published")
