@@ -234,6 +234,14 @@ func GetIPAddress(ctx context.Context) (string, error) {
 	return ip, nil
 }
 
+func GetUserAgent(ctx context.Context) (string, error) {
+	userAgent, ok := ctx.Value(middleware.UserAgentKey).(string)
+	if !ok {
+		return "", errors.NewInternalError("failed to retrieve user agent from context")
+	}
+	return userAgent, nil
+}
+
 func GetResponseWriter(ctx context.Context) http.ResponseWriter {
 	w, _ := ctx.Value(middleware.ResponseWriterKey).(http.ResponseWriter)
 	return w
