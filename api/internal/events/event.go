@@ -16,7 +16,7 @@ type Metadata struct {
 	CausationID   *uuid.UUID
 	TraceID       string
 	ActorUserID   *uuid.UUID
-	Source        string
+	Source        EventSource
 }
 
 type Event interface {

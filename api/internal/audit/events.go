@@ -7,6 +7,10 @@ import (
 	"github.com/google/uuid"
 )
 
+func NewRecipeCreatedEvent() (*AuditEntry, error) {
+	return nil, nil
+}
+
 func NewUserSignupEvent(correlationID uuid.UUID, userID uuid.UUID, username, ipAddress string) (*AuditEntry, error) {
 	createdAt := time.Now().UTC()
 

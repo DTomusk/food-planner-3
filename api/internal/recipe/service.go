@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"foodplanner/internal/db"
+	"foodplanner/internal/events"
 	"foodplanner/internal/ingredient"
 	"foodplanner/internal/logging"
 	"foodplanner/internal/upload"
@@ -21,6 +22,7 @@ type Service struct {
 	ingredientUsageRepo *ingredientUsageRepo
 	recipeRetentionDays *int
 	uploadService       *upload.UploadService
+	eventPublisher      events.Publisher
 }
 
 func NewService(
@@ -31,6 +33,7 @@ func NewService(
 	ingredientUsageRepo *ingredientUsageRepo,
 	recipeRetentionDays *int,
 	uploadService *upload.UploadService,
+	eventPublisher events.Publisher,
 ) *Service {
 	return &Service{
 		txRunner:            txRunner,
@@ -40,6 +43,7 @@ func NewService(
 		ingredientUsageRepo: ingredientUsageRepo,
 		recipeRetentionDays: recipeRetentionDays,
 		uploadService:       uploadService,
+		eventPublisher:      eventPublisher,
 	}
 }
 

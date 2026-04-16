@@ -100,6 +100,7 @@ func main() {
 		recipe.NewIngredientUsageRepo(),
 		nil,
 		uploadService,
+		redisPublisher,
 	)
 
 	srv := handler.New(

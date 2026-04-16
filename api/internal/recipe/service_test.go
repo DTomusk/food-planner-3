@@ -3,6 +3,7 @@ package recipe
 import (
 	"context"
 	"database/sql"
+	"foodplanner/internal/db"
 	"foodplanner/internal/ingredient"
 	"foodplanner/internal/testutil"
 	"foodplanner/internal/testutil/seeds"
@@ -13,6 +14,26 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
+
+func newTestRecipeService(t *testing.T, tx *sql.Tx, txRunner db.TxRunner, repo *recipeRepo, uploadService *upload.UploadService) *Service {
+	t.Helper()
+
+	effectiveUploadService := uploadService
+	if effectiveUploadService == nil {
+		effectiveUploadService = upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo())
+	}
+
+	return NewService(
+		txRunner,
+		repo,
+		NewRecipeVersionRepo(),
+		ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
+		NewIngredientUsageRepo(),
+		nil,
+		effectiveUploadService,
+		nil,
+	)
+}
 
 func TestCreateRecipe(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
@@ -35,15 +56,7 @@ func TestCreateRecipe(t *testing.T) {
 
 		repo, err := NewRecipeRepo(0.15, 0.85)
 		require.NoError(t, err)
-		s := NewService(
-			txRunner,
-			repo,
-			NewRecipeVersionRepo(),
-			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
-			NewIngredientUsageRepo(),
-			nil,
-			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
-		)
+		s := newTestRecipeService(t, tx, txRunner, repo, nil)
 		ingredientRequest := CreateIngredientUsageRequest{
 			IngredientID: ingredientID.String(),
 			Quantity:     200,
@@ -103,15 +116,7 @@ func TestCreateRecipe_PersistsDescription(t *testing.T) {
 
 		repo, err := NewRecipeRepo(0.15, 0.85)
 		require.NoError(t, err)
-		s := NewService(
-			txRunner,
-			repo,
-			NewRecipeVersionRepo(),
-			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
-			NewIngredientUsageRepo(),
-			nil,
-			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
-		)
+		s := newTestRecipeService(t, tx, txRunner, repo, nil)
 
 		description := "Silky vanilla ice cream with a soft-set custard base."
 		request := CreateRecipeRequest{
@@ -184,15 +189,7 @@ func TestCreateRecipe_SetsAnimalProductLevelFromIngredients(t *testing.T) {
 
 		repo, err := NewRecipeRepo(0.15, 0.85)
 		require.NoError(t, err)
-		s := NewService(
-			txRunner,
-			repo,
-			NewRecipeVersionRepo(),
-			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
-			NewIngredientUsageRepo(),
-			nil,
-			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
-		)
+		s := newTestRecipeService(t, tx, txRunner, repo, nil)
 
 		request := CreateRecipeRequest{
 			Name: "Mixed Dish",
@@ -245,15 +242,7 @@ func TestCreateRecipe_WithImageUploadID_PersistsAndRetrievesImageURL(t *testing.
 
 		repo, err := NewRecipeRepo(0.15, 0.85)
 		require.NoError(t, err)
-		s := NewService(
-			txRunner,
-			repo,
-			NewRecipeVersionRepo(),
-			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
-			NewIngredientUsageRepo(),
-			nil,
-			uploadService,
-		)
+		s := newTestRecipeService(t, tx, txRunner, repo, uploadService)
 
 		uploadRes, err := uploadService.CreateImageUploadURL(ctx, upload.CreateImageUploadURLRequest{
 			OwnerUserID:   testUser.ID,
@@ -348,15 +337,7 @@ func TestCreateRecipe_WithUsedImageUploadID_ReturnsErrorAndDoesNotCreateRecipe(t
 
 		repo, err := NewRecipeRepo(0.15, 0.85)
 		require.NoError(t, err)
-		s := NewService(
-			txRunner,
-			repo,
-			NewRecipeVersionRepo(),
-			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
-			NewIngredientUsageRepo(),
-			nil,
-			uploadService,
-		)
+		s := newTestRecipeService(t, tx, txRunner, repo, uploadService)
 
 		uploadRes, err := uploadService.CreateImageUploadURL(ctx, upload.CreateImageUploadURLRequest{
 			OwnerUserID:   testUser.ID,
@@ -431,15 +412,7 @@ func TestUpdateRecipe_WithImageUploadID_PersistsAndRetrievesImageURL(t *testing.
 
 		repo, err := NewRecipeRepo(0.15, 0.85)
 		require.NoError(t, err)
-		s := NewService(
-			txRunner,
-			repo,
-			NewRecipeVersionRepo(),
-			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
-			NewIngredientUsageRepo(),
-			nil,
-			uploadService,
-		)
+		s := newTestRecipeService(t, tx, txRunner, repo, uploadService)
 
 		baseRequest := CreateRecipeRequest{
 			Name: "Vanilla Ice Cream",
@@ -549,15 +522,7 @@ func TestUpdateRecipe_PersistsDescriptionOnNewVersion(t *testing.T) {
 
 		repo, err := NewRecipeRepo(0.15, 0.85)
 		require.NoError(t, err)
-		s := NewService(
-			txRunner,
-			repo,
-			NewRecipeVersionRepo(),
-			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
-			NewIngredientUsageRepo(),
-			nil,
-			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
-		)
+		s := newTestRecipeService(t, tx, txRunner, repo, nil)
 
 		createDescription := "Original vanilla ice cream description."
 		baseRequest := CreateRecipeRequest{
@@ -659,15 +624,7 @@ func TestUpdateRecipe_SetsAnimalProductLevelOnNewVersionFromIngredients(t *testi
 
 		repo, err := NewRecipeRepo(0.15, 0.85)
 		require.NoError(t, err)
-		s := NewService(
-			txRunner,
-			repo,
-			NewRecipeVersionRepo(),
-			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
-			NewIngredientUsageRepo(),
-			nil,
-			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
-		)
+		s := newTestRecipeService(t, tx, txRunner, repo, nil)
 
 		createReq := CreateRecipeRequest{
 			Name: "Salad",
@@ -752,15 +709,7 @@ func TestCreateRecipe_SetsContainsGlutenFromIngredients(t *testing.T) {
 
 		repo, err := NewRecipeRepo(0.15, 0.85)
 		require.NoError(t, err)
-		s := NewService(
-			txRunner,
-			repo,
-			NewRecipeVersionRepo(),
-			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
-			NewIngredientUsageRepo(),
-			nil,
-			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
-		)
+		s := newTestRecipeService(t, tx, txRunner, repo, nil)
 
 		request := CreateRecipeRequest{
 			Name: "Gluten Dish",
@@ -821,15 +770,7 @@ func TestUpdateRecipe_SetsContainsGlutenOnNewVersionFromIngredients(t *testing.T
 
 		repo, err := NewRecipeRepo(0.15, 0.85)
 		require.NoError(t, err)
-		s := NewService(
-			txRunner,
-			repo,
-			NewRecipeVersionRepo(),
-			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
-			NewIngredientUsageRepo(),
-			nil,
-			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
-		)
+		s := newTestRecipeService(t, tx, txRunner, repo, nil)
 
 		createReq := CreateRecipeRequest{
 			Name: "Gluten Free Dish",
@@ -901,15 +842,7 @@ func TestUpdateRecipe_WithUsedImageUploadID_ReturnsErrorAndDoesNotCreateNewVersi
 
 		repo, err := NewRecipeRepo(0.15, 0.85)
 		require.NoError(t, err)
-		s := NewService(
-			txRunner,
-			repo,
-			NewRecipeVersionRepo(),
-			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
-			NewIngredientUsageRepo(),
-			nil,
-			uploadService,
-		)
+		s := newTestRecipeService(t, tx, txRunner, repo, uploadService)
 
 		baseRequest := CreateRecipeRequest{
 			Name: "Vanilla Ice Cream",
@@ -1012,15 +945,7 @@ func TestUpdateRecipe_WithoutImageChanges_PreservesImageFromPreviousVersion(t *t
 
 		repo, err := NewRecipeRepo(0.15, 0.85)
 		require.NoError(t, err)
-		s := NewService(
-			txRunner,
-			repo,
-			NewRecipeVersionRepo(),
-			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
-			NewIngredientUsageRepo(),
-			nil,
-			uploadService,
-		)
+		s := newTestRecipeService(t, tx, txRunner, repo, uploadService)
 
 		// Create recipe with initial image
 		initialUploadRes, err := uploadService.CreateImageUploadURL(ctx, upload.CreateImageUploadURLRequest{
@@ -1129,15 +1054,7 @@ func TestUpdateRecipe_WithRemoveImageFlag_RemovesImage(t *testing.T) {
 
 		repo, err := NewRecipeRepo(0.15, 0.85)
 		require.NoError(t, err)
-		s := NewService(
-			txRunner,
-			repo,
-			NewRecipeVersionRepo(),
-			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
-			NewIngredientUsageRepo(),
-			nil,
-			uploadService,
-		)
+		s := newTestRecipeService(t, tx, txRunner, repo, uploadService)
 
 		// Create recipe with initial image
 		initialUploadRes, err := uploadService.CreateImageUploadURL(ctx, upload.CreateImageUploadURLRequest{
@@ -1243,15 +1160,7 @@ func TestUpdateRecipe_RecipeWithoutImage_RemainsWithoutImage(t *testing.T) {
 
 		repo, err := NewRecipeRepo(0.15, 0.85)
 		require.NoError(t, err)
-		s := NewService(
-			txRunner,
-			repo,
-			NewRecipeVersionRepo(),
-			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
-			NewIngredientUsageRepo(),
-			nil,
-			uploadService,
-		)
+		s := newTestRecipeService(t, tx, txRunner, repo, uploadService)
 
 		// Create recipe without image
 		createReq := CreateRecipeRequest{
@@ -1337,15 +1246,7 @@ func TestCreateRecipeWithDuplicateIngredients(t *testing.T) {
 
 		repo, err := NewRecipeRepo(0.15, 0.85)
 		require.NoError(t, err)
-		s := NewService(
-			txRunner,
-			repo,
-			NewRecipeVersionRepo(),
-			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
-			NewIngredientUsageRepo(),
-			nil,
-			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
-		)
+		s := newTestRecipeService(t, tx, txRunner, repo, nil)
 
 		ingredientRequest := CreateIngredientUsageRequest{
 			IngredientID: ingredientID.String(),
@@ -1375,15 +1276,7 @@ func TestCreateRecipeWithNonexistentIngredient(t *testing.T) {
 		require.NoError(t, err, "Failed to seed test user")
 		repo, err := NewRecipeRepo(0.15, 0.85)
 		require.NoError(t, err)
-		s := NewService(
-			txRunner,
-			repo,
-			NewRecipeVersionRepo(),
-			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
-			NewIngredientUsageRepo(),
-			nil,
-			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
-		)
+		s := newTestRecipeService(t, tx, txRunner, repo, nil)
 
 		ingredientRequest := CreateIngredientUsageRequest{
 			IngredientID: ingredientID.String(),
@@ -1421,15 +1314,7 @@ func TestCreateRecipeWithInvalidUnit(t *testing.T) {
 		require.NoError(t, err, "Failed to seed test user")
 		repo, err := NewRecipeRepo(0.15, 0.85)
 		require.NoError(t, err)
-		s := NewService(
-			txRunner,
-			repo,
-			NewRecipeVersionRepo(),
-			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
-			NewIngredientUsageRepo(),
-			nil,
-			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
-		)
+		s := newTestRecipeService(t, tx, txRunner, repo, nil)
 		ingredientRequest := CreateIngredientUsageRequest{
 			IngredientID: ingredientID.String(),
 			Quantity:     200,
@@ -1465,15 +1350,7 @@ func TestCreateRecipeNotPreferredUnit(t *testing.T) {
 		require.NoError(t, err, "Failed to seed test user")
 		repo, err := NewRecipeRepo(0.15, 0.85)
 		require.NoError(t, err)
-		s := NewService(
-			txRunner,
-			repo,
-			NewRecipeVersionRepo(),
-			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
-			NewIngredientUsageRepo(),
-			nil,
-			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
-		)
+		s := newTestRecipeService(t, tx, txRunner, repo, nil)
 		ingredientRequest := CreateIngredientUsageRequest{
 			IngredientID: ingredientID.String(),
 			Quantity:     200,
@@ -1513,15 +1390,7 @@ func TestCreateRecipe_NoSource(t *testing.T) {
 
 		repo, err := NewRecipeRepo(0.15, 0.85)
 
-		s := NewService(
-			txRunner,
-			repo,
-			NewRecipeVersionRepo(),
-			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
-			NewIngredientUsageRepo(),
-			nil,
-			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
-		)
+		s := newTestRecipeService(t, tx, txRunner, repo, nil)
 		ingredientRequest := CreateIngredientUsageRequest{
 			IngredientID: ingredientID.String(),
 			Quantity:     200,
@@ -1551,15 +1420,7 @@ func TestGetRecipes_PaginatesAcrossPages(t *testing.T) {
 		txRunner := testutil.NewTestTxRunner(tx)
 		repo, err := NewRecipeRepo(0.15, 0.85)
 		require.NoError(t, err)
-		s := NewService(
-			txRunner,
-			repo,
-			NewRecipeVersionRepo(),
-			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
-			NewIngredientUsageRepo(),
-			nil,
-			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
-		)
+		s := newTestRecipeService(t, tx, txRunner, repo, nil)
 
 		testUser, err := seeds.SeedTestUser(ctx, tx)
 		require.NoError(t, err, "Failed to seed test user")
@@ -1622,15 +1483,7 @@ func TestGetRecipes_InvalidCursor(t *testing.T) {
 		txRunner := testutil.NewTestTxRunner(tx)
 		repo, err := NewRecipeRepo(0.15, 0.85)
 		require.NoError(t, err)
-		s := NewService(
-			txRunner,
-			repo,
-			NewRecipeVersionRepo(),
-			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
-			NewIngredientUsageRepo(),
-			nil,
-			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
-		)
+		s := newTestRecipeService(t, tx, txRunner, repo, nil)
 
 		invalidCursor := "not-a-valid-cursor"
 
@@ -1889,15 +1742,7 @@ func TestGetRecipes_FiltersByUserID(t *testing.T) {
 		txRunner := testutil.NewTestTxRunner(tx)
 		repo, err := NewRecipeRepo(0.15, 0.85)
 		require.NoError(t, err)
-		s := NewService(
-			txRunner,
-			repo,
-			NewRecipeVersionRepo(),
-			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
-			NewIngredientUsageRepo(),
-			nil,
-			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
-		)
+		s := newTestRecipeService(t, tx, txRunner, repo, nil)
 
 		userA, err := seeds.SeedTestUser(ctx, tx)
 		require.NoError(t, err)
@@ -1939,15 +1784,7 @@ func TestGetRecipes_FiltersByAnimalProductLevel(t *testing.T) {
 		txRunner := testutil.NewTestTxRunner(tx)
 		repo, err := NewRecipeRepo(0.15, 0.85)
 		require.NoError(t, err)
-		s := NewService(
-			txRunner,
-			repo,
-			NewRecipeVersionRepo(),
-			ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
-			NewIngredientUsageRepo(),
-			nil,
-			upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
-		)
+		s := newTestRecipeService(t, tx, txRunner, repo, nil)
 
 		testUser, err := seeds.SeedTestUser(ctx, tx)
 		require.NoError(t, err)
@@ -2077,15 +1914,7 @@ func setupRecipeListFixture(t *testing.T, tx *sql.Tx) (context.Context, *Service
 	txRunner := testutil.NewTestTxRunner(tx)
 	repo, err := NewRecipeRepo(0.15, 0.85)
 	require.NoError(t, err)
-	s := NewService(
-		txRunner,
-		repo,
-		NewRecipeVersionRepo(),
-		ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
-		NewIngredientUsageRepo(),
-		nil,
-		upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
-	)
+	s := newTestRecipeService(t, tx, txRunner, repo, nil)
 
 	testUser, err := seeds.SeedTestUser(ctx, tx)
 	require.NoError(t, err, "Failed to seed test user")
@@ -2108,15 +1937,7 @@ func setupRecipeSearchFixture(t *testing.T, tx *sql.Tx) (context.Context, *Servi
 	txRunner := testutil.NewTestTxRunner(tx)
 	repo, err := NewRecipeRepo(0.15, 0.85)
 	require.NoError(t, err)
-	s := NewService(
-		txRunner,
-		repo,
-		NewRecipeVersionRepo(),
-		ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100),
-		NewIngredientUsageRepo(),
-		nil,
-		upload.NewUploadServiceWithProvider(tx, upload.NewStaticUploadProvider("https://upload.example.com", "https://cdn.example.com"), 0, upload.NewUploadRepo()),
-	)
+	s := newTestRecipeService(t, tx, txRunner, repo, nil)
 
 	testUser, err := seeds.SeedTestUser(ctx, tx)
 	require.NoError(t, err, "Failed to seed test user")

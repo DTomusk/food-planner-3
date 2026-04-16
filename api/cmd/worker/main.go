@@ -46,13 +46,15 @@ func main() {
 
 	// Register event type strings and their corresponding event structs
 	registry := events.NewRegistry()
+	registry.Register(events.RecipeCreatedEventType, func() events.Event { return &events.RecipeCreatedEvent{} })
 	registry.Register(events.UserSignedUpType, func() events.Event { return &events.UserSignedUpEvent{} })
 	registry.Register(events.UserSignedInType, func() events.Event { return &events.UserSignedInEvent{} })
 	registry.Register(events.UserSigninFailedType, func() events.Event { return &events.UserSigninFailedEvent{} })
 	expectedVersions := map[string]int{
-		events.UserSignedUpType:     1,
-		events.UserSignedInType:     1,
-		events.UserSigninFailedType: 1,
+		events.RecipeCreatedEventType: 1,
+		events.UserSignedUpType:       1,
+		events.UserSignedInType:       1,
+		events.UserSigninFailedType:   1,
 	}
 	eventsRepo := events.NewEventsRepo()
 
