@@ -8,6 +8,7 @@ import (
 
 const (
 	UserSignedUpType     = "user.signed_up"
+	UserSignedInType     = "user.signed_in"
 	UserSigninFailedType = "user.signin_failed"
 )
 
@@ -40,6 +41,40 @@ func NewUserSignedUpEvent(correlationID, userID uuid.UUID, username, email, ipAd
 		Username:  username,
 		Email:     email,
 		IPAddress: ipAddress,
+	}
+}
+
+type UserSignedInEvent struct {
+	Meta      Metadata
+	UserID    uuid.UUID
+	Username  string
+	Email     string
+	IPAddress string
+	UserAgent string
+}
+
+func (e UserSignedInEvent) Metadata() Metadata {
+	return e.Meta
+}
+
+func NewUserSignedInEvent(correlationID, userID uuid.UUID, username, email, ipAddress, userAgent string) UserSignedInEvent {
+	actorID := userID
+
+	return UserSignedInEvent{
+		Meta: Metadata{
+			ID:            uuid.New(),
+			Type:          UserSignedInType,
+			Version:       1,
+			OccurredAtUTC: time.Now().UTC(),
+			CorrelationID: correlationID,
+			ActorUserID:   &actorID,
+			Source:        "auth.service",
+		},
+		UserID:    userID,
+		Username:  username,
+		Email:     email,
+		IPAddress: ipAddress,
+		UserAgent: userAgent,
 	}
 }
 

@@ -42,6 +42,7 @@ func setupAuthMutationResolver(tx *sql.Tx) (*mutationResolver, *auth.AuthService
 
 func authContext(w http.ResponseWriter) context.Context {
 	ctx := context.WithValue(context.Background(), middleware.IPKey, "127.0.0.1")
+	ctx = context.WithValue(ctx, middleware.UserAgentKey, "resolver-test-agent/1.0")
 	if w != nil {
 		ctx = context.WithValue(ctx, middleware.ResponseWriterKey, w)
 	}

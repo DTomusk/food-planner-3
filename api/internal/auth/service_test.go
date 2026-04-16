@@ -198,6 +198,47 @@ func TestSignIn_Success(t *testing.T) {
 	})
 }
 
+func TestSignIn_PublishesSigninEvent(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		// Arrange
+		authService, eventBus := newTestAuthService(t, tx)
+		received := make(chan events.UserSignedInEvent, 1)
+		_, err := eventBus.Subscribe(events.UserSignedInType, events.HandlerFunc(func(ctx context.Context, tx db.DBTX, event events.Event) error {
+			signinEvent, ok := event.(events.UserSignedInEvent)
+			if !ok {
+				return nil
+			}
+			received <- signinEvent
+			return nil
+		}))
+		require.NoError(t, err)
+
+		email := "signin-audit@test.com"
+		password := "securepassword"
+		username := "signin-audited-user"
+		ipAddress := "127.0.0.1"
+		userAgent := "test-agent/1.0"
+
+		signedUpUser, _, _, err := authService.SignUp(email, password, username, ipAddress, context.Background())
+		require.NoError(t, err)
+
+		// Act
+		_, _, _, err = authService.SignIn(email, password, ipAddress, userAgent, context.Background())
+		require.NoError(t, err)
+
+		select {
+		case published := <-received:
+			require.Equal(t, signedUpUser.ID, published.UserID)
+			require.Equal(t, username, published.Username)
+			require.Equal(t, email, published.Email)
+			require.Equal(t, ipAddress, published.IPAddress)
+			require.Equal(t, userAgent, published.UserAgent)
+		case <-time.After(1 * time.Second):
+			t.Fatal("expected signin event to be published")
+		}
+	})
+}
+
 func TestSignIn_NoUser(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange

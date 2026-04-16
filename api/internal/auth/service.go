@@ -103,7 +103,18 @@ func (s *AuthService) SignIn(email, password, ipAddress, userAgent string, ctx c
 	if err != nil {
 		return nil, "", nil, err
 	}
+
+	s.publishSigninSuccess(ctx, logger, user.ID, user.Username, user.Email, ipAddress, userAgent)
+
 	return user, token, refresh_token, nil
+}
+
+func (s *AuthService) publishSigninSuccess(ctx context.Context, logger *slog.Logger, userID uuid.UUID, username, email, ipAddress, userAgent string) {
+	correlationID := uuid.New()
+	signinEvent := events.NewUserSignedInEvent(correlationID, userID, username, email, ipAddress, userAgent)
+	if err := s.eventPublisher.Publish(ctx, signinEvent); err != nil {
+		logger.Warn("Failed to publish signin event", "userID", userID, "correlationID", correlationID, "err", err)
+	}
 }
 
 func (s *AuthService) publishSigninFailure(ctx context.Context, logger *slog.Logger, userID *uuid.UUID, email, ipAddress, userAgent, failureReason string) {

@@ -50,17 +50,19 @@ func NewUserSignupEvent(correlationID uuid.UUID, userID uuid.UUID, username, ipA
 	}, nil
 }
 
-func NewUserSigninEvent(correlationID uuid.UUID, userID uuid.UUID, username, ipAddress string) (*AuditEntry, error) {
+func NewUserSigninEvent(correlationID uuid.UUID, userID uuid.UUID, username, ipAddress, userAgent string) (*AuditEntry, error) {
 	createdAt := time.Now().UTC()
 
 	contextData, err := json.Marshal(struct {
 		Source    string `json:"source"`
 		Operation string `json:"operation"`
 		IPAddress string `json:"ip_address"`
+		UserAgent string `json:"user_agent"`
 	}{
 		Source:    "graphql",
 		Operation: "signin",
 		IPAddress: ipAddress,
+		UserAgent: userAgent,
 	})
 	if err != nil {
 		return nil, err
