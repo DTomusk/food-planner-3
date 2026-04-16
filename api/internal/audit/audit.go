@@ -33,6 +33,7 @@ type Result string
 
 const (
 	ActionRecipeCreated Action = "recipe.created"
+	ActionRecipeUpdated Action = "recipe.updated"
 	ActionUserSignup    Action = "user.signup"
 	ActionUserSignin    Action = "user.signin"
 

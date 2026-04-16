@@ -27,6 +27,7 @@ func (h *RecipeCreatedEventHandler) Handle(ctx context.Context, tx db.DBTX, even
 		recipeCreatedEvent.VersionID,
 		recipeCreatedEvent.IPAddress,
 		recipeCreatedEvent.UserAgent,
+		recipeCreatedEvent.Meta.OccurredAtUTC,
 	)
 	if err != nil {
 		return err

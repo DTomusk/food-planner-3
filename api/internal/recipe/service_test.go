@@ -593,6 +593,92 @@ func TestUpdateRecipe_PersistsDescriptionOnNewVersion(t *testing.T) {
 	})
 }
 
+func TestUpdateRecipe_PublishesRecipeUpdatedEvent(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+
+		ingredientID := uuid.New()
+		testIngredient := ingredient.Ingredient{
+			ID:            ingredientID,
+			FileKey:       "test_ingredient",
+			Name:          "Test Ingredient",
+			PreferredUnit: 1,
+		}
+		err := seeds.InsertIngredient(ctx, tx, &testIngredient)
+		require.NoError(t, err)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		s := newTestRecipeService(t, tx, txRunner, repo, nil)
+
+		eventBus, ok := s.eventPublisher.(*events.InMemoryEventBus)
+		require.True(t, ok, "expected in-memory event bus")
+
+		received := make(chan events.RecipeUpdatedEvent, 1)
+		_, err = eventBus.Subscribe(events.RecipeUpdatedEventType, events.HandlerFunc(func(ctx context.Context, tx db.DBTX, event events.Event) error {
+			updatedEvent, ok := event.(events.RecipeUpdatedEvent)
+			if !ok {
+				return nil
+			}
+			received <- updatedEvent
+			return nil
+		}))
+		require.NoError(t, err)
+
+		createReq := CreateRecipeRequest{
+			Name: "Vanilla Ice Cream",
+			Ingredients: []CreateIngredientUsageRequest{
+				{IngredientID: ingredientID.String(), Quantity: 200, Unit: 1},
+			},
+			UserID:      testUser.ID.String(),
+			PrepMins:    15,
+			CookMins:    0,
+			Portions:    6,
+			IPAddress:   "127.0.0.1",
+			UserAgent:   "test-agent/1.0",
+			Description: "Original description",
+		}
+
+		createdRecipe, err := s.CreateRecipe(ctx, createReq)
+		require.NoError(t, err)
+
+		updateReq := UpdateRecipeRequest{
+			RecipeId: createdRecipe.ID.String(),
+			Request: CreateRecipeRequest{
+				Name: "Vanilla Ice Cream Updated",
+				Ingredients: []CreateIngredientUsageRequest{
+					{IngredientID: ingredientID.String(), Quantity: 220, Unit: 1},
+				},
+				UserID:      testUser.ID.String(),
+				PrepMins:    20,
+				CookMins:    0,
+				Portions:    6,
+				IPAddress:   "127.0.0.1",
+				UserAgent:   "test-agent/1.0",
+				Description: "Updated description",
+			},
+		}
+
+		updatedRecipe, err := s.UpdateRecipe(ctx, updateReq)
+		require.NoError(t, err)
+
+		select {
+		case published := <-received:
+			require.Equal(t, updatedRecipe.ID, published.RecipeID)
+			require.Equal(t, updatedRecipe.CurrentVersionID, published.VersionID)
+			require.Equal(t, testUser.ID, published.UserID)
+			require.Equal(t, "127.0.0.1", published.IPAddress)
+			require.Equal(t, "test-agent/1.0", published.UserAgent)
+		case <-time.After(1 * time.Second):
+			t.Fatal("expected recipe updated event to be published")
+		}
+	})
+}
+
 func TestUpdateRecipe_SetsAnimalProductLevelOnNewVersionFromIngredients(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		txRunner := testutil.NewTestTxRunner(tx)

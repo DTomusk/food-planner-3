@@ -307,6 +307,12 @@ func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest)
 		return nil, err
 	}
 
+	correlationID := uuid.New()
+	recipeUpdatedEvent := events.NewRecipeUpdatedEvent(correlationID, existingRecipe.ID, recipeVersion.ID, existingRecipe.UserID, request.Request.IPAddress, request.Request.UserAgent)
+	if err := s.eventPublisher.Publish(ctx, recipeUpdatedEvent); err != nil {
+		logger.Warn("Failed to publish recipe updated event", "recipeID", existingRecipe.ID, "versionID", recipeVersion.ID, "correlationID", correlationID, "err", err)
+	}
+
 	// Return updated recipe container
 	dbRecipeContainer, err := s.recipeRepo.getRecipeByID(ctx, s.txRunner.DB(), existingRecipe.ID)
 	if err != nil {

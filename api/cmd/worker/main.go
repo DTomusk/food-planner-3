@@ -47,11 +47,13 @@ func main() {
 	// Register event type strings and their corresponding event structs
 	registry := events.NewRegistry()
 	registry.Register(events.RecipeCreatedEventType, func() events.Event { return &events.RecipeCreatedEvent{} })
+	registry.Register(events.RecipeUpdatedEventType, func() events.Event { return &events.RecipeUpdatedEvent{} })
 	registry.Register(events.UserSignedUpType, func() events.Event { return &events.UserSignedUpEvent{} })
 	registry.Register(events.UserSignedInType, func() events.Event { return &events.UserSignedInEvent{} })
 	registry.Register(events.UserSigninFailedType, func() events.Event { return &events.UserSigninFailedEvent{} })
 	expectedVersions := map[string]int{
 		events.RecipeCreatedEventType: 1,
+		events.RecipeUpdatedEventType: 1,
 		events.UserSignedUpType:       1,
 		events.UserSignedInType:       1,
 		events.UserSigninFailedType:   1,
@@ -72,6 +74,12 @@ func main() {
 	auditService := audit.NewAuditService(audit.NewRepo())
 
 	// Register handlers to handle events (can register multiple handlers to an event)
+	if err := worker.RegisterHandler(events.RecipeCreatedEventType, audit.NewRecipeCreatedEventHandler(auditService)); err != nil {
+		log.Fatalf("Failed to register recipe created audit handler: %v", err)
+	}
+	if err := worker.RegisterHandler(events.RecipeUpdatedEventType, audit.NewRecipeUpdatedEventHandler(auditService)); err != nil {
+		log.Fatalf("Failed to register recipe updated audit handler: %v", err)
+	}
 	if err := worker.RegisterHandler(events.UserSignedUpType, audit.NewSignupEventHandler(auditService)); err != nil {
 		log.Fatalf("Failed to register signup audit handler: %v", err)
 	}
