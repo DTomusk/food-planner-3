@@ -7,8 +7,51 @@ import (
 	"github.com/google/uuid"
 )
 
-func NewRecipeCreatedEvent() (*AuditEntry, error) {
-	return nil, nil
+func NewRecipeCreatedEvent(correlationID, userID, recipeID, versionID uuid.UUID, ipAddress, userAgent string) (*AuditEntry, error) {
+	createdAt := time.Now().UTC()
+
+	newState, err := json.Marshal(struct {
+		RecipeID  uuid.UUID `json:"recipe_id"`
+		VersionID uuid.UUID `json:"version_id"`
+		UserID    uuid.UUID `json:"user_id"`
+		CreatedAt time.Time `json:"created_at"`
+	}{
+		RecipeID:  recipeID,
+		VersionID: versionID,
+		UserID:    userID,
+		CreatedAt: createdAt,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	contextData, err := json.Marshal(struct {
+		Source    string `json:"source"`
+		Operation string `json:"operation"`
+		IPAddress string `json:"ip_address"`
+		UserAgent string `json:"user_agent"`
+	}{
+		Source:    "graphql",
+		Operation: "recipe_created",
+		IPAddress: ipAddress,
+		UserAgent: userAgent,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &AuditEntry{
+		ID:            uuid.New(),
+		CorrelationID: correlationID,
+		ActorID:       &userID,
+		ResourceType:  ResourceTypeRecipe,
+		ResourceID:    &recipeID,
+		Action:        ActionRecipeCreated,
+		Result:        ResultSuccess,
+		CreatedAt:     createdAt,
+		NewState:      newState,
+		Context:       contextData,
+	}, nil
 }
 
 func NewUserSignupEvent(correlationID uuid.UUID, userID uuid.UUID, username, ipAddress string) (*AuditEntry, error) {

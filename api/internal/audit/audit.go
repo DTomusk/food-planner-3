@@ -32,10 +32,12 @@ type ResourceType string
 type Result string
 
 const (
-	ActionUserSignup Action = "user.signup"
-	ActionUserSignin Action = "user.signin"
+	ActionRecipeCreated Action = "recipe.created"
+	ActionUserSignup    Action = "user.signup"
+	ActionUserSignin    Action = "user.signin"
 
-	ResourceTypeUser ResourceType = "user"
+	ResourceTypeRecipe ResourceType = "recipe"
+	ResourceTypeUser   ResourceType = "user"
 
 	ResultSuccess Result = "success"
 	ResultFailure Result = "failure"
