@@ -25,7 +25,16 @@ func (r *mutationResolver) CreateRecipe(ctx context.Context, input model.CreateR
 		return nil, err
 	}
 
-	request, err := toCreateRecipeRequest(&input, claims.UserID)
+	ip, err := GetIPAddress(ctx)
+	if err != nil {
+		return nil, err
+	}
+	userAgent, err := GetUserAgent(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	request, err := toCreateRecipeRequest(&input, claims.UserID, ip, userAgent)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +56,16 @@ func (r *mutationResolver) UpdateRecipe(ctx context.Context, input model.UpdateR
 		return nil, err
 	}
 
-	createRequest, err := toCreateRecipeRequest(input.Details, claims.UserID)
+	ip, err := GetIPAddress(ctx)
+	if err != nil {
+		return nil, err
+	}
+	userAgent, err := GetUserAgent(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	createRequest, err := toCreateRecipeRequest(input.Details, claims.UserID, ip, userAgent)
 	if err != nil {
 		return nil, err
 	}

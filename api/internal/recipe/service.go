@@ -148,12 +148,17 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 				return err
 			}
 		}
-
 		return nil
 	})
 	if err != nil {
 		logger.Error("Error persisting recipe", "error", err)
 		return nil, err
+	}
+
+	correlationID := uuid.New()
+	recipeCreatedEvent := events.NewRecipeCreatedEvent(correlationID, recipeContainer.ID, recipeContainer.CurrentVersion.ID, userID, request.IPAddress, request.UserAgent)
+	if err := s.eventPublisher.Publish(ctx, recipeCreatedEvent); err != nil {
+		logger.Warn("Failed to publish recipe created event", "recipeID", recipeContainer.ID, "versionID", recipeContainer.CurrentVersion.ID, "correlationID", correlationID, "err", err)
 	}
 
 	// Consider returning values as they're inserted rather than doing a separate query
