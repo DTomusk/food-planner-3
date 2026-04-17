@@ -2,17 +2,25 @@
 
 ## Ready
 
-- [ ] Event pub/sub
+- [ ] GraphQL complexity limiting
     - Priority: high
-    - Area: backend, infrastructure
+    - Area: API
     - Type: tech debt
-    - Why: in the last story we added audit logging. Currently this happens in the same call as the action itself. However, this is a side effect that can be handled asynchronously, and if we want to add more side effects (which we will, e.g. notifications coming up), current services will be bloated by dependencies, responsibilities will be difficult to understand (e.g. what's in the critical path and needs to happen to return to the client and what's not) and things will be much harder to test and extend. We want to add a thin slice in the direction of having backgrounded workers and event infrastructure. In this first iteration, this can still run on the API service and in memory, we don't need message queues etc. yet, but we want to build it in a way that's easy to extend in the future (which we will need for retries, guaranteed delivery, and horizontal scaling)
-    - DoD: 
-        - In memory event bus (pub) implemented that existing services can call to emit events
-        - Event consumers/handlers implemented that asynchronously handle side effects
-        - Audit logging moved to event handler, so the audit log from the previous story (user signed up successfully) gets created outside of the main flow
+    - Why: currently, any client can create a ridiculous nested query that would blow up the server. We want to take a first pass at limiting the complexity of gql queries to ensure that sensible queries are still allowed, but that overly expensive ones are blocked. This will need fine-tuning in the future. 
+    - DoD:
+        - [ ] complexity weights assigned to different queries and mutations 
+        - [ ] overly complex queries audited using auditing infrastructure 
+        - [ ] existing queries defined in web run fine
 
 ## Planning 
+
+- [ ] Rate limiting
+    - Priority: high
+    - Area: API
+    - Type: tech debt
+    - Why: don't want people to spam the server 
+    - DoD:
+        - [ ] HTTP rate-limiting implemented using existing redis client
 
 - [ ] Manual content moderation
     - Depends on: Audit logging
@@ -162,6 +170,16 @@
     - DoD: 
 
 ## Done
+
+- [x] Event pub/sub
+    - Priority: high
+    - Area: backend, infrastructure
+    - Type: tech debt
+    - Why: in the last story we added audit logging. Currently this happens in the same call as the action itself. However, this is a side effect that can be handled asynchronously, and if we want to add more side effects (which we will, e.g. notifications coming up), current services will be bloated by dependencies, responsibilities will be difficult to understand (e.g. what's in the critical path and needs to happen to return to the client and what's not) and things will be much harder to test and extend. We want to add a thin slice in the direction of having backgrounded workers and event infrastructure. In this first iteration, this can still run on the API service and in memory, we don't need message queues etc. yet, but we want to build it in a way that's easy to extend in the future (which we will need for retries, guaranteed delivery, and horizontal scaling)
+    - DoD: 
+        - [x] In memory event bus (pub) implemented that existing services can call to emit events
+        - [x] Event consumers/handlers implemented that asynchronously handle side effects
+        - [x] Audit logging moved to event handler, so the audit log from the previous story (user signed up successfully) gets created outside of the main flow
 
 - [x] Audit logging
     - Priority: high
