@@ -128,6 +128,7 @@ func main() {
 	srv.AddTransport(transport.POST{})
 
 	srv.SetQueryCache(lru.New[*ast.QueryDocument](1000))
+	srv.SetErrorPresenter(graph.NewComplexityLimitErrorPresenter(redisPublisher, graph.DefaultMaxAcceptedComplexity))
 
 	srv.Use(extension.Introspection{})
 	srv.Use(extension.FixedComplexityLimit(graph.DefaultMaxAcceptedComplexity))

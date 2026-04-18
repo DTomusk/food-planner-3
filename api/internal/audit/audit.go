@@ -32,13 +32,15 @@ type ResourceType string
 type Result string
 
 const (
-	ActionRecipeCreated Action = "recipe.created"
-	ActionRecipeUpdated Action = "recipe.updated"
-	ActionUserSignup    Action = "user.signup"
-	ActionUserSignin    Action = "user.signin"
+	ActionRecipeCreated          Action = "recipe.created"
+	ActionRecipeUpdated          Action = "recipe.updated"
+	ActionGraphQLRequestRejected Action = "graphql.request_rejected"
+	ActionUserSignup             Action = "user.signup"
+	ActionUserSignin             Action = "user.signin"
 
-	ResourceTypeRecipe ResourceType = "recipe"
-	ResourceTypeUser   ResourceType = "user"
+	ResourceTypeGraphQLRequest ResourceType = "graphql_request"
+	ResourceTypeRecipe         ResourceType = "recipe"
+	ResourceTypeUser           ResourceType = "user"
 
 	ResultSuccess Result = "success"
 	ResultFailure Result = "failure"

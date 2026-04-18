@@ -10,9 +10,11 @@ import (
 	"strings"
 	"testing"
 
+	"foodplanner/internal/events"
 	"foodplanner/internal/gql/graph"
 	"foodplanner/internal/gql/graph/directive"
 	"foodplanner/internal/ingredient"
+	"foodplanner/internal/middleware"
 	"foodplanner/internal/recipe"
 	"foodplanner/internal/testutil"
 	"foodplanner/internal/testutil/seeds"
@@ -26,6 +28,15 @@ import (
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
+type recordingPublisher struct {
+	published []events.Event
+}
+
+func (p *recordingPublisher) Publish(ctx context.Context, event events.Event) error {
+	p.published = append(p.published, event)
+	return nil
+}
+
 type graphQLTestResponse struct {
 	Data   json.RawMessage `json:"data"`
 	Errors []struct {
@@ -33,7 +44,7 @@ type graphQLTestResponse struct {
 	} `json:"errors"`
 }
 
-func newComplexityTestHandler(t *testing.T, tx *sql.Tx) (http.Handler, *recipe.Service) {
+func newComplexityTestHandler(t *testing.T, tx *sql.Tx, publisher events.Publisher) (http.Handler, *recipe.Service) {
 	t.Helper()
 
 	txRunner := testutil.NewTestTxRunner(tx)
@@ -59,9 +70,12 @@ func newComplexityTestHandler(t *testing.T, tx *sql.Tx) (http.Handler, *recipe.S
 
 	srv.AddTransport(transport.POST{})
 	srv.SetQueryCache(lru.New[*ast.QueryDocument](1000))
+	srv.SetErrorPresenter(graph.NewComplexityLimitErrorPresenter(publisher, graph.DefaultMaxAcceptedComplexity))
 	srv.Use(extension.FixedComplexityLimit(graph.DefaultMaxAcceptedComplexity))
 
-	return srv, recipeService
+	wrapped := middleware.IPMiddleware(middleware.UserAgentMiddleware(middleware.RequestMiddleware(srv)))
+
+	return wrapped, recipeService
 }
 
 func seedRecipeForComplexityTest(t *testing.T, tx *sql.Tx, recipeService *recipe.Service) {
@@ -126,6 +140,7 @@ func executeGraphQLRequest(t *testing.T, gqlHandler http.Handler, first int) gra
 
 	req := httptest.NewRequest(http.MethodPost, "/query", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", "resolver-complexity-test/1.0")
 	rr := httptest.NewRecorder()
 
 	gqlHandler.ServeHTTP(rr, req)
@@ -139,7 +154,8 @@ func executeGraphQLRequest(t *testing.T, gqlHandler http.Handler, first int) gra
 
 func TestGraphQLComplexity_AllowsQueryUnderLimit(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
-		gqlHandler, recipeService := newComplexityTestHandler(t, tx)
+		publisher := &recordingPublisher{}
+		gqlHandler, recipeService := newComplexityTestHandler(t, tx, publisher)
 		seedRecipeForComplexityTest(t, tx, recipeService)
 
 		response := executeGraphQLRequest(t, gqlHandler, 2)
@@ -148,17 +164,30 @@ func TestGraphQLComplexity_AllowsQueryUnderLimit(t *testing.T) {
 		require.NotEmpty(t, response.Data)
 		require.Contains(t, string(response.Data), `"recipes"`)
 		require.Contains(t, string(response.Data), `"edges"`)
+		require.Empty(t, publisher.published)
 	})
 }
 
 func TestGraphQLComplexity_RejectsQueryOverLimit(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
-		gqlHandler, recipeService := newComplexityTestHandler(t, tx)
+		publisher := &recordingPublisher{}
+		gqlHandler, recipeService := newComplexityTestHandler(t, tx, publisher)
 		seedRecipeForComplexityTest(t, tx, recipeService)
 
 		response := executeGraphQLRequest(t, gqlHandler, 100)
 
 		require.NotEmpty(t, response.Errors)
 		require.True(t, strings.Contains(response.Errors[0].Message, "complexity") || strings.Contains(response.Errors[0].Message, "limit"))
+		require.Len(t, publisher.published, 1)
+
+		rejectedEvent, ok := publisher.published[0].(events.GraphQLRequestRejectedEvent)
+		require.True(t, ok)
+		require.Equal(t, events.GraphQLRequestRejectedType, rejectedEvent.Metadata().Type)
+		require.Equal(t, "Recipes", rejectedEvent.OperationName)
+		require.Equal(t, "query", rejectedEvent.OperationType)
+		require.Equal(t, "complexity_limit_exceeded", rejectedEvent.Reason)
+		require.Equal(t, "/query", rejectedEvent.Path)
+		require.Equal(t, graph.DefaultMaxAcceptedComplexity, rejectedEvent.MaxComplexity)
+		require.NotEmpty(t, rejectedEvent.QueryHash)
 	})
 }
