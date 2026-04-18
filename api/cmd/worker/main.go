@@ -51,12 +51,14 @@ func main() {
 	registry.Register(events.UserSignedUpType, func() events.Event { return &events.UserSignedUpEvent{} })
 	registry.Register(events.UserSignedInType, func() events.Event { return &events.UserSignedInEvent{} })
 	registry.Register(events.UserSigninFailedType, func() events.Event { return &events.UserSigninFailedEvent{} })
+	registry.Register(events.GraphQLRequestRejectedType, func() events.Event { return &events.GraphQLRequestRejectedEvent{} })
 	expectedVersions := map[string]int{
-		events.RecipeCreatedEventType: 1,
-		events.RecipeUpdatedEventType: 1,
-		events.UserSignedUpType:       1,
-		events.UserSignedInType:       1,
-		events.UserSigninFailedType:   1,
+		events.RecipeCreatedEventType:     1,
+		events.RecipeUpdatedEventType:     1,
+		events.UserSignedUpType:           1,
+		events.UserSignedInType:           1,
+		events.UserSigninFailedType:       1,
+		events.GraphQLRequestRejectedType: 1,
 	}
 	eventsRepo := events.NewEventsRepo()
 
@@ -88,6 +90,9 @@ func main() {
 	}
 	if err := worker.RegisterHandler(events.UserSigninFailedType, audit.NewSigninFailureEventHandler(auditService)); err != nil {
 		log.Fatalf("Failed to register signin failure audit handler: %v", err)
+	}
+	if err := worker.RegisterHandler(events.GraphQLRequestRejectedType, audit.NewGraphQLRequestRejectedEventHandler(auditService)); err != nil {
+		log.Fatalf("Failed to register GraphQL request rejected audit handler: %v", err)
 	}
 
 	// Run worker

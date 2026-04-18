@@ -103,6 +103,8 @@ func main() {
 		redisPublisher,
 	)
 
+	complexity := graph.NewComplexityRoot()
+
 	srv := handler.New(
 		graph.NewExecutableSchema(
 			graph.Config{
@@ -116,6 +118,7 @@ func main() {
 				Directives: graph.DirectiveRoot{
 					Auth: directive.AuthDirective,
 				},
+				Complexity: complexity,
 			},
 		),
 	)
@@ -125,8 +128,13 @@ func main() {
 	srv.AddTransport(transport.POST{})
 
 	srv.SetQueryCache(lru.New[*ast.QueryDocument](1000))
+	// Set custom error presenter to check for complexity limit errors
+	// Used for auditing
+	srv.SetErrorPresenter(graph.NewComplexityLimitErrorPresenter(redisPublisher, graph.DefaultMaxAcceptedComplexity))
 
 	srv.Use(extension.Introspection{})
+	// Enforce complexity limit to prevent expensive queries
+	srv.Use(extension.FixedComplexityLimit(graph.DefaultMaxAcceptedComplexity))
 	srv.Use(extension.AutomaticPersistedQuery{
 		Cache: lru.New[string](100),
 	})
