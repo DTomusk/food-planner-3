@@ -8,6 +8,8 @@ const (
 	DefaultMaxAcceptedComplexity = 1200
 )
 
+// Calculate complexity scores
+// TODO: keep updated with new resolvers and changes to pagination
 func NewComplexityRoot() ComplexityRoot {
 	complexity := ComplexityRoot{}
 

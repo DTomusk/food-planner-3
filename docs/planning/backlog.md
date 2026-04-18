@@ -2,16 +2,6 @@
 
 ## Ready
 
-- [ ] GraphQL complexity limiting
-    - Priority: high
-    - Area: API
-    - Type: tech debt
-    - Why: currently, any client can create a ridiculous nested query that would blow up the server. We want to take a first pass at limiting the complexity of gql queries to ensure that sensible queries are still allowed, but that overly expensive ones are blocked. This will need fine-tuning in the future. 
-    - DoD:
-        - [ ] complexity weights assigned to different queries and mutations 
-        - [ ] overly complex queries audited using auditing infrastructure 
-        - [ ] existing queries defined in web run fine
-
 ## Planning 
 
 - [ ] Rate limiting
@@ -170,6 +160,16 @@
     - DoD: 
 
 ## Done
+
+- [x] GraphQL complexity limiting
+    - Priority: high
+    - Area: API
+    - Type: tech debt
+    - Why: currently, any client can create a ridiculous nested query that would blow up the server. We want to take a first pass at limiting the complexity of gql queries to ensure that sensible queries are still allowed, but that overly expensive ones are blocked. This will need fine-tuning in the future. 
+    - DoD:
+        - [x] complexity weights assigned to different queries and mutations 
+        - [x] overly complex queries audited using auditing infrastructure 
+        - [x] existing queries defined in web run fine
 
 - [x] Event pub/sub
     - Priority: high

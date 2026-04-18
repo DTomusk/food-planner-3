@@ -19,6 +19,7 @@ import (
 
 const complexityLimitExceededReason = "complexity_limit_exceeded"
 
+// Returns a function that checks if an error is related to exceeding the complexity limit and publishes an event if so
 func NewComplexityLimitErrorPresenter(publisher events.Publisher, maxAcceptedComplexity int) graphql.ErrorPresenterFunc {
 	return func(ctx context.Context, err error) *gqlerror.Error {
 		presented := graphql.DefaultErrorPresenter(ctx, err)
