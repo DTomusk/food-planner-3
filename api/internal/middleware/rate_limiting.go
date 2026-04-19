@@ -26,7 +26,7 @@ type RateLimitingConfig struct {
 var fixedWindowScript = redis.NewScript(`
 local count = redis.call("INCR", KEYS[1])
 if count == 1 then
-	redis.call("EXPIRE", KEYS[1], ARGV[2])
+	redis.call("EXPIRE", KEYS[1], ARGV[1])
 end
 local ttl = redis.call("TTL", KEYS[1])
 local limit = tonumber(ARGV[2])
@@ -65,8 +65,8 @@ func NewRateLimitingMiddleware(
 				r.Context(),
 				client,
 				[]string{key},
-				limit,
 				windowSeconds,
+				limit,
 			).Result()
 			if err != nil {
 				// If Redis error occurs, decide based on configuration whether to allow the request (fail-open) or block it (fail-closed)
@@ -74,7 +74,7 @@ func NewRateLimitingMiddleware(
 					next.ServeHTTP(w, r)
 					return
 				}
-				http.Error(w, "rate limiting error", http.StatusInternalServerError)
+				http.Error(w, "rate limiter unavailable", http.StatusServiceUnavailable)
 				return
 			}
 
@@ -115,7 +115,11 @@ func NewRateLimitingMiddleware(
 func getLimitAndSubject(r *http.Request, cfg RateLimitingConfig) (int, string) {
 	// If user logged in, use their ID as the subject
 	if claims, ok := auth.ClaimsFromContext(r.Context()); ok && claims.UserID != "" {
-		return cfg.AuthenticatedLimit, "user:" + claims.UserID
+		limit := cfg.AuthenticatedLimit
+		if limit <= 0 {
+			limit = 180 // Default authenticated limit if not set
+		}
+		return limit, "user:" + claims.UserID
 	}
 	// Otherwise, use IP address
 	ip := ""
@@ -127,7 +131,11 @@ func getLimitAndSubject(r *http.Request, cfg RateLimitingConfig) (int, string) {
 	if ip == "" {
 		ip = "unknown"
 	}
-	return cfg.AnonymousLimit, "ip:" + ip
+	limit := cfg.AnonymousLimit
+	if limit <= 0 {
+		limit = 60 // Default anonymous limit if not set
+	}
+	return limit, "ip:" + ip
 }
 
 func toInt64(val interface{}) int64 {
