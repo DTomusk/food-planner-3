@@ -2,8 +2,6 @@
 
 ## Ready
 
-## Planning 
-
 - [ ] Rate limiting
     - Priority: high
     - Area: API
@@ -11,6 +9,8 @@
     - Why: don't want people to spam the server 
     - DoD:
         - [ ] HTTP rate-limiting implemented using existing redis client
+
+## Planning 
 
 - [ ] Manual content moderation
     - Depends on: Audit logging

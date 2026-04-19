@@ -144,10 +144,29 @@ func main() {
 	authMiddleware := auth.Middleware(jwtService)
 	ipMiddleware := middleware.IPMiddleware
 	userAgentMiddleware := middleware.UserAgentMiddleware
+	rateLimitingMiddleware := middleware.NewRateLimitingMiddleware(redisClient, middleware.RateLimitingConfig{
+		Window:               cfg.RateLimitingWindow,
+		AnonymousLimit:       cfg.RateLimitingAnonymousLimit,
+		AuthenticatedLimit:   cfg.RateLimitingAuthenticatedLimit,
+		FailOpenOnRedisError: cfg.RateLimitingFailOpenOnRedisError,
+	})
 	responseWriterMiddleware := middleware.ResponseWriterMiddleware
 	requestMiddleware := middleware.RequestMiddleware
 
-	http.Handle("/query", ipMiddleware(userAgentMiddleware(authMiddleware(responseWriterMiddleware(requestMiddleware(srv))))))
+	http.Handle("/query",
+		ipMiddleware(
+			userAgentMiddleware(
+				authMiddleware(
+					rateLimitingMiddleware(
+						responseWriterMiddleware(
+							requestMiddleware(srv),
+						),
+					),
+				),
+			),
+		),
+	)
+
 	// Check API health (process is running)
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
