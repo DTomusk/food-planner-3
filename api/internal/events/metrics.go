@@ -9,6 +9,7 @@ var metrics = struct {
 	workerProcessedTotal      atomic.Uint64
 	workerHandlerFailureTotal atomic.Uint64
 	workerAckFailureTotal     atomic.Uint64
+	rateLimiterBlockedTotal   atomic.Uint64
 }{}
 
 func incrementPublishSuccess() {
@@ -31,12 +32,17 @@ func incrementWorkerAckFailure() {
 	metrics.workerAckFailureTotal.Add(1)
 }
 
+func IncrementRateLimiterBlocked() {
+	metrics.rateLimiterBlockedTotal.Add(1)
+}
+
 type MetricsSnapshot struct {
 	PublishSuccessTotal       uint64
 	PublishFailureTotal       uint64
 	WorkerProcessedTotal      uint64
 	WorkerHandlerFailureTotal uint64
 	WorkerAckFailureTotal     uint64
+	RateLimiterBlockedTotal   uint64
 }
 
 func SnapshotMetrics() MetricsSnapshot {
@@ -46,5 +52,6 @@ func SnapshotMetrics() MetricsSnapshot {
 		WorkerProcessedTotal:      metrics.workerProcessedTotal.Load(),
 		WorkerHandlerFailureTotal: metrics.workerHandlerFailureTotal.Load(),
 		WorkerAckFailureTotal:     metrics.workerAckFailureTotal.Load(),
+		RateLimiterBlockedTotal:   metrics.rateLimiterBlockedTotal.Load(),
 	}
 }

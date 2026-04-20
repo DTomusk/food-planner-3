@@ -3,6 +3,7 @@ package middleware
 import (
 	"fmt"
 	"foodplanner/internal/auth"
+	"foodplanner/internal/events"
 	"net/http"
 	"strconv"
 	"time"
@@ -103,6 +104,8 @@ func NewRateLimitingMiddleware(
 			}
 
 			if !allowed {
+				// Track how many times requests were blocked by the rate limiter
+				events.IncrementRateLimiterBlocked()
 				http.Error(w, "rate limit exceeded", http.StatusTooManyRequests)
 				return
 			}
