@@ -46,19 +46,21 @@ func main() {
 
 	// Register event type strings and their corresponding event structs
 	registry := events.NewRegistry()
+	registry.Register(events.GraphQLRequestRejectedType, func() events.Event { return &events.GraphQLRequestRejectedEvent{} })
+	registry.Register(events.RateLimitExceededType, func() events.Event { return &events.RateLimitExceededEvent{} })
 	registry.Register(events.RecipeCreatedEventType, func() events.Event { return &events.RecipeCreatedEvent{} })
 	registry.Register(events.RecipeUpdatedEventType, func() events.Event { return &events.RecipeUpdatedEvent{} })
 	registry.Register(events.UserSignedUpType, func() events.Event { return &events.UserSignedUpEvent{} })
 	registry.Register(events.UserSignedInType, func() events.Event { return &events.UserSignedInEvent{} })
 	registry.Register(events.UserSigninFailedType, func() events.Event { return &events.UserSigninFailedEvent{} })
-	registry.Register(events.GraphQLRequestRejectedType, func() events.Event { return &events.GraphQLRequestRejectedEvent{} })
 	expectedVersions := map[string]int{
+		events.GraphQLRequestRejectedType: 1,
+		events.RateLimitExceededType:      1,
 		events.RecipeCreatedEventType:     1,
 		events.RecipeUpdatedEventType:     1,
 		events.UserSignedUpType:           1,
 		events.UserSignedInType:           1,
 		events.UserSigninFailedType:       1,
-		events.GraphQLRequestRejectedType: 1,
 	}
 	eventsRepo := events.NewEventsRepo()
 
@@ -93,6 +95,9 @@ func main() {
 	}
 	if err := worker.RegisterHandler(events.GraphQLRequestRejectedType, audit.NewGraphQLRequestRejectedEventHandler(auditService)); err != nil {
 		log.Fatalf("Failed to register GraphQL request rejected audit handler: %v", err)
+	}
+	if err := worker.RegisterHandler(events.RateLimitExceededType, audit.NewRateLimitExceededEventHandler(auditService)); err != nil {
+		log.Fatalf("Failed to register rate limit exceeded audit handler: %v", err)
 	}
 
 	// Run worker
