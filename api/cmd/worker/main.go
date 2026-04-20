@@ -76,28 +76,21 @@ func main() {
 	)
 
 	auditService := audit.NewAuditService(audit.NewRepo())
+	auditProjector := audit.NewAuditProjector(auditService, audit.DefaultAuditMappers())
 
-	// Register handlers to handle events (can register multiple handlers to an event)
-	if err := worker.RegisterHandler(events.RecipeCreatedEventType, audit.NewRecipeCreatedEventHandler(auditService)); err != nil {
-		log.Fatalf("Failed to register recipe created audit handler: %v", err)
-	}
-	if err := worker.RegisterHandler(events.RecipeUpdatedEventType, audit.NewRecipeUpdatedEventHandler(auditService)); err != nil {
-		log.Fatalf("Failed to register recipe updated audit handler: %v", err)
-	}
-	if err := worker.RegisterHandler(events.UserSignedUpType, audit.NewSignupEventHandler(auditService)); err != nil {
-		log.Fatalf("Failed to register signup audit handler: %v", err)
-	}
-	if err := worker.RegisterHandler(events.UserSignedInType, audit.NewSigninEventHandler(auditService)); err != nil {
-		log.Fatalf("Failed to register signin audit handler: %v", err)
-	}
-	if err := worker.RegisterHandler(events.UserSigninFailedType, audit.NewSigninFailureEventHandler(auditService)); err != nil {
-		log.Fatalf("Failed to register signin failure audit handler: %v", err)
-	}
-	if err := worker.RegisterHandler(events.GraphQLRequestRejectedType, audit.NewGraphQLRequestRejectedEventHandler(auditService)); err != nil {
-		log.Fatalf("Failed to register GraphQL request rejected audit handler: %v", err)
-	}
-	if err := worker.RegisterHandler(events.RateLimitExceededType, audit.NewRateLimitExceededEventHandler(auditService)); err != nil {
-		log.Fatalf("Failed to register rate limit exceeded audit handler: %v", err)
+	// Register a single projector for all event types that map to audit entries.
+	for _, eventType := range []string{
+		events.RecipeCreatedEventType,
+		events.RecipeUpdatedEventType,
+		events.UserSignedUpType,
+		events.UserSignedInType,
+		events.UserSigninFailedType,
+		events.GraphQLRequestRejectedType,
+		events.RateLimitExceededType,
+	} {
+		if err := worker.RegisterHandler(eventType, auditProjector); err != nil {
+			log.Fatalf("Failed to register audit projector for %s: %v", eventType, err)
+		}
 	}
 
 	// Run worker
