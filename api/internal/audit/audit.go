@@ -35,10 +35,12 @@ const (
 	ActionRecipeCreated          Action = "recipe.created"
 	ActionRecipeUpdated          Action = "recipe.updated"
 	ActionGraphQLRequestRejected Action = "graphql.request_rejected"
+	ActionRateLimitExceeded      Action = "http.rate_limit_exceeded"
 	ActionUserSignup             Action = "user.signup"
 	ActionUserSignin             Action = "user.signin"
 
 	ResourceTypeGraphQLRequest ResourceType = "graphql_request"
+	ResourceTypeHTTPRequest    ResourceType = "http_request"
 	ResourceTypeRecipe         ResourceType = "recipe"
 	ResourceTypeUser           ResourceType = "user"
 

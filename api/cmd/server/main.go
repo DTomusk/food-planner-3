@@ -142,12 +142,36 @@ func main() {
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
 
 	authMiddleware := auth.Middleware(jwtService)
+	correlationIDMiddleware := middleware.CorrelationIDMiddleware
 	ipMiddleware := middleware.IPMiddleware
 	userAgentMiddleware := middleware.UserAgentMiddleware
+	rateLimitingMiddleware := middleware.NewRateLimitingMiddleware(redisClient, middleware.RateLimitingConfig{
+		Window:               cfg.RateLimitingWindow,
+		AnonymousLimit:       cfg.RateLimitingAnonymousLimit,
+		AuthenticatedLimit:   cfg.RateLimitingAuthenticatedLimit,
+		FailOpenOnRedisError: cfg.RateLimitingFailOpenOnRedisError,
+	},
+		redisPublisher,
+	)
 	responseWriterMiddleware := middleware.ResponseWriterMiddleware
 	requestMiddleware := middleware.RequestMiddleware
 
-	http.Handle("/query", ipMiddleware(userAgentMiddleware(authMiddleware(responseWriterMiddleware(requestMiddleware(srv))))))
+	http.Handle("/query",
+		correlationIDMiddleware(
+			ipMiddleware(
+				userAgentMiddleware(
+					authMiddleware(
+						rateLimitingMiddleware(
+							responseWriterMiddleware(
+								requestMiddleware(srv),
+							),
+						),
+					),
+				),
+			),
+		),
+	)
+
 	// Check API health (process is running)
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {

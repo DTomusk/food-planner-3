@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -21,20 +22,27 @@ type Config struct {
 	RefreshTokenExpirationDays int
 	RecipeSearchTrigramWeight  float64
 	RecipeSearchFullTextWeight float64
-	UploadMaxImageSizeBytes    int64
-	R2AccountID                string
-	R2EndpointURL              string
-	R2BucketName               string
-	R2AccessKeyID              string
-	R2SecretAccessKey          string
-	R2PublicBaseURL            string
-	R2Region                   string
-	R2PresignExpiry            int
-	RedisAddress               string
-	RedisPassword              string
-	RedisDB                    int
-	RedisStream                string
-	RedisStreamMaxLen          int64
+	// R2
+	UploadMaxImageSizeBytes int64
+	R2AccountID             string
+	R2EndpointURL           string
+	R2BucketName            string
+	R2AccessKeyID           string
+	R2SecretAccessKey       string
+	R2PublicBaseURL         string
+	R2Region                string
+	R2PresignExpiry         int
+	// Redis
+	RedisAddress      string
+	RedisPassword     string
+	RedisDB           int
+	RedisStream       string
+	RedisStreamMaxLen int64
+	// Rate limiting
+	RateLimitingWindow               time.Duration
+	RateLimitingAnonymousLimit       int
+	RateLimitingAuthenticatedLimit   int
+	RateLimitingFailOpenOnRedisError bool
 }
 
 func Load() (*Config, error) {
@@ -213,32 +221,69 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("invalid REDIS_STREAM_MAX_LEN: %v", err)
 	}
 
+	rateLimitingWindowStr := os.Getenv("RATE_LIMITING_WINDOW")
+	if rateLimitingWindowStr == "" {
+		return nil, fmt.Errorf("RATE_LIMITING_WINDOW not set in environment")
+	}
+	rateLimitingWindow, err := time.ParseDuration(rateLimitingWindowStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid RATE_LIMITING_WINDOW: %v", err)
+	}
+	rateLimitingAnonymousLimitStr := os.Getenv("RATE_LIMITING_ANONYMOUS_LIMIT")
+	if rateLimitingAnonymousLimitStr == "" {
+		return nil, fmt.Errorf("RATE_LIMITING_ANONYMOUS_LIMIT not set in environment")
+	}
+	rateLimitingAnonymousLimit, err := strconv.Atoi(rateLimitingAnonymousLimitStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid RATE_LIMITING_ANONYMOUS_LIMIT: %v", err)
+	}
+	rateLimitingAuthenticatedLimitStr := os.Getenv("RATE_LIMITING_AUTHENTICATED_LIMIT")
+	if rateLimitingAuthenticatedLimitStr == "" {
+		return nil, fmt.Errorf("RATE_LIMITING_AUTHENTICATED_LIMIT not set in environment")
+	}
+	rateLimitingAuthenticatedLimit, err := strconv.Atoi(rateLimitingAuthenticatedLimitStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid RATE_LIMITING_AUTHENTICATED_LIMIT: %v", err)
+	}
+	rateLimitingFailOpenOnRedisErrorStr := os.Getenv("RATE_LIMITING_FAIL_OPEN_ON_REDIS_ERROR")
+	if rateLimitingFailOpenOnRedisErrorStr == "" {
+		return nil, fmt.Errorf("RATE_LIMITING_FAIL_OPEN_ON_REDIS_ERROR not set in environment")
+	}
+	rateLimitingFailOpenOnRedisError, err := strconv.ParseBool(rateLimitingFailOpenOnRedisErrorStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid RATE_LIMITING_FAIL_OPEN_ON_REDIS_ERROR: %v", err)
+	}
+
 	return &Config{
-		DatabaseURL:                db_url,
-		ServerPort:                 port,
-		CorsAllowedOrigin:          corsOrigin,
-		JWTSecret:                  jwtSecret,
-		JWTExpirationMinutes:       jwtExpirationMinutes,
-		IngredientDataFilePath:     ingredientDataFilePath,
-		IngredientUpsertBatchSize:  ingredientUpsertBatchSize,
-		RecipeRetentionDays:        recipeRetentionDays,
-		RefreshTokenSecret:         refreshTokenSecret,
-		RefreshTokenExpirationDays: refreshTokenExpirationDays,
-		RecipeSearchTrigramWeight:  recipeSearchTrigramWeight,
-		RecipeSearchFullTextWeight: recipeSearchFullTextWeight,
-		UploadMaxImageSizeBytes:    uploadMaxImageSizeBytes,
-		R2AccountID:                r2AccountID,
-		R2EndpointURL:              r2EndpointURL,
-		R2BucketName:               r2BucketName,
-		R2AccessKeyID:              r2AccessKeyID,
-		R2SecretAccessKey:          r2SecretAccessKey,
-		R2PublicBaseURL:            r2PublicBaseURL,
-		R2Region:                   r2Region,
-		R2PresignExpiry:            r2PresignExpiry,
-		RedisAddress:               redisAddress,
-		RedisPassword:              redisPassword,
-		RedisDB:                    redisDB,
-		RedisStream:                redisStream,
-		RedisStreamMaxLen:          redisStreamMaxLen,
+		DatabaseURL:                      db_url,
+		ServerPort:                       port,
+		CorsAllowedOrigin:                corsOrigin,
+		JWTSecret:                        jwtSecret,
+		JWTExpirationMinutes:             jwtExpirationMinutes,
+		IngredientDataFilePath:           ingredientDataFilePath,
+		IngredientUpsertBatchSize:        ingredientUpsertBatchSize,
+		RecipeRetentionDays:              recipeRetentionDays,
+		RefreshTokenSecret:               refreshTokenSecret,
+		RefreshTokenExpirationDays:       refreshTokenExpirationDays,
+		RecipeSearchTrigramWeight:        recipeSearchTrigramWeight,
+		RecipeSearchFullTextWeight:       recipeSearchFullTextWeight,
+		UploadMaxImageSizeBytes:          uploadMaxImageSizeBytes,
+		R2AccountID:                      r2AccountID,
+		R2EndpointURL:                    r2EndpointURL,
+		R2BucketName:                     r2BucketName,
+		R2AccessKeyID:                    r2AccessKeyID,
+		R2SecretAccessKey:                r2SecretAccessKey,
+		R2PublicBaseURL:                  r2PublicBaseURL,
+		R2Region:                         r2Region,
+		R2PresignExpiry:                  r2PresignExpiry,
+		RedisAddress:                     redisAddress,
+		RedisPassword:                    redisPassword,
+		RedisDB:                          redisDB,
+		RedisStream:                      redisStream,
+		RedisStreamMaxLen:                redisStreamMaxLen,
+		RateLimitingWindow:               rateLimitingWindow,
+		RateLimitingAnonymousLimit:       rateLimitingAnonymousLimit,
+		RateLimitingAuthenticatedLimit:   rateLimitingAuthenticatedLimit,
+		RateLimitingFailOpenOnRedisError: rateLimitingFailOpenOnRedisError,
 	}, nil
 }

@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	refreshtokens "foodplanner/internal/auth/refresh_tokens"
+	"foodplanner/internal/correlationid"
 	"foodplanner/internal/db"
 	"foodplanner/internal/events"
 	"foodplanner/internal/logging"
@@ -70,7 +71,7 @@ func (s *AuthService) SignUp(email, password, username, ipAddress string, ctx co
 		return nil, "", nil, err
 	}
 
-	correlationID := uuid.New()
+	correlationID := correlationid.FromContext(ctx)
 	signupEvent := events.NewUserSignedUpEvent(correlationID, user.ID, user.Username, user.Email, ipAddress)
 	if err := s.eventPublisher.Publish(ctx, signupEvent); err != nil {
 		logger.Warn("Failed to publish signup event", "userID", user.ID, "correlationID", correlationID, "err", err)
@@ -110,7 +111,7 @@ func (s *AuthService) SignIn(email, password, ipAddress, userAgent string, ctx c
 }
 
 func (s *AuthService) publishSigninSuccess(ctx context.Context, logger *slog.Logger, userID uuid.UUID, username, email, ipAddress, userAgent string) {
-	correlationID := uuid.New()
+	correlationID := correlationid.FromContext(ctx)
 	signinEvent := events.NewUserSignedInEvent(correlationID, userID, username, email, ipAddress, userAgent)
 	if err := s.eventPublisher.Publish(ctx, signinEvent); err != nil {
 		logger.Warn("Failed to publish signin event", "userID", userID, "correlationID", correlationID, "err", err)
@@ -118,7 +119,7 @@ func (s *AuthService) publishSigninSuccess(ctx context.Context, logger *slog.Log
 }
 
 func (s *AuthService) publishSigninFailure(ctx context.Context, logger *slog.Logger, userID *uuid.UUID, email, ipAddress, userAgent, failureReason string) {
-	correlationID := uuid.New()
+	correlationID := correlationid.FromContext(ctx)
 	signinFailureEvent := events.NewUserSigninFailedEvent(correlationID, userID, email, ipAddress, userAgent, failureReason)
 	if err := s.eventPublisher.Publish(ctx, signinFailureEvent); err != nil {
 		logger.Warn("Failed to publish signin failure event", "userID", userID, "email", email, "correlationID", correlationID, "err", err)
