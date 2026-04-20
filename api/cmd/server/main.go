@@ -142,6 +142,7 @@ func main() {
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
 
 	authMiddleware := auth.Middleware(jwtService)
+	correlationIDMiddleware := middleware.CorrelationIDMiddleware
 	ipMiddleware := middleware.IPMiddleware
 	userAgentMiddleware := middleware.UserAgentMiddleware
 	rateLimitingMiddleware := middleware.NewRateLimitingMiddleware(redisClient, middleware.RateLimitingConfig{
@@ -156,12 +157,14 @@ func main() {
 	requestMiddleware := middleware.RequestMiddleware
 
 	http.Handle("/query",
-		ipMiddleware(
-			userAgentMiddleware(
-				authMiddleware(
-					rateLimitingMiddleware(
-						responseWriterMiddleware(
-							requestMiddleware(srv),
+		correlationIDMiddleware(
+			ipMiddleware(
+				userAgentMiddleware(
+					authMiddleware(
+						rateLimitingMiddleware(
+							responseWriterMiddleware(
+								requestMiddleware(srv),
+							),
 						),
 					),
 				),

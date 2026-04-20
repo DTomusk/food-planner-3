@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 	"foodplanner/internal/auth"
+	"foodplanner/internal/correlationid"
 	"foodplanner/internal/events"
 	"foodplanner/internal/logging"
 	"net/http"
 	"strconv"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -116,7 +116,7 @@ func NewRateLimitingMiddleware(
 				// Publish an audit event only on first breach in this window (not on every blocked request)
 				if eventPublisher != nil && isFirstBreachInWindow(r.Context(), client, subject, windowSeconds) {
 					event := events.NewRateLimitExceededEvent(
-						uuid.New(),
+						correlationid.FromContext(r.Context()),
 						subject,
 						getIPFromContext(r.Context()),
 						getUserAgentFromRequestContext(r),

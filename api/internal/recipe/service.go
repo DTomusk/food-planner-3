@@ -6,6 +6,7 @@ import (
 	"foodplanner/internal/db"
 	"foodplanner/internal/events"
 	"foodplanner/internal/ingredient"
+	"foodplanner/internal/correlationid"
 	"foodplanner/internal/logging"
 	"foodplanner/internal/upload"
 	"log/slog"
@@ -155,7 +156,7 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 		return nil, err
 	}
 
-	correlationID := uuid.New()
+	correlationID := correlationid.FromContext(ctx)
 	recipeCreatedEvent := events.NewRecipeCreatedEvent(correlationID, recipeContainer.ID, recipeContainer.CurrentVersion.ID, userID, request.IPAddress, request.UserAgent)
 	if err := s.eventPublisher.Publish(ctx, recipeCreatedEvent); err != nil {
 		logger.Warn("Failed to publish recipe created event", "recipeID", recipeContainer.ID, "versionID", recipeContainer.CurrentVersion.ID, "correlationID", correlationID, "err", err)
@@ -307,7 +308,7 @@ func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest)
 		return nil, err
 	}
 
-	correlationID := uuid.New()
+	correlationID := correlationid.FromContext(ctx)
 	recipeUpdatedEvent := events.NewRecipeUpdatedEvent(correlationID, existingRecipe.ID, recipeVersion.ID, existingRecipe.UserID, request.Request.IPAddress, request.Request.UserAgent)
 	if err := s.eventPublisher.Publish(ctx, recipeUpdatedEvent); err != nil {
 		logger.Warn("Failed to publish recipe updated event", "recipeID", existingRecipe.ID, "versionID", recipeVersion.ID, "correlationID", correlationID, "err", err)

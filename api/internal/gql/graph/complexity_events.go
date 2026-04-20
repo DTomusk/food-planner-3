@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"foodplanner/internal/auth"
+	"foodplanner/internal/correlationid"
 	"foodplanner/internal/events"
 	"foodplanner/internal/logging"
 	"foodplanner/internal/middleware"
@@ -67,7 +68,7 @@ func publishComplexityRejectedEvent(ctx context.Context, publisher events.Publis
 	}
 
 	event := events.NewGraphQLRequestRejectedEvent(
-		uuid.New(),
+		correlationid.FromContext(ctx),
 		actorUserID,
 		operationName,
 		operationType,
