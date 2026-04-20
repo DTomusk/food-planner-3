@@ -1,13 +1,16 @@
 package middleware
 
 import (
+	"context"
 	"fmt"
 	"foodplanner/internal/auth"
 	"foodplanner/internal/events"
+	"foodplanner/internal/logging"
 	"net/http"
 	"strconv"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -41,6 +44,7 @@ return {allowed, count, ttl}
 func NewRateLimitingMiddleware(
 	client redis.UniversalClient,
 	cfg RateLimitingConfig,
+	eventPublisher events.Publisher,
 ) func(next http.Handler) http.Handler {
 	windowSeconds := int(cfg.Window.Seconds())
 	if windowSeconds <= 0 {
@@ -49,6 +53,8 @@ func NewRateLimitingMiddleware(
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			logger := logging.FromContext(r.Context())
+
 			if r.Method == http.MethodOptions {
 				// Skip rate limiting for preflight requests
 				next.ServeHTTP(w, r)
@@ -58,7 +64,7 @@ func NewRateLimitingMiddleware(
 			limit, subject := getLimitAndSubject(r, cfg)
 
 			// Generate Redis key based on subject and current time bucket
-			nowBucket := time.Now().UTC().Unix() / int64(windowSeconds)
+			nowBucket := getNowBucket(windowSeconds)
 			key := fmt.Sprintf("rate_limit:v1:%s:%d", subject, nowBucket)
 
 			// Run script
@@ -106,6 +112,34 @@ func NewRateLimitingMiddleware(
 			if !allowed {
 				// Track how many times requests were blocked by the rate limiter
 				events.IncrementRateLimiterBlocked()
+
+				// Publish an audit event only on first breach in this window (not on every blocked request)
+				if eventPublisher != nil && isFirstBreachInWindow(r.Context(), client, subject, windowSeconds) {
+					event := events.NewRateLimitExceededEvent(
+						uuid.New(),
+						subject,
+						getIPFromContext(r.Context()),
+						getUserAgentFromRequestContext(r),
+						r.Method,
+						r.URL.Path,
+						limit,
+						count,
+						windowSeconds,
+						ttl,
+					)
+
+					err = eventPublisher.Publish(r.Context(), event)
+					if err != nil {
+						logger.Warn(
+							"Failed to publish rate limit exceeded event",
+							"subject", subject,
+							"method", r.Method,
+							"path", r.URL.Path,
+							"err", err,
+						)
+					}
+				}
+
 				http.Error(w, "rate limit exceeded", http.StatusTooManyRequests)
 				return
 			}
@@ -113,6 +147,25 @@ func NewRateLimitingMiddleware(
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+func getNowBucket(windowSeconds int) int64 {
+	return time.Now().UTC().Unix() / int64(windowSeconds)
+}
+
+func getIPFromContext(ctx context.Context) string {
+	ip, _ := ctx.Value(IPKey).(string)
+	return ip
+}
+
+func getUserAgentFromRequestContext(r *http.Request) string {
+	if r == nil {
+		return ""
+	}
+	if userAgent, ok := r.Context().Value(UserAgentKey).(string); ok && userAgent != "" {
+		return userAgent
+	}
+	return r.UserAgent()
 }
 
 func getLimitAndSubject(r *http.Request, cfg RateLimitingConfig) (int, string) {
@@ -139,6 +192,20 @@ func getLimitAndSubject(r *http.Request, cfg RateLimitingConfig) (int, string) {
 		limit = 60 // Default anonymous limit if not set
 	}
 	return limit, "ip:" + ip
+}
+
+// Check if first breach in window, used for auditing
+func isFirstBreachInWindow(ctx context.Context, client redis.UniversalClient, subject string, windowSeconds int) bool {
+	nowBucket := getNowBucket(windowSeconds)
+	breachKey := fmt.Sprintf("rl:audit:first:%s:%d", subject, nowBucket)
+
+	// sets key if it doesn't exist i.e. is first breach for subject and bucket
+	result, err := client.SetNX(ctx, breachKey, "1", time.Duration(windowSeconds)*time.Second).Result()
+	if err != nil {
+		// return false on error to avoid flooding audit log
+		return false
+	}
+	return result
 }
 
 func toInt64(val interface{}) int64 {

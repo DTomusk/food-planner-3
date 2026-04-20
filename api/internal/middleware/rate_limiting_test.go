@@ -29,7 +29,7 @@ func TestRateLimitingMiddleware_AllowsRequestUnderLimit_Anonymous(t *testing.T) 
 		AnonymousLimit:       2,
 		AuthenticatedLimit:   5,
 		FailOpenOnRedisError: false,
-	})
+	}, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/query", nil)
 	req = req.WithContext(context.WithValue(req.Context(), IPKey, "203.0.113.10"))
@@ -57,7 +57,7 @@ func TestRateLimitingMiddleware_BlocksRequestOverLimit_Anonymous(t *testing.T) {
 		AnonymousLimit:       1,
 		AuthenticatedLimit:   5,
 		FailOpenOnRedisError: false,
-	})
+	}, nil)
 
 	req1 := httptest.NewRequest(http.MethodGet, "/query", nil)
 	req1 = req1.WithContext(context.WithValue(req1.Context(), IPKey, "203.0.113.11"))
@@ -90,7 +90,7 @@ func TestRateLimitingMiddleware_UsesAuthenticatedBucketWhenClaimsPresent(t *test
 		AnonymousLimit:       1,
 		AuthenticatedLimit:   2,
 		FailOpenOnRedisError: false,
-	})
+	}, nil)
 
 	claims := &auth.Claims{UserID: "user-123"}
 
@@ -128,7 +128,7 @@ func TestRateLimitingMiddleware_DifferentAnonymousSubjectsAreIsolated(t *testing
 		AnonymousLimit:       1,
 		AuthenticatedLimit:   2,
 		FailOpenOnRedisError: false,
-	})
+	}, nil)
 
 	reqA := httptest.NewRequest(http.MethodGet, "/query", nil)
 	reqA = reqA.WithContext(context.WithValue(reqA.Context(), IPKey, "203.0.113.13"))
@@ -163,7 +163,7 @@ func TestRateLimitingMiddleware_AnonymousAndAuthenticatedBucketsAreIsolatedForSa
 		AnonymousLimit:       1,
 		AuthenticatedLimit:   2,
 		FailOpenOnRedisError: false,
-	})
+	}, nil)
 
 	// First anonymous request from this IP should consume the anon bucket.
 	anonReq := httptest.NewRequest(http.MethodGet, "/query", nil)
@@ -203,7 +203,7 @@ func TestRateLimitingMiddleware_OptionsRequestsBypassLimiter(t *testing.T) {
 		AnonymousLimit:       1,
 		AuthenticatedLimit:   1,
 		FailOpenOnRedisError: false,
-	})
+	}, nil)
 
 	req := httptest.NewRequest(http.MethodOptions, "/query", nil)
 	rr := httptest.NewRecorder()
@@ -233,7 +233,7 @@ func TestRateLimitingMiddleware_FailOpenOnRedisError_AllowsRequest(t *testing.T)
 		AnonymousLimit:       1,
 		AuthenticatedLimit:   1,
 		FailOpenOnRedisError: true,
-	})
+	}, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/query", nil)
 	ctx, cancel := context.WithTimeout(req.Context(), 200*time.Millisecond)
@@ -267,7 +267,7 @@ func TestRateLimitingMiddleware_FailClosedOnRedisError_ReturnsServiceUnavailable
 		AnonymousLimit:       1,
 		AuthenticatedLimit:   1,
 		FailOpenOnRedisError: false,
-	})
+	}, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/query", nil)
 	ctx, cancel := context.WithTimeout(req.Context(), 200*time.Millisecond)
@@ -296,7 +296,7 @@ func TestRateLimitingMiddleware_UsesFallbackLimitsWhenConfiguredLimitsInvalid(t 
 		AnonymousLimit:       0,
 		AuthenticatedLimit:   0,
 		FailOpenOnRedisError: false,
-	})
+	}, nil)
 
 	anonReq := httptest.NewRequest(http.MethodGet, "/query", nil)
 	anonReq = anonReq.WithContext(context.WithValue(anonReq.Context(), IPKey, "203.0.113.17"))

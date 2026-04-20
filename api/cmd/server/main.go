@@ -149,7 +149,9 @@ func main() {
 		AnonymousLimit:       cfg.RateLimitingAnonymousLimit,
 		AuthenticatedLimit:   cfg.RateLimitingAuthenticatedLimit,
 		FailOpenOnRedisError: cfg.RateLimitingFailOpenOnRedisError,
-	})
+	},
+		redisPublisher,
+	)
 	responseWriterMiddleware := middleware.ResponseWriterMiddleware
 	requestMiddleware := middleware.RequestMiddleware
 
