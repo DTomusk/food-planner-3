@@ -2,14 +2,6 @@
 
 ## Ready
 
-- [ ] Rate limiting
-    - Priority: high
-    - Area: API
-    - Type: tech debt
-    - Why: don't want people to spam the server 
-    - DoD:
-        - [ ] HTTP rate-limiting implemented using existing redis client
-
 ## Planning 
 
 - [ ] Manual content moderation
@@ -160,6 +152,14 @@
     - DoD: 
 
 ## Done
+
+- [x] Rate limiting
+    - Priority: high
+    - Area: API
+    - Type: tech debt
+    - Why: don't want people to spam the server 
+    - DoD:
+        - [x] HTTP rate-limiting implemented using existing redis client
 
 - [x] GraphQL complexity limiting
     - Priority: high

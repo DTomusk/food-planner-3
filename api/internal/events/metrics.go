@@ -3,6 +3,7 @@ package events
 import "sync/atomic"
 
 // metrics stores process-local counters for basic event pipeline observability.
+// note: worker metrics are currently inaccessible via the api
 var metrics = struct {
 	publishSuccessTotal       atomic.Uint64
 	publishFailureTotal       atomic.Uint64
