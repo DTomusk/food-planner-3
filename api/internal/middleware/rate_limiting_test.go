@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"foodplanner/internal/auth"
+	"foodplanner/internal/events"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -12,6 +13,15 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
 )
+
+type recordingPublisher struct {
+	events []events.Event
+}
+
+func (p *recordingPublisher) Publish(ctx context.Context, event events.Event) error {
+	p.events = append(p.events, event)
+	return nil
+}
 
 func TestRateLimitingMiddleware_AllowsRequestUnderLimit_Anonymous(t *testing.T) {
 	s := miniredis.RunT(t)
@@ -313,4 +323,91 @@ func TestRateLimitingMiddleware_UsesFallbackLimitsWhenConfiguredLimitsInvalid(t 
 	middleware(next).ServeHTTP(authRR, authReq)
 	require.Equal(t, http.StatusNoContent, authRR.Code)
 	require.Equal(t, "180", authRR.Header().Get("X-RateLimit-Limit"))
+}
+
+func TestRateLimitingMiddleware_PublishesOnlyOnFirstBreachAndIncrementsMetricPerBreach(t *testing.T) {
+	s := miniredis.RunT(t)
+	client := redis.NewClient(&redis.Options{Addr: s.Addr()})
+	t.Cleanup(func() { _ = client.Close() })
+
+	publisher := &recordingPublisher{}
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	middleware := NewRateLimitingMiddleware(client, RateLimitingConfig{
+		Window:               time.Minute,
+		AnonymousLimit:       1,
+		AuthenticatedLimit:   2,
+		FailOpenOnRedisError: false,
+	}, publisher)
+
+	before := events.SnapshotMetrics().RateLimiterBlockedTotal
+
+	for i := 0; i < 4; i++ {
+		req := httptest.NewRequest(http.MethodGet, "/query", nil)
+		req = req.WithContext(context.WithValue(req.Context(), IPKey, "203.0.113.30"))
+		rr := httptest.NewRecorder()
+		middleware(next).ServeHTTP(rr, req)
+
+		if i == 0 {
+			require.Equal(t, http.StatusNoContent, rr.Code)
+		} else {
+			require.Equal(t, http.StatusTooManyRequests, rr.Code)
+		}
+	}
+
+	after := events.SnapshotMetrics().RateLimiterBlockedTotal
+	require.Equal(t, uint64(3), after-before, "expected blocked metric to increment once per blocked request")
+	require.Len(t, publisher.events, 1, "expected event publish only on first breach in window")
+
+	rateLimitEvent, ok := publisher.events[0].(events.RateLimitExceededEvent)
+	require.True(t, ok)
+	require.Equal(t, "ip:203.0.113.30", rateLimitEvent.Subject)
+	require.Equal(t, 1, rateLimitEvent.Limit)
+	require.Equal(t, 2, rateLimitEvent.Count, "first breach should occur at count=2 when limit=1")
+}
+
+func TestRateLimitingMiddleware_PublishesFirstBreachEventPerSubject(t *testing.T) {
+	s := miniredis.RunT(t)
+	client := redis.NewClient(&redis.Options{Addr: s.Addr()})
+	t.Cleanup(func() { _ = client.Close() })
+
+	publisher := &recordingPublisher{}
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	middleware := NewRateLimitingMiddleware(client, RateLimitingConfig{
+		Window:               time.Minute,
+		AnonymousLimit:       1,
+		AuthenticatedLimit:   2,
+		FailOpenOnRedisError: false,
+	}, publisher)
+
+	// Subject A: first request allowed, second request is first breach.
+	for i := 0; i < 2; i++ {
+		req := httptest.NewRequest(http.MethodGet, "/query", nil)
+		req = req.WithContext(context.WithValue(req.Context(), IPKey, "203.0.113.40"))
+		rr := httptest.NewRecorder()
+		middleware(next).ServeHTTP(rr, req)
+	}
+
+	// Subject B: first request allowed, second request is first breach.
+	for i := 0; i < 2; i++ {
+		req := httptest.NewRequest(http.MethodGet, "/query", nil)
+		req = req.WithContext(context.WithValue(req.Context(), IPKey, "203.0.113.41"))
+		rr := httptest.NewRecorder()
+		middleware(next).ServeHTTP(rr, req)
+	}
+
+	require.Len(t, publisher.events, 2, "expected one first-breach event per subject")
+
+	eventA, ok := publisher.events[0].(events.RateLimitExceededEvent)
+	require.True(t, ok)
+	require.Equal(t, "ip:203.0.113.40", eventA.Subject)
+
+	eventB, ok := publisher.events[1].(events.RateLimitExceededEvent)
+	require.True(t, ok)
+	require.Equal(t, "ip:203.0.113.41", eventB.Subject)
 }
