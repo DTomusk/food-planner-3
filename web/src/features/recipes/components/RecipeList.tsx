@@ -18,9 +18,9 @@ export default function RecipeList({ recipes, renderActions, onCardClick }: Reci
     }
 
     return (
-      <ul className="w-full space-y-8">
+      <ul className="w-full grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-1">
         {recipes.map((recipe: RecipeSummary) => (
-          <li key={recipe.id} className="mx-auto w-full max-w-md md:max-w-none">
+          <li key={recipe.id} className="mx-auto w-full max-w-xs md:max-w-none">
             <RecipeListingCard recipe={recipe} 
               onClick={() => onCardClick ? onCardClick(recipe) : navigate(`/recipes/${recipe.id}`)}
               actions={renderActions ? renderActions(recipe) : undefined}
