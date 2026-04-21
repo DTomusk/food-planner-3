@@ -36,6 +36,7 @@ type Config struct {
 	RedisAddress      string
 	RedisPassword     string
 	RedisDB           int
+	RedisUseTLS       bool
 	RedisStream       string
 	RedisStreamMaxLen int64
 	// Rate limiting
@@ -207,6 +208,15 @@ func Load() (*Config, error) {
 		}
 	}
 
+	// REDIS_USE_TLS is optional — defaults to false for local Redis
+	redisUseTLS := false
+	if redisUseTLSStr := os.Getenv("REDIS_USE_TLS"); redisUseTLSStr != "" {
+		redisUseTLS, err = strconv.ParseBool(redisUseTLSStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid REDIS_USE_TLS: %v", err)
+		}
+	}
+
 	redisStream := os.Getenv("REDIS_STREAM")
 	if redisStream == "" {
 		return nil, fmt.Errorf("REDIS_STREAM not set in environment")
@@ -279,6 +289,7 @@ func Load() (*Config, error) {
 		RedisAddress:                     redisAddress,
 		RedisPassword:                    redisPassword,
 		RedisDB:                          redisDB,
+		RedisUseTLS:                      redisUseTLS,
 		RedisStream:                      redisStream,
 		RedisStreamMaxLen:                redisStreamMaxLen,
 		RateLimitingWindow:               rateLimitingWindow,

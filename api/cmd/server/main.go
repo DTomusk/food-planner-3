@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -62,6 +63,12 @@ func main() {
 		Addr:     cfg.RedisAddress,
 		Password: cfg.RedisPassword,
 		DB:       cfg.RedisDB,
+		TLSConfig: func() *tls.Config {
+			if !cfg.RedisUseTLS {
+				return nil
+			}
+			return &tls.Config{MinVersion: tls.VersionTLS12}
+		}(),
 	})
 	redisPublisher := events.NewRedisPublisher(redisClient, cfg.RedisStream, cfg.RedisStreamMaxLen)
 
