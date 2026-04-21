@@ -5,16 +5,14 @@ import BackToTop from "@/components/ui/BackToTop";
 import IconButton from "@/components/ui/IconButton";
 import MobileNavDrawer from "@/components/ui/MobileNavDrawer";
 import SearchBar from "@/components/ui/SearchBar";
-import { useAuth } from "@/features/auth/hooks/useAuth";
 import { RecipeList, useRecipes } from "@/features/recipes";
 import FilterChip from "@/features/recipes/components/FilterChip";
 import RecipeFilters from "@/features/recipes/components/RecipeFilters";
 import { Page } from "@/layout";
 import { extractErrorMessage } from "@/lib/errors";
-import { commonStrings } from "@/lib/strings";
-import { Plus, SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 type DietLevelParam = "all" | "0" | "1";
 
@@ -124,7 +122,6 @@ export default function RecipeListingPage() {
         animalProductLevel,
         containsGluten,
     });
-    const { isAuthenticated } = useAuth();
     const handleGlutenFreeOnlyChange = (glutenFreeOnly: boolean) => {
         const nextParams = new URLSearchParams(searchParams);
         if (glutenFreeOnly) {
@@ -134,7 +131,6 @@ export default function RecipeListingPage() {
         }
         setSearchParams(nextParams);
     }
-    const navigate = useNavigate();
 
     const scrollToTop = () => {
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -145,18 +141,6 @@ export default function RecipeListingPage() {
             <PageTitle text="Recipes" />
             <div className="mx-auto px-4 sm:px-6 lg:px-8">
                 <Stack space="lg">
-                {!isAuthenticated && <Alert type="info" message="Please sign in to add a new recipe." />}
-                {isAuthenticated && 
-                <Inline>
-                    <Stack space="sm">
-                        <Button onClick={() => navigate("/recipes/create")} 
-                        aria-label="Add new recipe" variant="primary">
-                            <Inline>
-                            <Plus /> {commonStrings.recipe.add}
-                            </Inline>
-                        </Button>
-                    </Stack>
-                </Inline>}
                 {error && <Alert message={extractErrorMessage(error)} closable />}
                 <Inline align="start" justify="start" wrap className="w-full" gap="lg">
                     {/* Filters */}

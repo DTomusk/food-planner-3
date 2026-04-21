@@ -6,7 +6,7 @@ import ResizableSidebar from "./ResizableSidebar";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useSignOut } from "@/features/auth/hooks/useSignOut";
 import { commonStrings } from "@/lib";
-import { BookOpen, Home, LogIn, LogOut, Menu } from "lucide-react";
+import { BookOpen, Home, LogIn, LogOut, Menu, Plus } from "lucide-react";
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -29,6 +29,7 @@ export default function NavBar() {
     const navItems = (
         <Stack space="md">
             <NavItem onClick={handleNav(() => navigate("/"))} icon={<Home />} label="Home" />
+            {isAuthenticated && <NavItem onClick={handleNav(() => navigate("/recipes/create"))} icon={<Plus />} label="Add recipe" />}
             {isAuthenticated && <NavItem onClick={handleNav(() => navigate("/me/recipes"))} icon={<BookOpen />} label="My recipes" />}
             {!isAuthenticated && <NavItem onClick={handleNav(handleSignInClick)} icon={<LogIn />} label={commonStrings.auth.signIn} />}
             {isAuthenticated && <NavItem onClick={handleNav(() => mutate())} icon={<LogOut />} label={commonStrings.auth.signOut} />}

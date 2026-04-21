@@ -8,7 +8,7 @@ type ResizableSidebarProps = {
     className?: string;
 };
 
-const DEFAULT_MIN_WIDTH = 192;
+const DEFAULT_MIN_WIDTH = 160;
 const DEFAULT_MAX_WIDTH = 384;
 const DEFAULT_WIDTH = 256;
 
