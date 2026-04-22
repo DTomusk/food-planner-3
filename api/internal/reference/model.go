@@ -9,6 +9,9 @@ type IngredientModel struct {
 	CounterPlural      *string `yaml:"counter_plural,omitempty"`
 	AnimalProductLevel int     `yaml:"animal_product_level,omitempty"`
 	ContainsGluten     bool    `yaml:"contains_gluten,omitempty"`
+	TaxonomyParentKey  *string `yaml:"taxonomy_parent_key,omitempty"`
+	ProcessedLevel     *int    `yaml:"processed_level,omitempty"`
+	IsSearchable       *bool   `yaml:"is_searchable,omitempty"`
 }
 
 type FileData struct {

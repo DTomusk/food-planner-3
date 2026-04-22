@@ -26,6 +26,7 @@ func TestUpsertIngredients_PersistsAnimalProductLevel(t *testing.T) {
 			CounterPlural:      nil,
 			AnimalProductLevel: Vegan,
 			ContainsGluten:     false,
+			ProcessedLevel:     Raw,
 		}
 		ingredientB := &Ingredient{
 			ID:                 uuid.New(),
@@ -37,6 +38,7 @@ func TestUpsertIngredients_PersistsAnimalProductLevel(t *testing.T) {
 			CounterPlural:      nil,
 			AnimalProductLevel: Meat,
 			ContainsGluten:     true,
+			ProcessedLevel:     Derived,
 		}
 
 		err := repo.UpsertIngredients(ctx, tx, []*Ingredient{ingredientA, ingredientB})
@@ -73,6 +75,7 @@ func TestUpsertIngredients_UpdatesExistingIngredientByFileKey(t *testing.T) {
 			CounterPlural:      nil,
 			AnimalProductLevel: Vegan,
 			ContainsGluten:     false,
+			ProcessedLevel:     Raw,
 		}
 
 		err := repo.UpsertIngredients(ctx, tx, []*Ingredient{original})
@@ -88,6 +91,7 @@ func TestUpsertIngredients_UpdatesExistingIngredientByFileKey(t *testing.T) {
 			CounterPlural:      testutil.PtrString("slices"),
 			AnimalProductLevel: Vegetarian,
 			ContainsGluten:     true,
+			ProcessedLevel:     Derived,
 		}
 
 		err = repo.UpsertIngredients(ctx, tx, []*Ingredient{updated})
@@ -105,6 +109,7 @@ func TestUpsertIngredients_UpdatesExistingIngredientByFileKey(t *testing.T) {
 		require.Equal(t, updated.CounterPlural, persisted[0].CounterPlural)
 		require.Equal(t, updated.AnimalProductLevel, persisted[0].AnimalProductLevel)
 		require.Equal(t, updated.ContainsGluten, persisted[0].ContainsGluten)
+		require.Equal(t, updated.ProcessedLevel, persisted[0].ProcessedLevel)
 	})
 }
 

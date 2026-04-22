@@ -24,6 +24,7 @@ func TestSyncIngredientData_PersistsAnimalProductLevelAcrossBatches(t *testing.T
 				FileKey:            "service_vegan_ingredient",
 				PreferredUnit:      unit.Quantum,
 				AnimalProductLevel: Vegan,
+				ProcessedLevel:     Raw,
 			},
 			{
 				ID:                 uuid.New(),
@@ -31,6 +32,7 @@ func TestSyncIngredientData_PersistsAnimalProductLevelAcrossBatches(t *testing.T
 				FileKey:            "service_vegetarian_ingredient",
 				PreferredUnit:      unit.Gram,
 				AnimalProductLevel: Vegetarian,
+				ProcessedLevel:     Derived,
 			},
 			{
 				ID:                 uuid.New(),
@@ -38,6 +40,7 @@ func TestSyncIngredientData_PersistsAnimalProductLevelAcrossBatches(t *testing.T
 				FileKey:            "service_meat_ingredient",
 				PreferredUnit:      unit.Gram,
 				AnimalProductLevel: Meat,
+				ProcessedLevel:     Derived,
 			},
 		}
 
@@ -74,6 +77,7 @@ func TestExists_ReturnsTrueForPersistedIngredient(t *testing.T) {
 				FileKey:            "service_exists_ingredient",
 				PreferredUnit:      unit.Quantum,
 				AnimalProductLevel: Vegan,
+				ProcessedLevel:     Raw,
 			},
 		})
 		require.NoError(t, err)

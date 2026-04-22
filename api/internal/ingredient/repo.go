@@ -15,7 +15,7 @@ import (
 type IngredientRepo struct{}
 
 const (
-	selectIngredientColumnsBaseQuery = "SELECT id, name, preferred_unit, file_key, counter, plural, counter_plural, animal_product_level, contains_gluten FROM reference.ingredients"
+	selectIngredientColumnsBaseQuery = "SELECT id, name, preferred_unit, file_key, counter, plural, counter_plural, animal_product_level, contains_gluten, taxonomy_parent_id, processing_level, is_searchable FROM reference.ingredients"
 	selectIngredientsByIDsQuery      = selectIngredientColumnsBaseQuery + " WHERE id = ANY($1)"
 )
 
@@ -33,6 +33,9 @@ type IngredientRow struct {
 	CounterPlural      *string
 	AnimalProductLevel int
 	ContainsGluten     bool
+	TaxonomyParentID   *uuid.UUID
+	ProcessingLevel    int
+	IsSearchable       bool
 }
 
 func (r *IngredientRepo) IngredientExists(ctx context.Context, db db.DBTX, ingredientID string) (bool, error) {
@@ -54,25 +57,28 @@ func (r *IngredientRepo) GetAllIngredients(ctx context.Context, db db.DBTX) ([]*
 	var ingredients []*Ingredient
 	for rows.Next() {
 		var ingredientRow IngredientRow
-		if err := rows.Scan(&ingredientRow.ID, &ingredientRow.Name, &ingredientRow.PreferredUnit, &ingredientRow.FileKey, &ingredientRow.Counter, &ingredientRow.Plural, &ingredientRow.CounterPlural, &ingredientRow.AnimalProductLevel, &ingredientRow.ContainsGluten); err != nil {
+		if err := rows.Scan(&ingredientRow.ID, &ingredientRow.Name, &ingredientRow.PreferredUnit, &ingredientRow.FileKey, &ingredientRow.Counter, &ingredientRow.Plural, &ingredientRow.CounterPlural, &ingredientRow.AnimalProductLevel, &ingredientRow.ContainsGluten, &ingredientRow.TaxonomyParentID, &ingredientRow.ProcessingLevel, &ingredientRow.IsSearchable); err != nil {
 			return nil, err
 		}
 
-		unit := unit.Unit(ingredientRow.PreferredUnit)
-		if !unit.IsValid() {
+		resolvedUnit := unit.Unit(ingredientRow.PreferredUnit)
+		if !isPreferredUnitAllowed(ingredientRow.PreferredUnit, ingredientRow.IsSearchable) {
 			return nil, fmt.Errorf("invalid preferred unit %d for ingredient %s", ingredientRow.PreferredUnit, ingredientRow.ID)
 		}
 
 		ingredients = append(ingredients, &Ingredient{
 			ID:                 ingredientRow.ID,
 			Name:               ingredientRow.Name,
-			PreferredUnit:      unit,
+			PreferredUnit:      resolvedUnit,
 			FileKey:            ingredientRow.FileKey,
 			Counter:            ingredientRow.Counter,
 			Plural:             ingredientRow.Plural,
 			CounterPlural:      ingredientRow.CounterPlural,
 			AnimalProductLevel: AnimalProductLevel(ingredientRow.AnimalProductLevel),
 			ContainsGluten:     ingredientRow.ContainsGluten,
+			TaxonomyParentID:   ingredientRow.TaxonomyParentID,
+			ProcessedLevel:     ProcessedLevel(ingredientRow.ProcessingLevel),
+			IsSearchable:       ingredientRow.IsSearchable,
 		})
 	}
 	return ingredients, nil
@@ -94,25 +100,28 @@ func (r *IngredientRepo) GetIngredientsByIDs(ctx context.Context, db db.DBTX, in
 	var ingredients []*Ingredient
 	for rows.Next() {
 		var ingredientRow IngredientRow
-		if err := rows.Scan(&ingredientRow.ID, &ingredientRow.Name, &ingredientRow.PreferredUnit, &ingredientRow.FileKey, &ingredientRow.Counter, &ingredientRow.Plural, &ingredientRow.CounterPlural, &ingredientRow.AnimalProductLevel, &ingredientRow.ContainsGluten); err != nil {
+		if err := rows.Scan(&ingredientRow.ID, &ingredientRow.Name, &ingredientRow.PreferredUnit, &ingredientRow.FileKey, &ingredientRow.Counter, &ingredientRow.Plural, &ingredientRow.CounterPlural, &ingredientRow.AnimalProductLevel, &ingredientRow.ContainsGluten, &ingredientRow.TaxonomyParentID, &ingredientRow.ProcessingLevel, &ingredientRow.IsSearchable); err != nil {
 			return nil, err
 		}
 
-		unit := unit.Unit(ingredientRow.PreferredUnit)
-		if !unit.IsValid() {
+		resolvedUnit := unit.Unit(ingredientRow.PreferredUnit)
+		if !isPreferredUnitAllowed(ingredientRow.PreferredUnit, ingredientRow.IsSearchable) {
 			return nil, fmt.Errorf("invalid preferred unit %d for ingredient %s", ingredientRow.PreferredUnit, ingredientRow.ID)
 		}
 
 		ingredients = append(ingredients, &Ingredient{
 			ID:                 ingredientRow.ID,
 			Name:               ingredientRow.Name,
-			PreferredUnit:      unit,
+			PreferredUnit:      resolvedUnit,
 			FileKey:            ingredientRow.FileKey,
 			Counter:            ingredientRow.Counter,
 			Plural:             ingredientRow.Plural,
 			CounterPlural:      ingredientRow.CounterPlural,
 			AnimalProductLevel: AnimalProductLevel(ingredientRow.AnimalProductLevel),
 			ContainsGluten:     ingredientRow.ContainsGluten,
+			TaxonomyParentID:   ingredientRow.TaxonomyParentID,
+			ProcessedLevel:     ProcessedLevel(ingredientRow.ProcessingLevel),
+			IsSearchable:       ingredientRow.IsSearchable,
 		})
 	}
 	return ingredients, nil
@@ -124,15 +133,15 @@ func (r *IngredientRepo) UpsertIngredients(ctx context.Context, db db.DBTX, ingr
 	}
 
 	var (
-		query  = "INSERT INTO reference.ingredients (id, name, preferred_unit, file_key, counter, plural, counter_plural, animal_product_level, contains_gluten) VALUES"
+		query  = "INSERT INTO reference.ingredients (id, name, preferred_unit, file_key, counter, plural, counter_plural, animal_product_level, contains_gluten, taxonomy_parent_id, processing_level, is_searchable) VALUES"
 		args   []any
 		values []string
 	)
 
 	for i, ingredient := range ingredients {
-		start := i*9 + 1
-		values = append(values, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d)", start, start+1, start+2, start+3, start+4, start+5, start+6, start+7, start+8))
-		args = append(args, ingredient.ID, ingredient.Name, int(ingredient.PreferredUnit), ingredient.FileKey, ingredient.Counter, ingredient.Plural, ingredient.CounterPlural, int(ingredient.AnimalProductLevel), ingredient.ContainsGluten)
+		start := i*12 + 1
+		values = append(values, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d)", start, start+1, start+2, start+3, start+4, start+5, start+6, start+7, start+8, start+9, start+10, start+11))
+		args = append(args, ingredient.ID, ingredient.Name, int(ingredient.PreferredUnit), ingredient.FileKey, ingredient.Counter, ingredient.Plural, ingredient.CounterPlural, int(ingredient.AnimalProductLevel), ingredient.ContainsGluten, ingredient.TaxonomyParentID, int(ingredient.ProcessedLevel), ingredient.IsSearchable)
 	}
 
 	query += " " + strings.Join(values, ", ") + `
@@ -144,7 +153,10 @@ func (r *IngredientRepo) UpsertIngredients(ctx context.Context, db db.DBTX, ingr
 	plural = EXCLUDED.plural,
 	counter_plural = EXCLUDED.counter_plural,
 	animal_product_level = EXCLUDED.animal_product_level,
-	contains_gluten = EXCLUDED.contains_gluten;
+	contains_gluten = EXCLUDED.contains_gluten,
+	taxonomy_parent_id = EXCLUDED.taxonomy_parent_id,
+	processing_level = EXCLUDED.processing_level,
+	is_searchable = EXCLUDED.is_searchable;
 	`
 
 	_, err := db.ExecContext(ctx, query, args...)
