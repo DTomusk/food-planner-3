@@ -359,6 +359,7 @@ ingredients:
     name: "Flour"
     preferred_unit: 2
     contains_gluten: true
+    processed_level: 2
   - id: "bacon_rasher"
     name: "Bacon"
     preferred_unit: 1
@@ -366,71 +367,96 @@ ingredients:
     counter_plural: "rashers"
     animal_product_level: 2
     taxonomy_parent_key: "pork"
+    processed_level: 2
   - id: "cheese"
     name: "Cheese"
     preferred_unit: 2
     animal_product_level: 2
     taxonomy_parent_key: "milk"
+    processed_level: 2
   - id: "cheese_cheddar"
     name: "Cheddar cheese"
     preferred_unit: 2
     animal_product_level: 2
     taxonomy_parent_key: "cheese"
+    processed_level: 2
   - id: "cheese_cheddar_mature"
     name: "Mature cheddar cheese"
     preferred_unit: 2
     animal_product_level: 2
     taxonomy_parent_key: "cheese_cheddar"
+    processed_level: 2
   ## Category oils
   - id: "oil" 
     name: "Oil"
     preferred_unit: 0
     is_searchable: false
+    processed_level: 2
   - id: "oil_vegetable"
     name: "Vegetable oil"
     preferred_unit: 3
     taxonomy_parent_key: "oil"
+    processed_level: 2
   - id: "oil_olive"
     name: "Olive oil"
     preferred_unit: 3
     taxonomy_parent_key: "oil"
+    processed_level: 2
   - id: "oil_olive_extra_virgin"
     name: "Extra virgin olive oil"
     preferred_unit: 3
     taxonomy_parent_key: "oil_olive"
+    processed_level: 2
   - id: "oil_avocado"
     name: "Avocado oil"
     preferred_unit: 3
     taxonomy_parent_key: "oil"
+    processed_level: 2
   - id: "oil_canola"
     name: "Canola oil"
     preferred_unit: 3
     taxonomy_parent_key: "oil"
+    processed_level: 2
   - id: "oil_coconut"
     name: "Coconut oil"
     preferred_unit: 3
     taxonomy_parent_key: "oil"
+    processed_level: 2
   - id: "oil_sunflower"
     name: "Sunflower oil"
     preferred_unit: 3
     taxonomy_parent_key: "oil"
+    processed_level: 2
+  ## Category sauces and condiments
   - id: "tomatoes_tinned"
     name: "Tinned tomatoes"
     preferred_unit: 2
+    processed_level: 2
   ## Spice powders
   - id: "chilli_powder"
     name: "Chilli powder"
     preferred_unit: 5
+    processed_level: 2
   - id: "coriander_ground"
     name: "Ground coriander"
     preferred_unit: 5
+    processed_level: 2
   - id: "turmeric_ground"
     name: "Ground turmeric"
     preferred_unit: 5
     taxonomy_parent_key: "turmeric"
+    processed_level: 2
 
   # Composite ingredients
   - id: "pasta"
     name: "Pasta"
     preferred_unit: 2
     contains_gluten: true
+    processed_level: 3
+  - id: "bread"
+    name: "Bread"
+    preferred_unit: 1
+    counter: "slice"
+    counter_plural: "slices"
+    contains_gluten: true
+    processed_level: 3
