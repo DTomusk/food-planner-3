@@ -53,6 +53,9 @@ Ingredients are related in terms of specificity. All brown onion are onions, not
 ## Derivative relationship 
 Derivatives are related to the ingredients they're derived from. Flour is milled wheat. An egg yolk is taken from an egg. Beef mince is minced beef. There is a process that transforms a raw ingredient into a derived ingredient. 
 
+### Note 
+I've since rethought this a bit. I think that things that are minimally process (e.g. a segment of a satsuma, an egg yolk, a cut of meat) should still count as raw. It's more significant processing such as mincing, pressing etc. that changes the fundamental qualities of the ingredient that make it derived. 
+
 ## Composite relationship 
 Composites contain components. Fresh pasta contains eggs and flour. The component relationship doesn't have to be exhaustive. We should define a limited list of components that communicate a kind of "profile" of what the composite is. Tomato sauce contains tomatoes, could contain a lot of other things. 
 
