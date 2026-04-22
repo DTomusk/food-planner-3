@@ -60,16 +60,21 @@ Composites contain components. Fresh pasta contains eggs and flour. The componen
 I need to start thinking about how to represent this in the yaml reference file and the database schema. 
 
 Here's the current ingredients table schema: 
-| Column           | Type    | Constraints          |
-|------------------|---------|----------------------|
-| `id`             | UUID    | PRIMARY KEY          |
-| `name`           | TEXT    | NOT NULL             |
-| `preferred_unit` | INTEGER | NOT NULL             |
-| `file_key`       | TEXT    | NOT NULL, UNIQUE     |
-| `counter`        | TEXT    | NULLABLE             |
-| `plural`         | TEXT    | NULLABLE             |
-| `counter_plural` | TEXT    | NULLABLE             |
+| Column                 | Type    | Constraints      |
+|------------------------|---------|------------------|
+| `id`                   | UUID    | PRIMARY KEY      |
+| `name`                 | TEXT    | NOT NULL         |
+| `preferred_unit`       | INTEGER | NOT NULL         |
+| `file_key`             | TEXT    | NOT NULL, UNIQUE |
+| `counter`              | TEXT    | NULLABLE         |
+| `plural`               | TEXT    | NULLABLE         |
+| `counter_plural`       | TEXT    | NULLABLE         |
+| `animal_product_level` | INTEGER | NOT NULL, DEFAULT 0 |
+| `contains_gluten`      | BOOLEAN | NOT NULL, DEFAULT FALSE |
 
 I don't think any existing columns have to be removed or modified. We can add new columns for: 
 - Processing level (raw = 1, derivative = 2, composite = 3)
 - Taxonomy parent (nullable uuid derived from key string in yaml file)
+- Show in search (non nullable flag default to true to show ingredients that can be selected in recipes)
+
+We can also consider adding new tables for derivative parents and components, but that can come later. 

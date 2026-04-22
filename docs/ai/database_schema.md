@@ -1,6 +1,6 @@
 # Database Schema
 
-This file documents the current state of the PostgreSQL schema as of migration `0029`. It is derived from all up-migrations in `api/migrations/` and is intended as a quick reference for AI agents. Do not hand-edit column definitions here — regenerate from migrations when the schema changes.
+This file documents the current state of the PostgreSQL schema as of migration `0030`. It is derived from all up-migrations in `api/migrations/` and is intended as a quick reference for AI agents. Do not hand-edit column definitions here — regenerate from migrations when the schema changes.
 
 Regenerate with: `go run ./cmd/generate-db-schema-doc -migrations ./migrations -doc ../docs/ai/database_schema.md` (run from `api/`).
 
@@ -219,10 +219,17 @@ Read-mostly reference table of known ingredients. Populated via the ingredient s
 | `counter_plural`       | TEXT    | NULLABLE         |
 | `animal_product_level` | INTEGER | NOT NULL, DEFAULT 0 |
 | `contains_gluten`      | BOOLEAN | NOT NULL, DEFAULT FALSE |
+| `processing_level`     | INTEGER | NOT NULL, DEFAULT 1 |
+| `taxonomy_parent_id`   | UUID    | NULLABLE, FK -> `reference.ingredients(id)` ON DELETE SET NULL |
+| `is_searchable`        | BOOLEAN | NOT NULL, DEFAULT TRUE |
 
 Notes:
 - `file_key` is a stable identifier used to match rows during upsert syncs from `reference/ingredients.yaml`.
 - `preferred_unit` is the unit that the service enforces when creating ingredient usages.
+- `taxonomy_parent_id` models taxonomy relationships (specificity), not derivation/component lineage.
+- Constraint `ingredients_processing_level_check` enforces `processing_level IN (1, 2, 3)`.
+- Constraint `ingredients_taxonomy_parent_not_self` prevents self-parenting.
+- Index `idx_ingredients_taxonomy_parent_id` supports parent->children lookups.
 
 ---
 
@@ -243,6 +250,7 @@ uploads
   └── claimed by domain rows via (linked_entity_type, linked_entity_id)
 
 reference.ingredients
+  ├── reference.ingredients (taxonomy_parent_id)
   └── ingredient_usages (ingredient_id)
 ```
 
@@ -279,4 +287,5 @@ reference.ingredients
 | 0027      | alter recipe versions add contains gluten         |
 | 0028      | create audits                                     |
 | 0029      | create processed events                           |
+| 0030      | alter ingredients add taxonomy                    |
 
