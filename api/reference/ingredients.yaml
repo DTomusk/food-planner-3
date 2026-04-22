@@ -88,7 +88,61 @@ ingredients:
     taxonomy_parent_key: "egg"
 
   ## Origin plant
+  - id: "origin_plant"
+    name: "Plant origin"
+    preferred_unit: 0
+    animal_product_level: 0
+    is_searchable: false
   ### Category vegetables
+  - id: "vegetables"
+    name: "Vegetables"
+    preferred_unit: 0
+    is_searchable: false
+    animal_product_level: 0
+    taxonomy_parent_key: "origin_plant"
+  #### Sub category allium
+  - id: "allium"
+    name: "Allium"
+    preferred_unit: 0
+    is_searchable: false
+    animal_product_level: 0
+    taxonomy_parent_key: "vegetables"
+  - id: "onion"
+    name: "Onion"
+    plural: "Onions"
+    preferred_unit: 1
+    taxonomy_parent_key: "allium"
+  - id: "onion_brown"
+    name: "Brown onion"
+    plural: "Brown onions"
+    preferred_unit: 1
+    taxonomy_parent_key: "onion"
+  - id: "onion_red"
+    name: "Red onion"
+    plural: "Red onions"
+    preferred_unit: 1
+    taxonomy_parent_key: "onion"
+  - id: "onion_white"
+    name: "White onion"
+    plural: "White onions"
+    preferred_unit: 1
+    taxonomy_parent_key: "onion"
+  - id: "garlic"
+    name: "Garlic"
+    preferred_unit: 0
+    is_searchable: false
+  - id: "garlic_bulb"
+    name: "Garlic"
+    preferred_unit: 1
+    counter: "bulb"
+    counter_plural: "bulbs"
+    taxonomy_parent_key: "garlic"
+  - id: "garlic_clove"
+    name: "Garlic"
+    preferred_unit: 1
+    counter: "clove"
+    counter_plural: "cloves"
+    taxonomy_parent_key: "garlic"
   ### Category fruits
   ### Category legumes
   - id: "legumes"
@@ -131,65 +185,55 @@ ingredients:
     name: "Herbs and spices"
     preferred_unit: 0
     is_searchable: false
+  #### Sub category herbs
+  - id: "herbs"
+    name: "Herbs"
+    preferred_unit: 0
+    is_searchable: false
+    taxonomy_parent_key: "herbs_and_spices"
+  #### Sub category spices 
+  - id: "spices"
+    name: "Spices"
+    preferred_unit: 0
+    is_searchable: false
+    taxonomy_parent_key: "herbs_and_spices"
   - id: "peppercorns"
     name: "Peppercorn"
     plural: "Peppercorns"
     preferred_unit: 1
-    taxonomy_parent_key: "herbs_and_spices"
+    taxonomy_parent_key: "spices"
   - id: "cloves"
     name: "Clove"
     plural: "Cloves"
     preferred_unit: 1
-    taxonomy_parent_key: "herbs_and_spices"
+    taxonomy_parent_key: "spices"
   - id: "cinnamon_stick"
     name: "Cinnamon stick"
     plural: "Cinnamon sticks"
     preferred_unit: 1
-    taxonomy_parent_key: "herbs_and_spices"
-  #### Sub category allium
-  - id: "allium"
-    name: "Allium"
+    taxonomy_parent_key: "spices"
+  ##### Rhizomes
+  - id: "rhizomes"
+    name: "Rhizomes"
     preferred_unit: 0
     is_searchable: false
-  - id: "onion"
-    name: "Onion"
-    plural: "Onions"
-    preferred_unit: 1
-    taxonomy_parent_key: "allium"
-  - id: "onion_brown"
-    name: "Brown onion"
-    plural: "Brown onions"
-    preferred_unit: 1
-    taxonomy_parent_key: "onion"
-  - id: "onion_red"
-    name: "Red onion"
-    plural: "Red onions"
-    preferred_unit: 1
-    taxonomy_parent_key: "onion"
-  - id: "onion_white"
-    name: "White onion"
-    plural: "White onions"
-    preferred_unit: 1
-    taxonomy_parent_key: "onion"
+    taxonomy_parent_key: "spices"
   - id: "ginger"
     name: "Ginger"
     preferred_unit: 6
-  - id: "garlic"
-    name: "Garlic"
-    preferred_unit: 0
-    is_searchable: false
-  - id: "garlic_bulb"
-    name: "Garlic"
-    preferred_unit: 1
-    counter: "bulb"
-    counter_plural: "bulbs"
-    taxonomy_parent_key: "garlic"
-  - id: "garlic_clove"
-    name: "Garlic"
-    preferred_unit: 1
-    counter: "clove"
-    counter_plural: "cloves"
-    taxonomy_parent_key: "garlic_bulb"
+    taxonomy_parent_key: "rhizomes"
+  - id: "galangal"
+    name: "Galangal"
+    preferred_unit: 2
+    taxonomy_parent_key: "rhizomes"
+  - id: "lemongrass"
+    name: "Lemongrass"
+    preferred_unit: 2
+    taxonomy_parent_key: "rhizomes"
+  - id: "turmeric"
+    name: "Turmeric"
+    preferred_unit: 2
+    taxonomy_parent_key: "rhizomes"
 
   ## Origin mineral
   - id: "salt"
