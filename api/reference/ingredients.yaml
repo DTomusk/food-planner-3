@@ -1,3 +1,12 @@
+# Unit reference (consider replacing ints with string keys)
+#   0 = UnitUnknown (used for ingredients that cannot be added to recipes because they are categories )
+# 	1 = Quantum (pieces, cloves, but also unitless like 5 eggs, the presence of counters differentiates between the two cases)
+# 	2 = Gram
+# 	3 = Milliliter
+# 	4 = Tablespoon
+# 	5 = Teaspoon
+# 	6 = Centimeter
+
 ingredients:
   # Raw ingredients
   ## Origin animal
@@ -39,6 +48,11 @@ ingredients:
     animal_product_level: 2
     is_searchable: false
     taxonomy_parent_key: "meat_red"
+  - id: "pork_belly"
+    name: "Pork belly"
+    preferred_unit: 2
+    animal_product_level: 2
+    taxonomy_parent_key: "pork"
   #### Sub category poultry
   - id: "meat_poultry"
     name: "Poultry"
@@ -52,6 +66,21 @@ ingredients:
     animal_product_level: 2
     is_searchable: false
     taxonomy_parent_key: "meat_poultry"
+  - id: "chicken_breast"
+    name: "Chicken breast"
+    preferred_unit: 2
+    animal_product_level: 2
+    taxonomy_parent_key: "chicken"
+  - id: "chicken_thigh"
+    name: "Chicken thigh"
+    preferred_unit: 2
+    animal_product_level: 2
+    taxonomy_parent_key: "chicken"
+  - id: "chicken_wings"
+    name: "Chicken wings"
+    preferred_unit: 1
+    animal_product_level: 2
+    taxonomy_parent_key: "chicken"
 
   ### Category seafood
   - id: "seafood"
@@ -86,6 +115,11 @@ ingredients:
     plural: "Egg yolks"
     animal_product_level: 1
     taxonomy_parent_key: "egg"
+  - id: "milk"
+    name: "Milk"
+    preferred_unit: 3
+    animal_product_level: 1
+    taxonomy_parent_key: "animal_product_other"
 
   ## Origin plant
   - id: "origin_plant"
@@ -144,11 +178,21 @@ ingredients:
     counter_plural: "cloves"
     taxonomy_parent_key: "garlic"
   ### Category fruits
+  - id: "fruits"
+    name: "Fruits"
+    preferred_unit: 0
+    is_searchable: false
+    animal_product_level: 0
+    taxonomy_parent_key: "origin_plant"
   ### Category legumes
   - id: "legumes"
     name: "Legumes"
     preferred_unit: 0
     is_searchable: false
+  - id: "chickpeas"
+    name: "Chickpeas"
+    preferred_unit: 2
+    taxonomy_parent_key: "legumes"
   #### Sub category lentils
   - id: "lentils"
     name: "Lentils"
@@ -174,23 +218,75 @@ ingredients:
     name: "Black lentils"
     preferred_unit: 2
     taxonomy_parent_key: "lentils"
-  - id: "chickpeas"
-    name: "Chickpeas"
-    preferred_unit: 2
-    taxonomy_parent_key: "legumes"
   ### Category grains 
+  - id: "grains"
+    name: "Grains"
+    preferred_unit: 0
+    is_searchable: false
+    taxonomy_parent_key: "origin_plant"
+  #### Rices
+  - id: "rice"
+    name: "Rice"
+    preferred_unit: 2
+    taxonomy_parent_key: "grains"
+  - id: "rice_white"
+    name: "White rice"
+    preferred_unit: 2
+    taxonomy_parent_key: "rice"
+  - id: "rice_brown"
+    name: "Brown rice"
+    preferred_unit: 2
+    taxonomy_parent_key: "rice"
+  - id: "rice_jasmine"
+    name: "Jasmine rice"
+    preferred_unit: 2
+    taxonomy_parent_key: "rice"
+  - id: "rice_basmati"
+    name: "Basmati rice"
+    preferred_unit: 2
+    taxonomy_parent_key: "rice"
+  - id: "wheat"
+    name: "Wheat"
+    preferred_unit: 2
+    taxonomy_parent_key: "grains"
+  - id: "oats"
+    name: "Oats"
+    preferred_unit: 2
+    taxonomy_parent_key: "grains"
+  - id: "barley"
+    name: "Barley"
+    preferred_unit: 2
+    taxonomy_parent_key: "grains"
+  - id: "quinoa"
+    name: "Quinoa"
+    preferred_unit: 2
+    taxonomy_parent_key: "grains"
+  - id: "bulgur"
+    name: "Bulgur"
+    preferred_unit: 2
+    taxonomy_parent_key: "grains"
   ### Category nuts and seeds
+  - id: "nuts_and_seeds"
+    name: "Nuts and seeds"
+    preferred_unit: 0
+    is_searchable: false
+    taxonomy_parent_key: "origin_plant"
   ### Category herbs and spices
   - id: "herbs_and_spices"
     name: "Herbs and spices"
     preferred_unit: 0
     is_searchable: false
+    taxonomy_parent_key: "origin_plant"
   #### Sub category herbs
   - id: "herbs"
     name: "Herbs"
     preferred_unit: 0
     is_searchable: false
     taxonomy_parent_key: "herbs_and_spices"
+  - id: "basil"
+    name: "Basil"
+    preferred_unit: 2
+    taxonomy_parent_key: "herbs"
   #### Sub category spices 
   - id: "spices"
     name: "Spices"
@@ -239,6 +335,24 @@ ingredients:
   - id: "salt"
     name: "Salt"
     preferred_unit: 5
+  - id: "salt_sea"
+    name: "Sea salt"
+    preferred_unit: 5
+    taxonomy_parent_key: "salt"
+  - id: "salt_table"
+    name: "Table salt"
+    preferred_unit: 5
+    taxonomy_parent_key: "salt"
+  - id: "salt_kosher"
+    name: "Kosher salt"
+    preferred_unit: 5
+    taxonomy_parent_key: "salt"
+  - id: "baking_powder"
+    name: "Baking powder"
+    preferred_unit: 5
+  - id: "baking_soda"
+    name: "Baking soda"
+    preferred_unit: 5
 
   # Derived ingredients
   - id: "flour"
@@ -251,24 +365,59 @@ ingredients:
     counter: "rasher"
     counter_plural: "rashers"
     animal_product_level: 2
+    taxonomy_parent_key: "pork"
   - id: "cheese"
     name: "Cheese"
     preferred_unit: 2
     animal_product_level: 2
+    taxonomy_parent_key: "milk"
   - id: "cheese_cheddar"
     name: "Cheddar cheese"
     preferred_unit: 2
     animal_product_level: 2
+    taxonomy_parent_key: "cheese"
   - id: "cheese_cheddar_mature"
     name: "Mature cheddar cheese"
     preferred_unit: 2
     animal_product_level: 2
+    taxonomy_parent_key: "cheese_cheddar"
+  ## Category oils
+  - id: "oil" 
+    name: "Oil"
+    preferred_unit: 0
+    is_searchable: false
   - id: "oil_vegetable"
     name: "Vegetable oil"
     preferred_unit: 3
+    taxonomy_parent_key: "oil"
+  - id: "oil_olive"
+    name: "Olive oil"
+    preferred_unit: 3
+    taxonomy_parent_key: "oil"
+  - id: "oil_olive_extra_virgin"
+    name: "Extra virgin olive oil"
+    preferred_unit: 3
+    taxonomy_parent_key: "oil_olive"
+  - id: "oil_avocado"
+    name: "Avocado oil"
+    preferred_unit: 3
+    taxonomy_parent_key: "oil"
+  - id: "oil_canola"
+    name: "Canola oil"
+    preferred_unit: 3
+    taxonomy_parent_key: "oil"
+  - id: "oil_coconut"
+    name: "Coconut oil"
+    preferred_unit: 3
+    taxonomy_parent_key: "oil"
+  - id: "oil_sunflower"
+    name: "Sunflower oil"
+    preferred_unit: 3
+    taxonomy_parent_key: "oil"
   - id: "tomatoes_tinned"
     name: "Tinned tomatoes"
     preferred_unit: 2
+  ## Spice powders
   - id: "chilli_powder"
     name: "Chilli powder"
     preferred_unit: 5
@@ -278,6 +427,7 @@ ingredients:
   - id: "turmeric_ground"
     name: "Ground turmeric"
     preferred_unit: 5
+    taxonomy_parent_key: "turmeric"
 
   # Composite ingredients
   - id: "pasta"
