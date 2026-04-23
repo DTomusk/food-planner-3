@@ -17,6 +17,7 @@ type IngredientRepo struct{}
 const (
 	selectIngredientColumnsBaseQuery = "SELECT id, name, preferred_unit, file_key, counter, plural, counter_plural, animal_product_level, contains_gluten, taxonomy_parent_id, processing_level, is_searchable FROM reference.ingredients"
 	selectIngredientsByIDsQuery      = selectIngredientColumnsBaseQuery + " WHERE id = ANY($1)"
+	selectAllSearchableQuery         = selectIngredientColumnsBaseQuery + " WHERE is_searchable = TRUE"
 )
 
 func NewIngredientRepo() *IngredientRepo {
@@ -45,7 +46,7 @@ func (r *IngredientRepo) IngredientExists(ctx context.Context, db db.DBTX, ingre
 }
 
 func (r *IngredientRepo) GetAllIngredients(ctx context.Context, db db.DBTX) ([]*Ingredient, error) {
-	rows, err := db.QueryContext(ctx, selectIngredientColumnsBaseQuery)
+	rows, err := db.QueryContext(ctx, selectAllSearchableQuery)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -59,11 +60,6 @@ func (r *IngredientRepo) GetAllIngredients(ctx context.Context, db db.DBTX) ([]*
 		var ingredientRow IngredientRow
 		if err := rows.Scan(&ingredientRow.ID, &ingredientRow.Name, &ingredientRow.PreferredUnit, &ingredientRow.FileKey, &ingredientRow.Counter, &ingredientRow.Plural, &ingredientRow.CounterPlural, &ingredientRow.AnimalProductLevel, &ingredientRow.ContainsGluten, &ingredientRow.TaxonomyParentID, &ingredientRow.ProcessingLevel, &ingredientRow.IsSearchable); err != nil {
 			return nil, err
-		}
-
-		// Skip non-searchable ingredients
-		if !ingredientRow.IsSearchable {
-			continue
 		}
 
 		resolvedUnit := unit.Unit(ingredientRow.PreferredUnit)
