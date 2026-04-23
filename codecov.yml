@@ -1,0 +1,9 @@
+codecov:
+  require_ci_to_pass: true
+
+ignore:
+  - "api/internal/gql/graph/generated.go"
+  - "api/internal/gql/graph/model/models_gen.go"
+  - "api/internal/config/**"
+  - "api/cmd/**"
+  - "api/internal/testutil/**"
