@@ -1,6 +1,5 @@
 type User {
     id: ID!
-    email: String!
     username: String!
     recipes(
         pagination: PaginationInput
