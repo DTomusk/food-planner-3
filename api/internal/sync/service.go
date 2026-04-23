@@ -64,16 +64,6 @@ func (s *SyncService) SyncIngredientData(ctx context.Context) error {
 	domainIngredients := make([]*ingredient.Ingredient, len(fileIngredients))
 
 	for i, fileIngredient := range fileIngredients {
-		processedLevel := ingredient.Raw
-		if fileIngredient.ProcessedLevel != nil {
-			processedLevel = ingredient.ProcessedLevel(*fileIngredient.ProcessedLevel)
-		}
-
-		isSearchable := true
-		if fileIngredient.IsSearchable != nil {
-			isSearchable = *fileIngredient.IsSearchable
-		}
-
 		var taxonomyParentID *uuid.UUID
 		if fileIngredient.TaxonomyParentKey != nil && *fileIngredient.TaxonomyParentKey != "" {
 			resolvedParentID, exists := resolvedIDsByFileKey[*fileIngredient.TaxonomyParentKey]
@@ -93,8 +83,8 @@ func (s *SyncService) SyncIngredientData(ctx context.Context) error {
 			ingredient.AnimalProductLevel(fileIngredient.AnimalProductLevel),
 			fileIngredient.ContainsGluten,
 			taxonomyParentID,
-			processedLevel,
-			isSearchable,
+			fileIngredient.ProcessedLevel,
+			fileIngredient.IsSearchable,
 		)
 		if err != nil {
 			return err

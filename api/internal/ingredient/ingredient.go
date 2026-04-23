@@ -28,13 +28,23 @@ func NewIngredient(
 	animalProductLevel AnimalProductLevel,
 	containsGluten bool,
 	taxonomyParentID *uuid.UUID,
-	processedLevel ProcessedLevel,
-	isSearchable bool,
+	processedLevel *int,
+	isSearchable *bool,
 ) (*Ingredient, error) {
+	resolvedProcessedLevel := Raw
+	if processedLevel != nil {
+		resolvedProcessedLevel = ProcessedLevel(*processedLevel)
+	}
+
+	resolvedIsSearchable := true
+	if isSearchable != nil {
+		resolvedIsSearchable = *isSearchable
+	}
+
 	if name == "" {
 		return nil, ErrInvalidName
 	}
-	if !isPreferredUnitAllowed(preferredUnit, isSearchable) {
+	if !isPreferredUnitAllowed(preferredUnit, resolvedIsSearchable) {
 		return nil, ErrInvalidPreferredUnit
 	}
 	return &Ingredient{
@@ -48,8 +58,8 @@ func NewIngredient(
 		AnimalProductLevel: animalProductLevel,
 		ContainsGluten:     containsGluten,
 		TaxonomyParentID:   taxonomyParentID,
-		ProcessedLevel:     processedLevel,
-		IsSearchable:       isSearchable,
+		ProcessedLevel:     resolvedProcessedLevel,
+		IsSearchable:       resolvedIsSearchable,
 	}, nil
 }
 
