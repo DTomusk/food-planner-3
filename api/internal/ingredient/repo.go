@@ -61,6 +61,11 @@ func (r *IngredientRepo) GetAllIngredients(ctx context.Context, db db.DBTX) ([]*
 			return nil, err
 		}
 
+		// Skip non-searchable ingredients
+		if !ingredientRow.IsSearchable {
+			continue
+		}
+
 		resolvedUnit := unit.Unit(ingredientRow.PreferredUnit)
 		if !isPreferredUnitAllowed(ingredientRow.PreferredUnit, ingredientRow.IsSearchable) {
 			return nil, fmt.Errorf("invalid preferred unit %d for ingredient %s", ingredientRow.PreferredUnit, ingredientRow.ID)
