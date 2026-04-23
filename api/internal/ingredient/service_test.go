@@ -171,3 +171,49 @@ func TestGetIngredientsByIDs_ReturnsNonSearchableIngredientWhenRequested(t *test
 		require.Equal(t, unit.UnitUnknown, ingredients[0].PreferredUnit)
 	})
 }
+
+func TestGetAllIngredientsUnfiltered_IncludesNonSearchable(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := t.Context()
+		logger := logging.FromContext(ctx)
+		service := NewIngredientService(testutil.NewTestTxRunner(tx), NewIngredientRepo(), 10)
+
+		searchableID := uuid.New()
+		nonSearchableID := uuid.New()
+
+		err := service.SyncIngredientData(ctx, logger, []*Ingredient{
+			{
+				ID:                 searchableID,
+				Name:               "Service Searchable Unfiltered",
+				FileKey:            "service_searchable_unfiltered",
+				PreferredUnit:      unit.Gram,
+				AnimalProductLevel: Vegan,
+				ProcessedLevel:     Raw,
+				IsSearchable:       true,
+			},
+			{
+				ID:                 nonSearchableID,
+				Name:               "Service Non Searchable Unfiltered",
+				FileKey:            "service_non_searchable_unfiltered",
+				PreferredUnit:      unit.UnitUnknown,
+				AnimalProductLevel: Vegan,
+				ProcessedLevel:     Derived,
+				IsSearchable:       false,
+			},
+		})
+		require.NoError(t, err)
+
+		ingredients, err := service.GetAllIngredientsUnfiltered(ctx, logger)
+		require.NoError(t, err)
+
+		byID := make(map[uuid.UUID]*Ingredient, len(ingredients))
+		for _, ingredient := range ingredients {
+			byID[ingredient.ID] = ingredient
+		}
+
+		require.Contains(t, byID, searchableID)
+		require.Contains(t, byID, nonSearchableID)
+		require.False(t, byID[nonSearchableID].IsSearchable)
+		require.Equal(t, unit.UnitUnknown, byID[nonSearchableID].PreferredUnit)
+	})
+}

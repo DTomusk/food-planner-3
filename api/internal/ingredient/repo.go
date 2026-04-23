@@ -85,6 +85,46 @@ func (r *IngredientRepo) GetAllIngredients(ctx context.Context, db db.DBTX) ([]*
 	return ingredients, nil
 }
 
+func (r *IngredientRepo) GetAllIngredientsUnfiltered(ctx context.Context, db db.DBTX) ([]*Ingredient, error) {
+	rows, err := db.QueryContext(ctx, selectIngredientColumnsBaseQuery)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	defer rows.Close()
+
+	var ingredients []*Ingredient
+	for rows.Next() {
+		var ingredientRow IngredientRow
+		if err := rows.Scan(&ingredientRow.ID, &ingredientRow.Name, &ingredientRow.PreferredUnit, &ingredientRow.FileKey, &ingredientRow.Counter, &ingredientRow.Plural, &ingredientRow.CounterPlural, &ingredientRow.AnimalProductLevel, &ingredientRow.ContainsGluten, &ingredientRow.TaxonomyParentID, &ingredientRow.ProcessingLevel, &ingredientRow.IsSearchable); err != nil {
+			return nil, err
+		}
+
+		resolvedUnit := unit.Unit(ingredientRow.PreferredUnit)
+		if !isPreferredUnitAllowed(ingredientRow.PreferredUnit, ingredientRow.IsSearchable) {
+			return nil, fmt.Errorf("invalid preferred unit %d for ingredient %s", ingredientRow.PreferredUnit, ingredientRow.ID)
+		}
+
+		ingredients = append(ingredients, &Ingredient{
+			ID:                 ingredientRow.ID,
+			Name:               ingredientRow.Name,
+			PreferredUnit:      resolvedUnit,
+			FileKey:            ingredientRow.FileKey,
+			Counter:            ingredientRow.Counter,
+			Plural:             ingredientRow.Plural,
+			CounterPlural:      ingredientRow.CounterPlural,
+			AnimalProductLevel: AnimalProductLevel(ingredientRow.AnimalProductLevel),
+			ContainsGluten:     ingredientRow.ContainsGluten,
+			TaxonomyParentID:   ingredientRow.TaxonomyParentID,
+			ProcessedLevel:     ProcessedLevel(ingredientRow.ProcessingLevel),
+			IsSearchable:       ingredientRow.IsSearchable,
+		})
+	}
+	return ingredients, nil
+}
+
 func (r *IngredientRepo) GetIngredientsByIDs(ctx context.Context, db db.DBTX, ingredientIDs []string) ([]*Ingredient, error) {
 	if len(ingredientIDs) == 0 {
 		return []*Ingredient{}, nil
