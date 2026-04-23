@@ -103,3 +103,71 @@ func TestGetIngredientsByIDs_EmptyIDsReturnsEmptySlice(t *testing.T) {
 		require.Empty(t, ingredients)
 	})
 }
+
+func TestServiceGetAllIngredients_FiltersOutNonSearchable(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := t.Context()
+		logger := logging.FromContext(ctx)
+		service := NewIngredientService(testutil.NewTestTxRunner(tx), NewIngredientRepo(), 10)
+
+		searchableID := uuid.New()
+		nonSearchableID := uuid.New()
+
+		err := service.SyncIngredientData(ctx, logger, []*Ingredient{
+			{
+				ID:                 searchableID,
+				Name:               "Service Searchable Ingredient",
+				FileKey:            "service_searchable_ingredient",
+				PreferredUnit:      unit.Gram,
+				AnimalProductLevel: Vegan,
+				ProcessedLevel:     Raw,
+				IsSearchable:       true,
+			},
+			{
+				ID:                 nonSearchableID,
+				Name:               "Service Non Searchable Ingredient",
+				FileKey:            "service_non_searchable_ingredient",
+				PreferredUnit:      unit.UnitUnknown,
+				AnimalProductLevel: Vegan,
+				ProcessedLevel:     Raw,
+				IsSearchable:       false,
+			},
+		})
+		require.NoError(t, err)
+
+		allIngredients, err := service.GetAllIngredients(ctx, logger)
+		require.NoError(t, err)
+		require.Len(t, allIngredients, 1)
+		require.Equal(t, searchableID, allIngredients[0].ID)
+		require.True(t, allIngredients[0].IsSearchable)
+	})
+}
+
+func TestGetIngredientsByIDs_ReturnsNonSearchableIngredientWhenRequested(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := t.Context()
+		logger := logging.FromContext(ctx)
+		service := NewIngredientService(testutil.NewTestTxRunner(tx), NewIngredientRepo(), 10)
+
+		ingredientID := uuid.New()
+		err := service.SyncIngredientData(ctx, logger, []*Ingredient{
+			{
+				ID:                 ingredientID,
+				Name:               "Service Hidden Ingredient",
+				FileKey:            "service_hidden_ingredient",
+				PreferredUnit:      unit.UnitUnknown,
+				AnimalProductLevel: Vegan,
+				ProcessedLevel:     Derived,
+				IsSearchable:       false,
+			},
+		})
+		require.NoError(t, err)
+
+		ingredients, err := service.GetIngredientsByIDs(ctx, logger, []string{ingredientID.String()})
+		require.NoError(t, err)
+		require.Len(t, ingredients, 1)
+		require.Equal(t, ingredientID, ingredients[0].ID)
+		require.False(t, ingredients[0].IsSearchable)
+		require.Equal(t, unit.UnitUnknown, ingredients[0].PreferredUnit)
+	})
+}
