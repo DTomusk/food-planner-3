@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"database/sql"
 	"foodplanner/internal/audit"
 	"foodplanner/internal/config"
@@ -42,6 +43,12 @@ func main() {
 		Addr:     cfg.RedisAddress,
 		Password: cfg.RedisPassword,
 		DB:       cfg.RedisDB,
+		TLSConfig: func() *tls.Config {
+			if !cfg.RedisUseTLS {
+				return nil
+			}
+			return &tls.Config{MinVersion: tls.VersionTLS12}
+		}(),
 	})
 
 	// Register event type strings and their corresponding event structs

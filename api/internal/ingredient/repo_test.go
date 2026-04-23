@@ -26,6 +26,7 @@ func TestUpsertIngredients_PersistsAnimalProductLevel(t *testing.T) {
 			CounterPlural:      nil,
 			AnimalProductLevel: Vegan,
 			ContainsGluten:     false,
+			ProcessedLevel:     Raw,
 		}
 		ingredientB := &Ingredient{
 			ID:                 uuid.New(),
@@ -37,6 +38,7 @@ func TestUpsertIngredients_PersistsAnimalProductLevel(t *testing.T) {
 			CounterPlural:      nil,
 			AnimalProductLevel: Meat,
 			ContainsGluten:     true,
+			ProcessedLevel:     Derived,
 		}
 
 		err := repo.UpsertIngredients(ctx, tx, []*Ingredient{ingredientA, ingredientB})
@@ -73,6 +75,7 @@ func TestUpsertIngredients_UpdatesExistingIngredientByFileKey(t *testing.T) {
 			CounterPlural:      nil,
 			AnimalProductLevel: Vegan,
 			ContainsGluten:     false,
+			ProcessedLevel:     Raw,
 		}
 
 		err := repo.UpsertIngredients(ctx, tx, []*Ingredient{original})
@@ -88,6 +91,7 @@ func TestUpsertIngredients_UpdatesExistingIngredientByFileKey(t *testing.T) {
 			CounterPlural:      testutil.PtrString("slices"),
 			AnimalProductLevel: Vegetarian,
 			ContainsGluten:     true,
+			ProcessedLevel:     Derived,
 		}
 
 		err = repo.UpsertIngredients(ctx, tx, []*Ingredient{updated})
@@ -105,6 +109,7 @@ func TestUpsertIngredients_UpdatesExistingIngredientByFileKey(t *testing.T) {
 		require.Equal(t, updated.CounterPlural, persisted[0].CounterPlural)
 		require.Equal(t, updated.AnimalProductLevel, persisted[0].AnimalProductLevel)
 		require.Equal(t, updated.ContainsGluten, persisted[0].ContainsGluten)
+		require.Equal(t, updated.ProcessedLevel, persisted[0].ProcessedLevel)
 	})
 }
 
@@ -115,5 +120,71 @@ func TestGetIngredientsByIDsRepo_EmptyIDsReturnsEmptySlice(t *testing.T) {
 		ingredients, err := repo.GetIngredientsByIDs(context.Background(), tx, []string{})
 		require.NoError(t, err)
 		require.Empty(t, ingredients)
+	})
+}
+
+func TestGetAllIngredients_FiltersOutNonSearchable(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		repo := NewIngredientRepo()
+
+		searchable := &Ingredient{
+			ID:                 uuid.New(),
+			Name:               "Searchable Ingredient",
+			FileKey:            "searchable_ingredient",
+			PreferredUnit:      unit.Gram,
+			AnimalProductLevel: Vegan,
+			ContainsGluten:     false,
+			ProcessedLevel:     Raw,
+			IsSearchable:       true,
+		}
+
+		nonSearchable := &Ingredient{
+			ID:                 uuid.New(),
+			Name:               "Non Searchable Category",
+			FileKey:            "non_searchable_category",
+			PreferredUnit:      unit.UnitUnknown,
+			AnimalProductLevel: Vegan,
+			ContainsGluten:     false,
+			ProcessedLevel:     Raw,
+			IsSearchable:       false,
+		}
+
+		err := repo.UpsertIngredients(ctx, tx, []*Ingredient{searchable, nonSearchable})
+		require.NoError(t, err)
+
+		allIngredients, err := repo.GetAllIngredients(ctx, tx)
+		require.NoError(t, err)
+		require.Len(t, allIngredients, 1)
+		require.Equal(t, searchable.ID, allIngredients[0].ID)
+		require.Equal(t, searchable.FileKey, allIngredients[0].FileKey)
+	})
+}
+
+func TestGetIngredientsByIDs_AllowsUnitUnknownForNonSearchable(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := context.Background()
+		repo := NewIngredientRepo()
+
+		ingredient := &Ingredient{
+			ID:                 uuid.New(),
+			Name:               "Hidden Category",
+			FileKey:            "hidden_category",
+			PreferredUnit:      unit.UnitUnknown,
+			AnimalProductLevel: Vegan,
+			ContainsGluten:     false,
+			ProcessedLevel:     Derived,
+			IsSearchable:       false,
+		}
+
+		err := repo.UpsertIngredients(ctx, tx, []*Ingredient{ingredient})
+		require.NoError(t, err)
+
+		fetched, err := repo.GetIngredientsByIDs(ctx, tx, []string{ingredient.ID.String()})
+		require.NoError(t, err)
+		require.Len(t, fetched, 1)
+		require.Equal(t, ingredient.ID, fetched[0].ID)
+		require.Equal(t, unit.UnitUnknown, fetched[0].PreferredUnit)
+		require.False(t, fetched[0].IsSearchable)
 	})
 }

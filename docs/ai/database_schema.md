@@ -1,6 +1,8 @@
 # Database Schema
 
-This file documents the current state of the PostgreSQL schema as of migration `0021`. It is derived from all up-migrations in `api/migrations/` and is intended as a quick reference for AI agents. Do not hand-edit column definitions here — regenerate from migrations when the schema changes.
+This file documents the current state of the PostgreSQL schema as of migration `0030`. It is derived from all up-migrations in `api/migrations/` and is intended as a quick reference for AI agents. Do not hand-edit column definitions here — regenerate from migrations when the schema changes.
+
+Regenerate with: `go run ./cmd/generate-db-schema-doc -migrations ./migrations -doc ../docs/ai/database_schema.md` (run from `api/`).
 
 ## Schemas
 
@@ -64,6 +66,7 @@ Tracks temporary upload intents and claim state for media objects (for example r
 | `used_at`            | TIMESTAMPTZ | NULLABLE                                                   |
 | `linked_entity_type` | TEXT        | NULLABLE                                                   |
 | `linked_entity_id`   | UUID        | NULLABLE                                                   |
+| `deleted_at`         | TIMESTAMPTZ | NULLABLE                                                   |
 
 Notes:
 - Constraint `uploads_link_pair_check` enforces both link fields are null or both non-null.
@@ -97,17 +100,20 @@ Notes:
 
 A single immutable snapshot of a recipe's content. Recipes are never mutated in place; editing creates a new version row.
 
-| Column      | Type        | Constraints                                      |
-|-------------|-------------|--------------------------------------------------|
-| `id`        | UUID        | PRIMARY KEY                                      |
-| `recipe_id` | UUID        | NOT NULL, FK → `recipe_containers(id)` ON DELETE CASCADE |
-| `name`      | TEXT        | NOT NULL                                         |
-| `prep_mins` | INTEGER     | NOT NULL, DEFAULT 0                              |
-| `cook_mins` | INTEGER     | NOT NULL, DEFAULT 0                              |
-| `portions`  | INTEGER     | NOT NULL, DEFAULT 1                              |
-| `version`   | INTEGER     | NOT NULL, DEFAULT 1                              |
-| `img_src`   | VARCHAR(255)| NULLABLE                                         |
-| `created_at`| TIMESTAMPTZ | NOT NULL, DEFAULT now()                          |
+| Column                 | Type         | Constraints                                      |
+|------------------------|--------------|--------------------------------------------------|
+| `id`                   | UUID         | PRIMARY KEY                                      |
+| `recipe_id`            | UUID         | NOT NULL, FK → `recipe_containers(id)` ON DELETE CASCADE |
+| `name`                 | TEXT         | NOT NULL                                         |
+| `prep_mins`            | INTEGER      | NOT NULL, DEFAULT 0                              |
+| `cook_mins`            | INTEGER      | NOT NULL, DEFAULT 0                              |
+| `portions`             | INTEGER      | NOT NULL, DEFAULT 1                              |
+| `version`              | INTEGER      | NOT NULL, DEFAULT 1                              |
+| `img_src`              | VARCHAR(255) | NULLABLE                                         |
+| `created_at`           | TIMESTAMPTZ  | NOT NULL, DEFAULT now()                          |
+| `description`          | TEXT         | NOT NULL, DEFAULT ''                             |
+| `animal_product_level` | INTEGER      | NOT NULL, DEFAULT 0                              |
+| `contains_gluten`      | BOOLEAN      | NOT NULL, DEFAULT FALSE                          |
 
 Notes:
 - Version numbers are incremented by the service layer, not enforced by a DB constraint.
@@ -158,23 +164,72 @@ Notes:
 
 ---
 
+## public.audits
+
+Append-only audit trail for domain actions and outcomes.
+
+| Column           | Type        | Constraints                             |
+|------------------|-------------|-----------------------------------------|
+| `id`             | UUID        | PRIMARY KEY, DEFAULT gen_random_uuid()  |
+| `correlation_id` | UUID        | NOT NULL                                |
+| `actor_id`       | UUID        | NULLABLE, FK → `users(id)`              |
+| `resource_type`  | TEXT        | NOT NULL                                |
+| `resource_id`    | UUID        | NULLABLE                                |
+| `action`         | TEXT        | NOT NULL                                |
+| `created_at`     | TIMESTAMPTZ | NOT NULL, DEFAULT now()                 |
+| `result`         | TEXT        | NOT NULL                                |
+| `old_state`      | JSONB       | NULLABLE                                |
+| `new_state`      | JSONB       | NULLABLE                                |
+| `reason`         | TEXT        | NULLABLE                                |
+| `context`        | JSONB       | NULLABLE                                |
+
+Notes:
+- Indexes exist on `actor_id`, `resource_type/resource_id`, `created_at`, and `correlation_id`.
+
+---
+
+## public.processed_events
+
+Idempotency ledger for event-consumer handlers.
+
+| Column           | Type        | Constraints                         |
+|------------------|-------------|-------------------------------------|
+| `event_id`       | UUID        | NOT NULL                            |
+| `consumer_group` | TEXT        | NOT NULL                            |
+| `handler_name`   | TEXT        | NOT NULL                            |
+| `processed_at`   | TIMESTAMPTZ | NOT NULL, DEFAULT now()             |
+
+Notes:
+- Composite primary key: (`event_id`, `consumer_group`, `handler_name`).
+
+---
+
 ## reference.ingredients
 
 Read-mostly reference table of known ingredients. Populated via the ingredient sync command.
 
-| Column           | Type    | Constraints          |
-|------------------|---------|----------------------|
-| `id`             | UUID    | PRIMARY KEY          |
-| `name`           | TEXT    | NOT NULL             |
-| `preferred_unit` | INTEGER | NOT NULL             |
-| `file_key`       | TEXT    | NOT NULL, UNIQUE     |
-| `counter`        | TEXT    | NULLABLE             |
-| `plural`         | TEXT    | NULLABLE             |
-| `counter_plural` | TEXT    | NULLABLE             |
+| Column                 | Type    | Constraints      |
+|------------------------|---------|------------------|
+| `id`                   | UUID    | PRIMARY KEY      |
+| `name`                 | TEXT    | NOT NULL         |
+| `preferred_unit`       | INTEGER | NOT NULL         |
+| `file_key`             | TEXT    | NOT NULL, UNIQUE |
+| `counter`              | TEXT    | NULLABLE         |
+| `plural`               | TEXT    | NULLABLE         |
+| `counter_plural`       | TEXT    | NULLABLE         |
+| `animal_product_level` | INTEGER | NOT NULL, DEFAULT 0 |
+| `contains_gluten`      | BOOLEAN | NOT NULL, DEFAULT FALSE |
+| `processing_level`     | INTEGER | NOT NULL, DEFAULT 1 |
+| `taxonomy_parent_id`   | UUID    | NULLABLE, FK -> `reference.ingredients(id)` ON DELETE SET NULL |
+| `is_searchable`        | BOOLEAN | NOT NULL, DEFAULT TRUE |
 
 Notes:
 - `file_key` is a stable identifier used to match rows during upsert syncs from `reference/ingredients.yaml`.
 - `preferred_unit` is the unit that the service enforces when creating ingredient usages.
+- `taxonomy_parent_id` models taxonomy relationships (specificity), not derivation/component lineage.
+- Constraint `ingredients_processing_level_check` enforces `processing_level IN (1, 2, 3)`.
+- Constraint `ingredients_taxonomy_parent_not_self` prevents self-parenting.
+- Index `idx_ingredients_taxonomy_parent_id` supports parent->children lookups.
 
 ---
 
@@ -185,6 +240,7 @@ users
   ├── refresh_tokens (user_id)
   │     └── refresh_tokens (replaced_by_token_id)
   ├── uploads (owner_user_id)
+  ├── audits (actor_id)
   └── recipe_containers (user_id)
     └── recipe_versions (recipe_id)
       ├── recipe_sources (recipe_version_id)    [0..1 per version]
@@ -194,31 +250,42 @@ uploads
   └── claimed by domain rows via (linked_entity_type, linked_entity_id)
 
 reference.ingredients
+  ├── reference.ingredients (taxonomy_parent_id)
   └── ingredient_usages (ingredient_id)
 ```
 
 ## Migration History Summary
 
-| Migration | Description                                                    |
-|-----------|----------------------------------------------------------------|
-| 0001      | Create `recipes` table (id, name)                              |
-| 0002      | Create `users`; add `user_id` to recipes                       |
-| 0003      | Create `reference` schema and `reference.ingredients`          |
-| 0004      | Create `ingredient_usages`                                     |
-| 0005      | Add `prep_mins`, `cook_mins`, `portions` to recipes            |
-| 0006      | Create `recipe_sources`                                        |
-| 0007      | Add `deleted_on` to recipes                                    |
-| 0008      | Add `counter` to `reference.ingredients`                       |
-| 0009      | Add `plural`, `counter_plural` to `reference.ingredients`      |
-| 0010      | Add `username` to `users`                                      |
-| 0011      | Rename `recipes` → `recipe_versions`                           |
-| 0012      | Rename FK columns to `recipe_version_id` in usages and sources |
-| 0013      | Drop `user_id` and `deleted_on` from `recipe_versions`         |
-| 0014      | Create `recipe_containers`; add `recipe_id` to versions        |
-| 0015      | Add `created_at` to `recipe_versions`                          |
-| 0016      | Add `version` integer to `recipe_versions`                     |
-| 0017      | Create `refresh_tokens`                                        |
-| 0018      | Add partial index for newest non-deleted recipe pagination     |
-| 0019      | Add recipe search indexes (`fts` and `trgm`) on version name   |
-| 0020      | Create `uploads` table for upload lifecycle tracking           |
-| 0021      | Add `img_src` to `recipe_versions`                             |
+| Migration | Description                                       |
+|-----------|---------------------------------------------------|
+| 0001      | create recipes                                    |
+| 0002      | create users                                      |
+| 0003      | create ingredients                                |
+| 0004      | create ingredient usages                          |
+| 0005      | alter recipes add metadata                        |
+| 0006      | create recipe sources                             |
+| 0007      | alter recipes add deleted on                      |
+| 0008      | alter ingredients add counter                     |
+| 0009      | alter ingredients add plurals                     |
+| 0010      | alter users add username                          |
+| 0011      | alter recipes rename recipe versions              |
+| 0012      | alter table rename recipe references              |
+| 0013      | alter table recipe versions drop user and deleted |
+| 0014      | create recipe containers                          |
+| 0015      | alter recipe versions add created at              |
+| 0016      | alter recipe versions add version number          |
+| 0017      | create refresh tokens                             |
+| 0018      | alter recipes add created at id index             |
+| 0019      | alter recipe versions add search indexes          |
+| 0020      | create uploads                                    |
+| 0021      | alter recipe versions add img src                 |
+| 0022      | alter uploads add deleted at                      |
+| 0023      | alter recipe versions add description             |
+| 0024      | alter ingredients add animal product level        |
+| 0025      | alter recipe versions add animal product level    |
+| 0026      | alter ingredients add contains gluten             |
+| 0027      | alter recipe versions add contains gluten         |
+| 0028      | create audits                                     |
+| 0029      | create processed events                           |
+| 0030      | alter ingredients add taxonomy                    |
+

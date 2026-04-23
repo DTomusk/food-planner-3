@@ -57,6 +57,15 @@ func (s *IngredientService) GetAllIngredients(ctx context.Context, logger *slog.
 	return ingredients, nil
 }
 
+func (s *IngredientService) GetAllIngredientsUnfiltered(ctx context.Context, logger *slog.Logger) ([]*Ingredient, error) {
+	ingredients, err := s.repo.GetAllIngredientsUnfiltered(ctx, s.txRunner.DB())
+	if err != nil {
+		logger.Error("Failed to fetch unfiltered ingredients", "error", err)
+		return nil, err
+	}
+	return ingredients, nil
+}
+
 func (s *IngredientService) GetIngredientsByIDs(ctx context.Context, logger *slog.Logger, ids []string) ([]*Ingredient, error) {
 	ingredients, err := s.repo.GetIngredientsByIDs(ctx, s.txRunner.DB(), ids)
 	if err != nil {

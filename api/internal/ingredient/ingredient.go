@@ -16,13 +16,35 @@ type Ingredient struct {
 	CounterPlural      *string
 	AnimalProductLevel AnimalProductLevel
 	ContainsGluten     bool
+	TaxonomyParentID   *uuid.UUID
+	ProcessedLevel     ProcessedLevel
+	IsSearchable       bool
 }
 
-func NewIngredient(name, fileKey string, preferredUnit int, counter, plural, counterPlural *string, animalProductLevel AnimalProductLevel, containsGluten bool) (*Ingredient, error) {
+func NewIngredient(
+	name, fileKey string,
+	preferredUnit int,
+	counter, plural, counterPlural *string,
+	animalProductLevel AnimalProductLevel,
+	containsGluten bool,
+	taxonomyParentID *uuid.UUID,
+	processedLevel *int,
+	isSearchable *bool,
+) (*Ingredient, error) {
+	resolvedProcessedLevel := Raw
+	if processedLevel != nil {
+		resolvedProcessedLevel = ProcessedLevel(*processedLevel)
+	}
+
+	resolvedIsSearchable := true
+	if isSearchable != nil {
+		resolvedIsSearchable = *isSearchable
+	}
+
 	if name == "" {
 		return nil, ErrInvalidName
 	}
-	if !unit.Unit(preferredUnit).IsValid() {
+	if !isPreferredUnitAllowed(preferredUnit, resolvedIsSearchable) {
 		return nil, ErrInvalidPreferredUnit
 	}
 	return &Ingredient{
@@ -35,7 +57,20 @@ func NewIngredient(name, fileKey string, preferredUnit int, counter, plural, cou
 		CounterPlural:      counterPlural,
 		AnimalProductLevel: animalProductLevel,
 		ContainsGluten:     containsGluten,
+		TaxonomyParentID:   taxonomyParentID,
+		ProcessedLevel:     resolvedProcessedLevel,
+		IsSearchable:       resolvedIsSearchable,
 	}, nil
+}
+
+// Unknown unit allowed for non-searchable ingredients
+func isPreferredUnitAllowed(preferredUnit int, isSearchable bool) bool {
+	resolvedUnit := unit.Unit(preferredUnit)
+	if resolvedUnit.IsValid() {
+		return true
+	}
+
+	return !isSearchable && resolvedUnit == unit.UnitUnknown
 }
 
 type AnimalProductLevel int
@@ -44,4 +79,13 @@ const (
 	Vegan AnimalProductLevel = iota
 	Vegetarian
 	Meat
+)
+
+type ProcessedLevel int
+
+const (
+	Unknown ProcessedLevel = iota
+	Raw
+	Derived
+	Composite
 )
