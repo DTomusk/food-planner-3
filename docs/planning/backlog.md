@@ -2,6 +2,14 @@
 
 ## Ready
 
+- [ ] Richer units
+    - Priority: medium
+    - Area: Ingredient usages, fullstack
+    - Type: feature
+    - Why: currently, users are limited to one unit for each ingredient (the preferred unit in the reference data). This sucks. We want to allow users to choose between units for their ingredients. 
+    - DoD:
+
+
 ## Planning 
 
 - [ ] Manual content moderation
@@ -107,13 +115,6 @@
     - Why: 
     - DoD: 
 
-- [ ] Code coverage improvements 
-    - Priority: 
-    - Area: 
-    - Type: tech debt
-    - Why: right now, code coverage is checking files we can't test (e.g. gql generated files). This brings down the score and gives a false understanding of the actual coverage, making the coverage report much less useful
-    - DoD: 
-
 - [ ] Save others' recipes
     - Priority: 
     - Area: 
@@ -152,6 +153,14 @@
     - DoD: 
 
 ## Done
+
+- [x] Code coverage improvements 
+    - Priority: 
+    - Area: 
+    - Type: tech debt
+    - Why: right now, code coverage is checking files we can't test (e.g. gql generated files). This brings down the score and gives a false understanding of the actual coverage, making the coverage report much less useful
+    - DoD: 
+        - [x] Add a yaml file to exclude certain files from test coverage
 
 - [x] Rate limiting
     - Priority: high
