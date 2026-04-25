@@ -421,7 +421,25 @@ ingredients:
     taxonomy_parent_key: "herbs_and_spices"
   - id: "basil"
     name: "Basil"
+    preferred_unit: 1
+    counter: "leaf"
+    counter_plural: "leaves"
+    taxonomy_parent_key: "herbs"
+  - id: "parsley"
+    name: "Parsley"
+    preferred_unit: 1
+    counter: "bunch"
+    counter_plural: "bunches"
+    taxonomy_parent_key: "herbs"
+  - id: "coriander"
+    name: "Coriander"
     preferred_unit: 2
+    taxonomy_parent_key: "herbs"
+  - id: "sage"
+    name: "Sage"
+    preferred_unit: 1
+    counter: "leaf"
+    counter_plural: "leaves"
     taxonomy_parent_key: "herbs"
   #### Sub category spices 
   - id: "spices"
