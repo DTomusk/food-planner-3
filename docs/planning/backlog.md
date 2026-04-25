@@ -2,7 +2,32 @@
 
 ## Ready
 
+- [ ] Recipe drafts 
+    - Priority: high
+    - Area: recipes, fullstack
+    - Type: feature
+    - Why: I could see the versioning system getting a bit annoying. If you make small edits and have to create a new recipe every time, then the recipe gets spread out and hard to track. It will make ratings and comments harder. We should make the versioning more in-your-face and allow users to create drafts before publishing a new version so they can make edits without a new version. We should only allow one draft at a time. Also, if you're just not ready to share a recipe, you should still be able to save your progress. And I think this will make the versioning system clearer to users.
+    - DoD: 
+        - [ ] users can choose to save and publish or save as draft when creating/updating a recipe 
+        - [ ] each recipe (container id) can only have one draft version at a time 
+        - [ ] other users aren't able to see the draft version of a recipe, they can only see the latest published version
+        - [ ] drafts aren't versioned, updating a draft updates the same draft version in the db, rather than creating a new one as with published versions
+
 ## Planning 
+
+- [ ] Notifications
+    - Priority: 
+    - Area: 
+    - Type: (bug, tech debt, feature)
+    - Why: 
+    - DoD: 
+
+- [ ] More (and richer) units
+    - Priority: high  
+    - Area: recipes, ingredient usage, fullstack
+    - Type: feature
+    - Why: currently, users cannot choose a unit for an ingredient. This doesn't make sense. We need a way of controlling what units are available for which ingredients. Because there are a lot of ingredients, it's not realistic to set the available for each ingredient, but we can probably take steps in the direction of having sensible units for each ingredient. The first could be adding a notion of dimension to units, e.g. mass, volume etc. If the preferred unit for an ingredient has a certain dimension, then show all ingredients of that dimension (e.g. grams -> pounds, ounces, kilograms, etc.). This might end up being too many to choose from, I don't know, but I think having the choice will be good for now. Later we can consider distinguishing between system e.g. metric and imperial, but that's a separate story. 
+    - DoD: 
 
 - [ ] Manual content moderation
     - Depends on: Audit logging
@@ -37,13 +62,6 @@
     - Area: 
     - Type: (bug, tech debt, feature)
     - Why: 
-    - DoD: 
-
-- [ ] Recipe drafts 
-    - Priority: 
-    - Area: 
-    - Type: (bug, tech debt, feature)
-    - Why: I could envisage the versioning system getting a bit annoying. If you make small edits and have to create a new recipe every time, then the recipe gets spread out and hard to track. It will make ratings and comments harder. We should make the versioning more in-your-face and allow users to create drafts before publishing a new version so they can make edits without a new version. We should only allow one draft at a time. 
     - DoD: 
 
 - [ ] Recipe rating 
