@@ -3,10 +3,10 @@ package recipe
 import (
 	"context"
 	"database/sql"
+	"foodplanner/internal/correlationid"
 	"foodplanner/internal/db"
 	"foodplanner/internal/events"
 	"foodplanner/internal/ingredient"
-	"foodplanner/internal/correlationid"
 	"foodplanner/internal/logging"
 	"foodplanner/internal/upload"
 	"log/slog"
@@ -97,6 +97,7 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 		imgSrc,
 		maxAnimalProductLevel,
 		containsGluten,
+		request.Publish,
 	)
 	if err != nil {
 		logger.Error("Error creating recipe", "error", err)
@@ -211,6 +212,13 @@ func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest)
 	if err != nil {
 		return nil, err
 	}
+
+	// If publish is true, simply create a new version
+	// If publish is false, check if there is an existing draft
+	// If there is an existing draft, update that version in place
+	// This might just involve deleting the draft version and inserting a new one (rather than trying to work out exactly what's changed)
+	// If not, create a new draft version
+	// So, publish true and publish false with no existing draft are essentially the same
 
 	// No upload id, no remove image flag (or remove image flag false), set imgSrc to previous version
 	// No upload id, remove image flag true, set imgSrc to nil

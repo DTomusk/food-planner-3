@@ -12,6 +12,7 @@ type CreateRecipeRequest struct {
 	ImgUploadID *string                        `json:"img_upload_id,omitempty"`
 	IPAddress   string                         `json:"ip_address" validate:"required,ip"`
 	UserAgent   string                         `json:"user_agent" validate:"required"`
+	Publish     bool                           `json:"publish"`
 }
 
 type CreateIngredientUsageRequest struct {
