@@ -7,6 +7,22 @@
 # 	5 = Teaspoon
 # 	6 = Centimeter
 
+# Animal product level reference
+# 0 = Not an animal product (vegan)
+# 1 = Animal product but not from muscle meat (e.g. milk, egg, cheese) vegetarian
+# 2 = Muscle meat (e.g. beef, chicken, pork) not vegetarian
+
+# Is searchable should be true for ingredients that can be added to recipes
+# Not searchable ingredients are used for categorization and don't have sufficient meaning in the context of a recipe (e.g. allium, origin_animal)
+
+# Processed level defaults to 0 (raw ingrediets)
+# 1 are derived ingredients (e.g. flour, cheese, bacon rasher) that primarily come from one raw ingredient
+# 2 are composites that are made up of multiple raw or derived ingredients (e.g. pasta, bread, sauces)
+
+# Counters are for unit 1 ingredients that are typically counted in specific units (e.g. slices of bread, rasher of bacon, clove of garlic). The counter field specifies the singular form of the unit, and counter_plural specifies the plural form
+
+# Taxonomy parent key is used to build the ingredient taxonomy. It should point to the most specific parent category (e.g. chicken breast's taxonomy parent is chicken, not meat or origin_animal)
+
 ingredients:
   # Raw ingredients
   ## Origin animal
@@ -36,12 +52,37 @@ ingredients:
     animal_product_level: 2
     is_searchable: false
     taxonomy_parent_key: "meat_red"
+  - id: "beef_steak"
+    name: "Steak"
+    preferred_unit: 2
+    animal_product_level: 2
+    taxonomy_parent_key: "beef"
+  - id: "beef_brisket"
+    name: "Beef brisket"
+    preferred_unit: 2
+    animal_product_level: 2
+    taxonomy_parent_key: "beef"
   - id: "lamb"
     name: "Lamb"
     preferred_unit: 0
     animal_product_level: 2
     is_searchable: false
     taxonomy_parent_key: "meat_red"
+  - id: "lamb_chop"
+    name: "Lamb chop"
+    preferred_unit: 2
+    animal_product_level: 2
+    taxonomy_parent_key: "lamb"
+  - id: "lamb_shoulder"
+    name: "Lamb shoulder"
+    preferred_unit: 2
+    animal_product_level: 2
+    taxonomy_parent_key: "lamb"
+  - id: "lamb_leg"
+    name: "Lamb leg"
+    preferred_unit: 2
+    animal_product_level: 2
+    taxonomy_parent_key: "lamb"
   - id: "pork"
     name: "Pork"
     preferred_unit: 0
@@ -53,6 +94,27 @@ ingredients:
     preferred_unit: 2
     animal_product_level: 2
     taxonomy_parent_key: "pork"
+  - id: "pork_chop"
+    name: "Pork chop"
+    preferred_unit: 2
+    animal_product_level: 2
+    taxonomy_parent_key: "pork"
+  - id: "pork_shoulder"
+    name: "Pork shoulder"
+    preferred_unit: 2
+    animal_product_level: 2
+    taxonomy_parent_key: "pork"
+  - id: "pork_ribs"
+    name: "Pork ribs"
+    preferred_unit: 2
+    animal_product_level: 2
+    taxonomy_parent_key: "pork"
+  - id: "venison"
+    name: "Venison"
+    preferred_unit: 0
+    animal_product_level: 2
+    is_searchable: false
+    taxonomy_parent_key: "meat_red"
   #### Sub category poultry
   - id: "meat_poultry"
     name: "Poultry"
@@ -66,6 +128,11 @@ ingredients:
     animal_product_level: 2
     is_searchable: false
     taxonomy_parent_key: "meat_poultry"
+  - id: "chicken_whole"
+    name: "Whole chicken"
+    preferred_unit: 1
+    animal_product_level: 2
+    taxonomy_parent_key: "chicken"
   - id: "chicken_breast"
     name: "Chicken breast"
     preferred_unit: 2
@@ -125,14 +192,12 @@ ingredients:
   - id: "origin_plant"
     name: "Plant origin"
     preferred_unit: 0
-    animal_product_level: 0
     is_searchable: false
   ### Category vegetables
   - id: "vegetables"
     name: "Vegetables"
     preferred_unit: 0
     is_searchable: false
-    animal_product_level: 0
     taxonomy_parent_key: "origin_plant"
   #### Sub category allium
   - id: "allium"
@@ -177,6 +242,77 @@ ingredients:
     counter: "clove"
     counter_plural: "cloves"
     taxonomy_parent_key: "garlic"
+  - id: "onion_spring"
+    name: "Spring onion"
+    plural: "Spring onions"
+    preferred_unit: 1
+    taxonomy_parent_key: "allium"
+  - id: "leek"
+    name: "Leek"
+    preferred_unit: 1
+    taxonomy_parent_key: "allium"
+  - id: "shallot"
+    name: "Shallot"
+    preferred_unit: 1
+    taxonomy_parent_key: "allium"
+  - id: "chives"
+    name: "Chives"
+    preferred_unit: 1
+    taxonomy_parent_key: "allium"
+  - id: "scallion"
+    name: "Scallion"
+    preferred_unit: 1
+    taxonomy_parent_key: "allium"
+  #### Sub category nightshades
+  - id: "nightshades"
+    name: "Nightshades"
+    preferred_unit: 0
+    is_searchable: false
+    taxonomy_parent_key: "vegetables"
+  - id: "tomato"
+    name: "Tomato"
+    preferred_unit: 1
+    taxonomy_parent_key: "nightshades"
+  - id: "tomato_cherry"
+    name: "Cherry tomato"
+    preferred_unit: 1
+    taxonomy_parent_key: "tomato"
+  - id: "tomato_heirloom"
+    name: "Heirloom tomato"
+    preferred_unit: 1
+    taxonomy_parent_key: "tomato"
+  - id: "tomato_plum"
+    name: "Plum tomato"
+    preferred_unit: 1
+    taxonomy_parent_key: "tomato"
+  - id: "potato"
+    name: "Potato"
+    preferred_unit: 1
+    taxonomy_parent_key: "nightshades"
+  - id: "potato_white"
+    name: "White potato"
+    preferred_unit: 1
+    taxonomy_parent_key: "potato"
+  - id: "potato_red"
+    name: "Red potato"
+    preferred_unit: 1
+    taxonomy_parent_key: "potato"
+  - id: "potato_yellow"
+    name: "Yellow potato"
+    preferred_unit: 1
+    taxonomy_parent_key: "potato"
+  - id: "potato_baking"
+    name: "Baking potato"
+    preferred_unit: 1
+    taxonomy_parent_key: "potato"
+  - id: "potato_waxy"
+    name: "Waxy potato"
+    preferred_unit: 1
+    taxonomy_parent_key: "potato"
+  - id: "eggplant"
+    name: "Eggplant"
+    preferred_unit: 1
+    taxonomy_parent_key: "nightshades"
   ### Category fruits
   - id: "fruits"
     name: "Fruits"
