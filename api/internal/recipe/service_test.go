@@ -1385,6 +1385,278 @@ func TestUpdateRecipe_RecipeWithoutImage_RemainsWithoutImage(t *testing.T) {
 	})
 }
 
+func TestUpdateRecipe_UnpublishedRecipe_DraftUpdateAdvancesCurrentVersion(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+
+		ingredientID := uuid.New()
+		testIngredient := ingredient.Ingredient{
+			ID:            ingredientID,
+			FileKey:       "test_ingredient_unpublished_draft_update",
+			Name:          "Test Ingredient",
+			PreferredUnit: 1,
+		}
+		err := seeds.InsertIngredient(ctx, tx, &testIngredient)
+		require.NoError(t, err)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		s := newTestRecipeService(t, tx, txRunner, repo, nil)
+
+		createReq := CreateRecipeRequest{
+			Name: "Draft Recipe",
+			Ingredients: []CreateIngredientUsageRequest{
+				{IngredientID: ingredientID.String(), Quantity: 100, Unit: 1},
+			},
+			UserID:   testUser.ID.String(),
+			PrepMins: 10,
+			CookMins: 10,
+			Portions: 2,
+			Publish:  false,
+		}
+
+		createdRecipe, err := s.CreateRecipe(ctx, createReq)
+		require.NoError(t, err)
+		require.NotNil(t, createdRecipe)
+		require.Nil(t, createdRecipe.PublishedAt)
+		firstDraftID := createdRecipe.CurrentVersionID
+
+		updateReq := UpdateRecipeRequest{
+			RecipeId: createdRecipe.ID.String(),
+			Request: CreateRecipeRequest{
+				Name: "Draft Recipe Updated",
+				Ingredients: []CreateIngredientUsageRequest{
+					{IngredientID: ingredientID.String(), Quantity: 120, Unit: 1},
+				},
+				UserID:   testUser.ID.String(),
+				PrepMins: 12,
+				CookMins: 10,
+				Portions: 2,
+				Publish:  false,
+			},
+		}
+
+		updatedRecipe, err := s.UpdateRecipe(ctx, updateReq)
+		require.NoError(t, err)
+		require.NotNil(t, updatedRecipe)
+		require.NotEqual(t, firstDraftID, updatedRecipe.CurrentVersionID)
+		require.Equal(t, 1, updatedRecipe.CurrentVersion.Version)
+		require.Nil(t, updatedRecipe.PublishedAt)
+		require.Nil(t, updatedRecipe.CurrentVersion.PublishedAt)
+
+		deletedFirstDraft, err := s.GetRecipeVersionByID(ctx, firstDraftID)
+		require.NoError(t, err)
+		require.Nil(t, deletedFirstDraft)
+
+		var versionCount int
+		err = tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM recipe_versions WHERE recipe_id = $1`, createdRecipe.ID).Scan(&versionCount)
+		require.NoError(t, err)
+		require.Equal(t, 1, versionCount)
+	})
+}
+
+func TestUpdateRecipe_PublishedRecipe_DraftKeepsCurrentVersionOnLatestPublished(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+
+		ingredientID := uuid.New()
+		testIngredient := ingredient.Ingredient{
+			ID:            ingredientID,
+			FileKey:       "test_ingredient_published_keeps_current",
+			Name:          "Test Ingredient",
+			PreferredUnit: 1,
+		}
+		err := seeds.InsertIngredient(ctx, tx, &testIngredient)
+		require.NoError(t, err)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		s := newTestRecipeService(t, tx, txRunner, repo, nil)
+
+		createReq := CreateRecipeRequest{
+			Name: "Published Recipe",
+			Ingredients: []CreateIngredientUsageRequest{
+				{IngredientID: ingredientID.String(), Quantity: 100, Unit: 1},
+			},
+			UserID:   testUser.ID.String(),
+			PrepMins: 10,
+			CookMins: 10,
+			Portions: 2,
+			Publish:  true,
+		}
+
+		createdRecipe, err := s.CreateRecipe(ctx, createReq)
+		require.NoError(t, err)
+		require.NotNil(t, createdRecipe)
+		require.NotNil(t, createdRecipe.PublishedAt)
+		publishedVersionID := createdRecipe.CurrentVersionID
+
+		updateReq := UpdateRecipeRequest{
+			RecipeId: createdRecipe.ID.String(),
+			Request: CreateRecipeRequest{
+				Name: "Draft From Published",
+				Ingredients: []CreateIngredientUsageRequest{
+					{IngredientID: ingredientID.String(), Quantity: 150, Unit: 1},
+				},
+				UserID:   testUser.ID.String(),
+				PrepMins: 15,
+				CookMins: 10,
+				Portions: 2,
+				Publish:  false,
+			},
+		}
+
+		updatedRecipe, err := s.UpdateRecipe(ctx, updateReq)
+		require.NoError(t, err)
+		require.NotNil(t, updatedRecipe)
+		require.Equal(t, publishedVersionID, updatedRecipe.CurrentVersionID)
+		require.Equal(t, 1, updatedRecipe.CurrentVersion.Version)
+		require.NotNil(t, updatedRecipe.CurrentVersion.PublishedAt)
+
+		draftVersion, err := s.GetRecipeVersionByRecipeIDAndVersion(ctx, createdRecipe.ID, 2)
+		require.NoError(t, err)
+		require.NotNil(t, draftVersion)
+		require.Nil(t, draftVersion.PublishedAt)
+		require.NotEqual(t, publishedVersionID, draftVersion.ID)
+	})
+}
+
+func TestUpdateRecipe_PublishedRecipe_ReplacesExistingDraftAndDeletesOldDraftData(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+
+		ingredientID := uuid.New()
+		testIngredient := ingredient.Ingredient{
+			ID:            ingredientID,
+			FileKey:       "test_ingredient_replace_draft",
+			Name:          "Test Ingredient",
+			PreferredUnit: 1,
+		}
+		err := seeds.InsertIngredient(ctx, tx, &testIngredient)
+		require.NoError(t, err)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		s := newTestRecipeService(t, tx, txRunner, repo, nil)
+
+		createReq := CreateRecipeRequest{
+			Name: "Published Base",
+			Ingredients: []CreateIngredientUsageRequest{
+				{IngredientID: ingredientID.String(), Quantity: 100, Unit: 1},
+			},
+			UserID:   testUser.ID.String(),
+			PrepMins: 10,
+			CookMins: 10,
+			Portions: 2,
+			Publish:  true,
+		}
+
+		createdRecipe, err := s.CreateRecipe(ctx, createReq)
+		require.NoError(t, err)
+		require.NotNil(t, createdRecipe)
+		publishedVersionID := createdRecipe.CurrentVersionID
+
+		firstDraftReq := UpdateRecipeRequest{
+			RecipeId: createdRecipe.ID.String(),
+			Request: CreateRecipeRequest{
+				Name: "Draft One",
+				Ingredients: []CreateIngredientUsageRequest{
+					{IngredientID: ingredientID.String(), Quantity: 110, Unit: 1},
+				},
+				UserID:   testUser.ID.String(),
+				PrepMins: 11,
+				CookMins: 10,
+				Portions: 2,
+				Source: CreateRecipeSourceRequest{
+					Type: 1,
+					URL:  testutil.PtrString("https://example.com/draft-one"),
+				},
+				Publish: false,
+			},
+		}
+
+		firstDraftResult, err := s.UpdateRecipe(ctx, firstDraftReq)
+		require.NoError(t, err)
+		require.NotNil(t, firstDraftResult)
+		require.Equal(t, publishedVersionID, firstDraftResult.CurrentVersionID)
+
+		firstDraftVersion, err := s.GetRecipeVersionByRecipeIDAndVersion(ctx, createdRecipe.ID, 2)
+		require.NoError(t, err)
+		require.NotNil(t, firstDraftVersion)
+		firstDraftID := firstDraftVersion.ID
+
+		var firstDraftUsageCount int
+		err = tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM ingredient_usages WHERE recipe_version_id = $1`, firstDraftID).Scan(&firstDraftUsageCount)
+		require.NoError(t, err)
+		require.Greater(t, firstDraftUsageCount, 0)
+
+		var firstDraftSourceCount int
+		err = tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM recipe_sources WHERE recipe_version_id = $1`, firstDraftID).Scan(&firstDraftSourceCount)
+		require.NoError(t, err)
+		require.Equal(t, 1, firstDraftSourceCount)
+
+		secondDraftReq := UpdateRecipeRequest{
+			RecipeId: createdRecipe.ID.String(),
+			Request: CreateRecipeRequest{
+				Name: "Draft Two",
+				Ingredients: []CreateIngredientUsageRequest{
+					{IngredientID: ingredientID.String(), Quantity: 125, Unit: 1},
+				},
+				UserID:   testUser.ID.String(),
+				PrepMins: 12,
+				CookMins: 10,
+				Portions: 2,
+				Source: CreateRecipeSourceRequest{
+					Type: 1,
+					URL:  testutil.PtrString("https://example.com/draft-two"),
+				},
+				Publish: false,
+			},
+		}
+
+		secondDraftResult, err := s.UpdateRecipe(ctx, secondDraftReq)
+		require.NoError(t, err)
+		require.NotNil(t, secondDraftResult)
+		require.Equal(t, publishedVersionID, secondDraftResult.CurrentVersionID)
+
+		secondDraftVersion, err := s.GetRecipeVersionByRecipeIDAndVersion(ctx, createdRecipe.ID, 2)
+		require.NoError(t, err)
+		require.NotNil(t, secondDraftVersion)
+		require.NotEqual(t, firstDraftID, secondDraftVersion.ID)
+
+		deletedFirstDraft, err := s.GetRecipeVersionByID(ctx, firstDraftID)
+		require.NoError(t, err)
+		require.Nil(t, deletedFirstDraft)
+
+		var remainingOldUsageCount int
+		err = tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM ingredient_usages WHERE recipe_version_id = $1`, firstDraftID).Scan(&remainingOldUsageCount)
+		require.NoError(t, err)
+		require.Equal(t, 0, remainingOldUsageCount)
+
+		var remainingOldSourceCount int
+		err = tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM recipe_sources WHERE recipe_version_id = $1`, firstDraftID).Scan(&remainingOldSourceCount)
+		require.NoError(t, err)
+		require.Equal(t, 0, remainingOldSourceCount)
+
+		var draftCount int
+		err = tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM recipe_versions WHERE recipe_id = $1 AND published_at IS NULL`, createdRecipe.ID).Scan(&draftCount)
+		require.NoError(t, err)
+		require.Equal(t, 1, draftCount)
+	})
+}
+
 func TestCreateRecipeWithDuplicateIngredients(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		txRunner := testutil.NewTestTxRunner(tx)
