@@ -9,9 +9,26 @@
     - Why: I could see the versioning system getting a bit annoying. If you make small edits and have to create a new recipe every time, then the recipe gets spread out and hard to track. It will make ratings and comments harder. We should make the versioning more in-your-face and allow users to create drafts before publishing a new version so they can make edits without a new version. We should only allow one draft at a time. Also, if you're just not ready to share a recipe, you should still be able to save your progress. And I think this will make the versioning system clearer to users.
     - DoD: 
         - [ ] users can choose to save and publish or save as draft when creating/updating a recipe 
+            - [ ] new recipe: can save and publish or save as draft 
+            - [ ] existing published recipe: can create new version from newest published version to save and publish or save as draft 
+            - [ ] existing draft recipe: can edit draft or save and publish 
         - [ ] each recipe (container id) can only have one draft version at a time 
+            - [ ] the new draft version has to be based on the latest published version, users shouldn't be able to create new drafts from versions which aren't the newest published one
         - [ ] other users aren't able to see the draft version of a recipe, they can only see the latest published version
+            - [ ] draft version not shown in recipe search 
+            - [ ] draft version not shown in recipe detail (and not in versions)
+            - [ ] creator sees draft in my recipes 
         - [ ] drafts aren't versioned, updating a draft updates the same draft version in the db, rather than creating a new one as with published versions
+            - Technical detail: consider hard deleting the old draft and inserting the new draft in a transaction. 
+        - [ ] the recipes/id/edit page takes the creator to the existing draft if there is one 
+        - [ ] recipe detail page shows versions more clearly 
+            - [ ] if you are the creator, it shows the draft version if there is one (with an edit button), and a create new version button if there isn't
+        - [ ] recipe container continues to reference latest published recipe as current version, as this will likely be queried much more than the draft version 
+        - [ ] recipe container itself should have a published on flag 
+        - [ ] when creating a completely new draft recipe, the recipe container should reference the draft as the current version and both the container and the version should have published on set to null 
+        - [ ] when publishing a new recipe for the first time, both the container and the version should get published on set 
+        - [ ] do not implement a separate publish endpoint, the update endpoint should be the only way for an existing draft to become a published version 
+        - [ ] recipes cannot be unpublished 
 
 ## Planning 
 

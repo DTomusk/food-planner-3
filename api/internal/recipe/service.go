@@ -261,6 +261,8 @@ func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest)
 		imgSrc,
 		maxAnimalProductLevel,
 		containsGluten,
+		// TODO: fix later
+		nil,
 	)
 	if err != nil {
 		return nil, err

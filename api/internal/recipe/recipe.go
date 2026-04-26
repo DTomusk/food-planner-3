@@ -12,8 +12,9 @@ type RecipeContainer struct {
 	CurrentVersionID uuid.UUID
 	CurrentVersion   *RecipeVersion
 
-	CreatedAt time.Time
-	DeletedAt *time.Time
+	CreatedAt   time.Time
+	DeletedAt   *time.Time
+	PublishedAt *time.Time
 }
 
 type RecipeVersion struct {
@@ -70,6 +71,7 @@ func NewRecipe(
 		CurrentVersionID: version.ID,
 		CurrentVersion:   version,
 		CreatedAt:        now,
+		PublishedAt:      publishedAt,
 	}
 
 	return recipe, nil
