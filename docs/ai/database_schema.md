@@ -1,6 +1,6 @@
 # Database Schema
 
-This file documents the current state of the PostgreSQL schema as of migration `0030`. It is derived from all up-migrations in `api/migrations/` and is intended as a quick reference for AI agents. Do not hand-edit column definitions here — regenerate from migrations when the schema changes.
+This file documents the current state of the PostgreSQL schema as of migration `0031`. It is derived from all up-migrations in `api/migrations/` and is intended as a quick reference for AI agents. Do not hand-edit column definitions here — regenerate from migrations when the schema changes.
 
 Regenerate with: `go run ./cmd/generate-db-schema-doc -migrations ./migrations -doc ../docs/ai/database_schema.md` (run from `api/`).
 
@@ -86,6 +86,7 @@ The long-lived record for a recipe. Belongs to a user and tracks which version i
 | `user_id`            | UUID        | NOT NULL, FK → `users(id)` ON DELETE CASCADE                     |
 | `current_version_id` | UUID        | NULLABLE, FK → `recipe_versions(id)` DEFERRABLE INITIALLY DEFERRED |
 | `created_at`         | TIMESTAMPTZ | NOT NULL, DEFAULT now()                                           |
+| `published_at`       | TIMESTAMPTZ | NULLABLE                                                          |
 | `deleted_on`         | TIMESTAMPTZ | NULLABLE                                                          |
 
 Notes:
@@ -93,6 +94,7 @@ Notes:
 - The FK is deferrable to allow container and version to be inserted in any order within one transaction.
 - `deleted_on` implements soft delete at the container level.
 - Partial index `idx_recipes_created_at_id` supports newest-first pagination for non-deleted rows.
+- Partial index `idx_recipe_containers_public_created_at_id` supports newest-first pagination for published, non-deleted rows.
 
 ---
 
@@ -111,6 +113,7 @@ A single immutable snapshot of a recipe's content. Recipes are never mutated in 
 | `version`              | INTEGER      | NOT NULL, DEFAULT 1                              |
 | `img_src`              | VARCHAR(255) | NULLABLE                                         |
 | `created_at`           | TIMESTAMPTZ  | NOT NULL, DEFAULT now()                          |
+| `published_at`         | TIMESTAMPTZ  | NULLABLE                                         |
 | `description`          | TEXT         | NOT NULL, DEFAULT ''                             |
 | `animal_product_level` | INTEGER      | NOT NULL, DEFAULT 0                              |
 | `contains_gluten`      | BOOLEAN      | NOT NULL, DEFAULT FALSE                          |
@@ -119,6 +122,8 @@ Notes:
 - Version numbers are incremented by the service layer, not enforced by a DB constraint.
 - Treat this table as append-only history. Old rows are never updated.
 - Search indexes exist on `name`: `idx_recipe_versions_name_fts_gin` (full text) and `idx_recipe_versions_name_trgm_gin` (fuzzy trigram).
+- Partial unique index `ux_recipe_versions_one_draft_per_recipe` enforces at most one draft row (`published_at IS NULL`) per `recipe_id`.
+- Partial index `idx_recipe_versions_recipe_published_created_at` supports listing published versions (`published_at IS NOT NULL`) by recipe.
 - Migration `0019` enables `pg_trgm` extension (`CREATE EXTENSION IF NOT EXISTS pg_trgm`).
 
 ---
@@ -288,4 +293,5 @@ reference.ingredients
 | 0028      | create audits                                     |
 | 0029      | create processed events                           |
 | 0030      | alter ingredients add taxonomy                    |
+| 0031      | alter recipes add published at                    |
 
