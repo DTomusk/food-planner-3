@@ -8,12 +8,14 @@ require github.com/joho/godotenv v1.5.1
 
 require (
 	github.com/99designs/gqlgen v0.17.85
+	github.com/alicebob/miniredis/v2 v2.37.0
 	github.com/aws/aws-sdk-go-v2 v1.41.5
 	github.com/aws/aws-sdk-go-v2/config v1.32.13
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.13
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.98.0
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/lib/pq v1.10.9
+	github.com/redis/go-redis/v9 v9.18.0
 	github.com/rs/cors v1.11.1
 	github.com/stretchr/testify v1.11.1
 	github.com/vektah/gqlparser/v2 v2.5.32
@@ -23,7 +25,6 @@ require (
 
 require (
 	github.com/agnivade/levenshtein v1.2.1 // indirect
-	github.com/alicebob/miniredis/v2 v2.37.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.8 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.21 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.21 // indirect
@@ -47,7 +48,6 @@ require (
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/redis/go-redis/v9 v9.18.0 // indirect
 	github.com/sosodev/duration v1.3.1 // indirect
 	github.com/urfave/cli/v3 v3.6.1 // indirect
 	github.com/yuin/gopher-lua v1.1.1 // indirect

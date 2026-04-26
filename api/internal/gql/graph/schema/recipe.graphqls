@@ -84,6 +84,7 @@ input CreateRecipeInput {
   portions: Int!
   recipeSource: CreateRecipeSourceInput!
   imgUploadId: ID
+  publish: Boolean!
 }
 
 input CreateIngredientUsageInput {

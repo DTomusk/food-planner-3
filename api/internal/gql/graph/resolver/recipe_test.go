@@ -363,6 +363,7 @@ func TestRecipeResolver_UpdateRecipe_WithVersionResolvers(t *testing.T) {
 				Type: 1,
 				URL:  ptrString("https://example.com/chocolate-cake"),
 			},
+			Publish: true,
 		}
 
 		authenticatedCtx := auth.ContextWithClaims(ctx, &auth.Claims{UserID: testUser.ID.String()})
@@ -490,8 +491,8 @@ func TestRecipeResolver_Recipes_PaginatesEdges(t *testing.T) {
 			recipeID := uuid.New()
 			versionID := uuid.New()
 			createdAt := now.Add(-time.Duration(i) * time.Minute)
-			require.NoError(t, seeds.InsertRecipeContainer(ctx, tx, recipeID, testUser.ID))
-			require.NoError(t, seeds.InsertRecipeVersion(ctx, tx, versionID, recipeID, name, 10, 20, 2, 1))
+			require.NoError(t, seeds.InsertPublishedRecipeContainer(ctx, tx, recipeID, testUser.ID))
+			require.NoError(t, seeds.InsertPublishedRecipeVersion(ctx, tx, versionID, recipeID, name, 10, 20, 2, 1))
 			require.NoError(t, seeds.SetRecipeContainerCurrentVersion(ctx, tx, recipeID, versionID))
 			_, err = tx.ExecContext(ctx, `UPDATE recipe_containers SET created_at = $1 WHERE id = $2`, createdAt, recipeID)
 			require.NoError(t, err)
@@ -544,10 +545,10 @@ func TestRecipeVersionResolver_NoDataPaths(t *testing.T) {
 		recipeID := uuid.New()
 		versionID := uuid.New()
 
-		err = seeds.InsertRecipeContainer(ctx, tx, recipeID, testUser.ID)
+		err = seeds.InsertPublishedRecipeContainer(ctx, tx, recipeID, testUser.ID)
 		require.NoError(t, err)
 
-		err = seeds.InsertRecipeVersion(ctx, tx, versionID, recipeID, "Recipe Without Source", 15, 25, 2, 1)
+		err = seeds.InsertPublishedRecipeVersion(ctx, tx, versionID, recipeID, "Recipe Without Source", 15, 25, 2, 1)
 		require.NoError(t, err)
 
 		err = seeds.SetRecipeContainerCurrentVersion(ctx, tx, recipeID, versionID)

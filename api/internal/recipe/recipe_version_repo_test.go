@@ -25,9 +25,9 @@ func TestGetRecipeSourceByRecipeVersionID(t *testing.T) {
 		recipeID := uuid.New()
 		versionID := uuid.New()
 
-		err = seeds.InsertRecipeContainer(ctx, tx, recipeID, testUser.ID)
+		err = seeds.InsertPublishedRecipeContainer(ctx, tx, recipeID, testUser.ID)
 		require.NoError(t, err)
-		err = seeds.InsertRecipeVersion(ctx, tx, versionID, recipeID, "Recipe With Source", 30, 60, 8, 1)
+		err = seeds.InsertPublishedRecipeVersion(ctx, tx, versionID, recipeID, "Recipe With Source", 30, 60, 8, 1)
 		require.NoError(t, err)
 		err = seeds.SetRecipeContainerCurrentVersion(ctx, tx, recipeID, versionID)
 		require.NoError(t, err)
@@ -57,7 +57,7 @@ func TestCreateRecipeVersion_PersistsAnimalProductLevel(t *testing.T) {
 		require.NoError(t, err)
 
 		recipeID := uuid.New()
-		err = seeds.InsertRecipeContainer(ctx, tx, recipeID, testUser.ID)
+		err = seeds.InsertPublishedRecipeContainer(ctx, tx, recipeID, testUser.ID)
 		require.NoError(t, err)
 
 		recipeVersion := &RecipeVersion{
@@ -95,9 +95,9 @@ func TestGetRecipeVersionByID_ReturnsAnimalProductLevel(t *testing.T) {
 		recipeID := uuid.New()
 		versionID := uuid.New()
 
-		err = seeds.InsertRecipeContainer(ctx, tx, recipeID, testUser.ID)
+		err = seeds.InsertPublishedRecipeContainer(ctx, tx, recipeID, testUser.ID)
 		require.NoError(t, err)
-		err = seeds.InsertRecipeVersion(ctx, tx, versionID, recipeID, "Recipe With Animal Level", 30, 60, 8, 1)
+		err = seeds.InsertPublishedRecipeVersion(ctx, tx, versionID, recipeID, "Recipe With Animal Level", 30, 60, 8, 1)
 		require.NoError(t, err)
 
 		expectedAnimalProductLevel := 1
@@ -120,7 +120,7 @@ func TestCreateRecipeVersion_PersistsContainsGluten(t *testing.T) {
 		require.NoError(t, err)
 
 		recipeID := uuid.New()
-		err = seeds.InsertRecipeContainer(ctx, tx, recipeID, testUser.ID)
+		err = seeds.InsertPublishedRecipeContainer(ctx, tx, recipeID, testUser.ID)
 		require.NoError(t, err)
 
 		recipeVersion := &RecipeVersion{
@@ -158,9 +158,9 @@ func TestGetRecipeVersionByID_ReturnsContainsGluten(t *testing.T) {
 		recipeID := uuid.New()
 		versionID := uuid.New()
 
-		err = seeds.InsertRecipeContainer(ctx, tx, recipeID, testUser.ID)
+		err = seeds.InsertPublishedRecipeContainer(ctx, tx, recipeID, testUser.ID)
 		require.NoError(t, err)
-		err = seeds.InsertRecipeVersion(ctx, tx, versionID, recipeID, "Recipe With Gluten", 30, 60, 8, 1)
+		err = seeds.InsertPublishedRecipeVersion(ctx, tx, versionID, recipeID, "Recipe With Gluten", 30, 60, 8, 1)
 		require.NoError(t, err)
 
 		expectedContainsGluten := true

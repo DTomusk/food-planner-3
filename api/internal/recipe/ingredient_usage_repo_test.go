@@ -34,9 +34,9 @@ func TestGetIngredientUsagesForRecipeVersion(t *testing.T) {
 		recipeID := uuid.New()
 		versionID := uuid.New()
 
-		err = seeds.InsertRecipeContainer(ctx, tx, recipeID, testUser.ID)
+		err = seeds.InsertPublishedRecipeContainer(ctx, tx, recipeID, testUser.ID)
 		require.NoError(t, err)
-		err = seeds.InsertRecipeVersion(ctx, tx, versionID, recipeID, "Recipe With Ingredients", 30, 60, 8, 1)
+		err = seeds.InsertPublishedRecipeVersion(ctx, tx, versionID, recipeID, "Recipe With Ingredients", 30, 60, 8, 1)
 		require.NoError(t, err)
 		err = seeds.SetRecipeContainerCurrentVersion(ctx, tx, recipeID, versionID)
 		require.NoError(t, err)
@@ -92,9 +92,9 @@ func TestInsertIngredientUsages(t *testing.T) {
 		recipeID := uuid.New()
 		versionID := uuid.New()
 
-		err = seeds.InsertRecipeContainer(ctx, tx, recipeID, testUser.ID)
+		err = seeds.InsertPublishedRecipeContainer(ctx, tx, recipeID, testUser.ID)
 		require.NoError(t, err)
-		err = seeds.InsertRecipeVersion(ctx, tx, versionID, recipeID, "Recipe With Multiple Ingredients", 30, 60, 8, 1)
+		err = seeds.InsertPublishedRecipeVersion(ctx, tx, versionID, recipeID, "Recipe With Multiple Ingredients", 30, 60, 8, 1)
 		require.NoError(t, err)
 		err = seeds.SetRecipeContainerCurrentVersion(ctx, tx, recipeID, versionID)
 		require.NoError(t, err)

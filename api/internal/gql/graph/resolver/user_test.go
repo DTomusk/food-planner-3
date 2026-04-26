@@ -34,7 +34,6 @@ func TestUserResolver_User(t *testing.T) {
 		require.NoError(t, err, "Failed to fetch user")
 		require.NotNil(t, userModel, "Expected user model, got nil")
 		require.Equal(t, testUser.ID.String(), userModel.ID)
-		require.Equal(t, testUser.Email, userModel.Email)
 		require.Equal(t, testUser.Username, userModel.Username)
 	})
 }
@@ -58,7 +57,6 @@ func TestUserResolver_Me(t *testing.T) {
 		require.NoError(t, err, "Failed to fetch current user")
 		require.NotNil(t, userModel, "Expected current user model, got nil")
 		require.Equal(t, testUser.ID.String(), userModel.ID)
-		require.Equal(t, testUser.Email, userModel.Email)
 		require.Equal(t, testUser.Username, userModel.Username)
 	})
 }
@@ -97,10 +95,10 @@ func TestUserResolver_Recipes(t *testing.T) {
 			recipeID := uuid.New()
 			versionID := uuid.New()
 
-			err = seeds.InsertRecipeContainer(ctx, tx, recipeID, testUser.ID)
+			err = seeds.InsertPublishedRecipeContainer(ctx, tx, recipeID, testUser.ID)
 			require.NoError(t, err)
 
-			err = seeds.InsertRecipeVersion(ctx, tx, versionID, recipeID, recipeName, 20, 40, 4, 1)
+			err = seeds.InsertPublishedRecipeVersion(ctx, tx, versionID, recipeID, recipeName, 20, 40, 4, 1)
 			require.NoError(t, err)
 
 			err = seeds.SetRecipeContainerCurrentVersion(ctx, tx, recipeID, versionID)
@@ -110,10 +108,10 @@ func TestUserResolver_Recipes(t *testing.T) {
 		otherRecipeID := uuid.New()
 		otherVersionID := uuid.New()
 
-		err = seeds.InsertRecipeContainer(ctx, tx, otherRecipeID, otherUser.ID)
+		err = seeds.InsertPublishedRecipeContainer(ctx, tx, otherRecipeID, otherUser.ID)
 		require.NoError(t, err)
 
-		err = seeds.InsertRecipeVersion(ctx, tx, otherVersionID, otherRecipeID, "Other User Recipe", 10, 30, 2, 1)
+		err = seeds.InsertPublishedRecipeVersion(ctx, tx, otherVersionID, otherRecipeID, "Other User Recipe", 10, 30, 2, 1)
 		require.NoError(t, err)
 
 		err = seeds.SetRecipeContainerCurrentVersion(ctx, tx, otherRecipeID, otherVersionID)
@@ -194,18 +192,18 @@ func TestUserResolver_Recipes_ForcesParentUserScope(t *testing.T) {
 
 		testUserRecipeID := uuid.New()
 		testUserVersionID := uuid.New()
-		err = seeds.InsertRecipeContainer(ctx, tx, testUserRecipeID, testUser.ID)
+		err = seeds.InsertPublishedRecipeContainer(ctx, tx, testUserRecipeID, testUser.ID)
 		require.NoError(t, err)
-		err = seeds.InsertRecipeVersion(ctx, tx, testUserVersionID, testUserRecipeID, "Scoped Recipe", 15, 25, 2, 1)
+		err = seeds.InsertPublishedRecipeVersion(ctx, tx, testUserVersionID, testUserRecipeID, "Scoped Recipe", 15, 25, 2, 1)
 		require.NoError(t, err)
 		err = seeds.SetRecipeContainerCurrentVersion(ctx, tx, testUserRecipeID, testUserVersionID)
 		require.NoError(t, err)
 
 		otherUserRecipeID := uuid.New()
 		otherUserVersionID := uuid.New()
-		err = seeds.InsertRecipeContainer(ctx, tx, otherUserRecipeID, otherUser.ID)
+		err = seeds.InsertPublishedRecipeContainer(ctx, tx, otherUserRecipeID, otherUser.ID)
 		require.NoError(t, err)
-		err = seeds.InsertRecipeVersion(ctx, tx, otherUserVersionID, otherUserRecipeID, "Other Recipe", 10, 20, 2, 1)
+		err = seeds.InsertPublishedRecipeVersion(ctx, tx, otherUserVersionID, otherUserRecipeID, "Other Recipe", 10, 20, 2, 1)
 		require.NoError(t, err)
 		err = seeds.SetRecipeContainerCurrentVersion(ctx, tx, otherUserRecipeID, otherUserVersionID)
 		require.NoError(t, err)

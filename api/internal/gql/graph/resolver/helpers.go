@@ -29,7 +29,6 @@ func mapUser(user *user.User) *model.User {
 	}
 	return &model.User{
 		ID:       user.ID.String(),
-		Email:    user.Email,
 		Username: user.Username,
 	}
 }
@@ -204,6 +203,7 @@ func toCreateRecipeRequest(input *model.CreateRecipeInput, userID, ipAddress, us
 		Source:      recipeSourceRequest,
 		ImgUploadID: input.ImgUploadID,
 		IPAddress:   ipAddress,
+		Publish:     input.Publish,
 	}, nil
 }
 

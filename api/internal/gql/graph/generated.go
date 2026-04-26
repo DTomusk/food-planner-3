@@ -156,7 +156,6 @@ type ComplexityRoot struct {
 	}
 
 	User struct {
-		Email    func(childComplexity int) int
 		ID       func(childComplexity int) int
 		Recipes  func(childComplexity int, pagination *model.PaginationInput, filter *model.RecipeFilterInput) int
 		Username func(childComplexity int) int
@@ -660,12 +659,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Unit.Val(childComplexity), true
 
-	case "User.email":
-		if e.complexity.User.Email == nil {
-			break
-		}
-
-		return e.complexity.User.Email(childComplexity), true
 	case "User.id":
 		if e.complexity.User.ID == nil {
 			break
@@ -1066,8 +1059,6 @@ func (ec *executionContext) fieldContext_AuthPayload_user(_ context.Context, fie
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_User_id(ctx, field)
-			case "email":
-				return ec.fieldContext_User_email(ctx, field)
 			case "username":
 				return ec.fieldContext_User_username(ctx, field)
 			case "recipes":
@@ -2132,8 +2123,6 @@ func (ec *executionContext) fieldContext_Query_user(ctx context.Context, field g
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_User_id(ctx, field)
-			case "email":
-				return ec.fieldContext_User_email(ctx, field)
 			case "username":
 				return ec.fieldContext_User_username(ctx, field)
 			case "recipes":
@@ -2195,8 +2184,6 @@ func (ec *executionContext) fieldContext_Query_me(_ context.Context, field graph
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_User_id(ctx, field)
-			case "email":
-				return ec.fieldContext_User_email(ctx, field)
 			case "username":
 				return ec.fieldContext_User_username(ctx, field)
 			case "recipes":
@@ -2371,8 +2358,6 @@ func (ec *executionContext) fieldContext_Recipe_author(_ context.Context, field 
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_User_id(ctx, field)
-			case "email":
-				return ec.fieldContext_User_email(ctx, field)
 			case "username":
 				return ec.fieldContext_User_username(ctx, field)
 			case "recipes":
@@ -3471,35 +3456,6 @@ func (ec *executionContext) fieldContext_User_id(_ context.Context, field graphq
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _User_email(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_User_email,
-		func(ctx context.Context) (any, error) {
-			return obj.Email, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_User_email(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "User",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -5118,7 +5074,7 @@ func (ec *executionContext) unmarshalInputCreateRecipeInput(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "ingredientUsages", "prepMins", "cookMins", "portions", "recipeSource", "imgUploadId"}
+	fieldsInOrder := [...]string{"name", "description", "ingredientUsages", "prepMins", "cookMins", "portions", "recipeSource", "imgUploadId", "publish"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -5181,6 +5137,13 @@ func (ec *executionContext) unmarshalInputCreateRecipeInput(ctx context.Context,
 				return it, err
 			}
 			it.ImgUploadID = data
+		case "publish":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("publish"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Publish = data
 		}
 	}
 
@@ -6534,11 +6497,6 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			out.Values[i] = graphql.MarshalString("User")
 		case "id":
 			out.Values[i] = ec._User_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "email":
-			out.Values[i] = ec._User_email(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}

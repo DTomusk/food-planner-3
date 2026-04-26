@@ -140,7 +140,6 @@ func TestAuthResolver_SignUp(t *testing.T) {
 
 		// Assert
 		require.NoError(t, err)
-		require.Equal(t, input.Email, authPayload.User.Email)
 		require.Equal(t, input.Username, authPayload.User.Username)
 		require.NotEmpty(t, authPayload.User.ID)
 		require.NotEmpty(t, authPayload.Jwt)
@@ -189,7 +188,6 @@ func TestAuthResolver_SignIn(t *testing.T) {
 
 		// Assert
 		require.NoError(t, err)
-		require.Equal(t, createdUser.Email, authPayload.User.Email)
 		require.Equal(t, createdUser.Username, authPayload.User.Username)
 		require.Equal(t, createdUser.ID.String(), authPayload.User.ID)
 		require.NotEmpty(t, authPayload.Jwt)
@@ -283,7 +281,6 @@ func TestAuthResolver_Refresh_Success_SetsRefreshTokenCookie(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, authPayload)
 		require.Equal(t, testUser.ID.String(), authPayload.User.ID)
-		require.Equal(t, testUser.Email, authPayload.User.Email)
 		require.Equal(t, testUser.Username, authPayload.User.Username)
 		require.NotEmpty(t, authPayload.Jwt)
 		assertRefreshTokenCookie(t, recorder)

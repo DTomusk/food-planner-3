@@ -99,6 +99,56 @@ func TestCreateRecipe(t *testing.T) {
 		require.Equal(t, 15, recipeVersion.PrepMins, "Expected prep minutes to match the request")
 		require.Equal(t, 0, recipeVersion.CookMins, "Expected cook minutes to match the request")
 		require.Equal(t, 6, recipeVersion.Portions, "Expected portions to match the request")
+		require.Nil(t, recipeContainer.PublishedAt, "Expected container published_at to be nil when publish is false")
+		require.Nil(t, recipeVersion.PublishedAt, "Expected version published_at to be nil when publish is false")
+	})
+}
+
+func TestCreateRecipe_WhenPublishTrue_SetsPublishedAtEqualToCreatedAt(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+
+		ingredientID := uuid.New()
+		testIngredient := ingredient.Ingredient{
+			ID:            ingredientID,
+			FileKey:       "test_ingredient_publish_true",
+			Name:          "Test Ingredient Publish True",
+			PreferredUnit: 1,
+		}
+		err := seeds.InsertIngredient(ctx, tx, &testIngredient)
+		require.NoError(t, err)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		s := newTestRecipeService(t, tx, txRunner, repo, nil)
+
+		request := CreateRecipeRequest{
+			Name: "Published Ice Cream",
+			Ingredients: []CreateIngredientUsageRequest{
+				{
+					IngredientID: ingredientID.String(),
+					Quantity:     200,
+					Unit:         1,
+				},
+			},
+			UserID:   testUser.ID.String(),
+			PrepMins: 15,
+			CookMins: 0,
+			Portions: 6,
+			Publish:  true,
+		}
+
+		recipeContainer, err := s.CreateRecipe(ctx, request)
+		require.NoError(t, err)
+		require.NotNil(t, recipeContainer)
+
+		require.NotNil(t, recipeContainer.CurrentVersion)
+		require.NotNil(t, recipeContainer.PublishedAt, "Expected container published_at to be set when publish is true")
+		require.NotNil(t, recipeContainer.CurrentVersion.PublishedAt, "Expected version published_at to be set when publish is true")
 	})
 }
 
@@ -433,6 +483,7 @@ func TestUpdateRecipe_WithImageUploadID_PersistsAndRetrievesImageURL(t *testing.
 			PrepMins: 15,
 			CookMins: 0,
 			Portions: 6,
+			Publish:  true,
 		}
 
 		recipeContainer, err := s.CreateRecipe(ctx, baseRequest)
@@ -545,6 +596,7 @@ func TestUpdateRecipe_PersistsDescriptionOnNewVersion(t *testing.T) {
 			PrepMins:    15,
 			CookMins:    0,
 			Portions:    6,
+			Publish:     true,
 		}
 
 		recipeContainer, err := s.CreateRecipe(ctx, baseRequest)
@@ -641,6 +693,7 @@ func TestUpdateRecipe_PublishesRecipeUpdatedEvent(t *testing.T) {
 			IPAddress:   "127.0.0.1",
 			UserAgent:   "test-agent/1.0",
 			Description: "Original description",
+			Publish:     true,
 		}
 
 		createdRecipe, err := s.CreateRecipe(ctx, createReq)
@@ -727,6 +780,7 @@ func TestUpdateRecipe_SetsAnimalProductLevelOnNewVersionFromIngredients(t *testi
 			PrepMins: 5,
 			CookMins: 0,
 			Portions: 1,
+			Publish:  true,
 		}
 
 		createdRecipe, err := s.CreateRecipe(ctx, createReq)
@@ -873,6 +927,7 @@ func TestUpdateRecipe_SetsContainsGlutenOnNewVersionFromIngredients(t *testing.T
 			PrepMins: 5,
 			CookMins: 10,
 			Portions: 1,
+			Publish:  true,
 		}
 
 		createdRecipe, err := s.CreateRecipe(ctx, createReq)
@@ -949,6 +1004,7 @@ func TestUpdateRecipe_WithUsedImageUploadID_ReturnsErrorAndDoesNotCreateNewVersi
 			PrepMins: 15,
 			CookMins: 0,
 			Portions: 6,
+			Publish:  true,
 		}
 
 		recipeContainer, err := s.CreateRecipe(ctx, baseRequest)
@@ -1065,6 +1121,7 @@ func TestUpdateRecipe_WithoutImageChanges_PreservesImageFromPreviousVersion(t *t
 			CookMins:    45,
 			Portions:    8,
 			ImgUploadID: &initialUploadID,
+			Publish:     true,
 		}
 
 		recipeContainer, err := s.CreateRecipe(ctx, createReq)
@@ -1174,6 +1231,7 @@ func TestUpdateRecipe_WithRemoveImageFlag_RemovesImage(t *testing.T) {
 			CookMins:    15,
 			Portions:    4,
 			ImgUploadID: &initialUploadID,
+			Publish:     true,
 		}
 
 		recipeContainer, err := s.CreateRecipe(ctx, createReq)
@@ -1269,6 +1327,7 @@ func TestUpdateRecipe_RecipeWithoutImage_RemainsWithoutImage(t *testing.T) {
 			CookMins:    0,
 			Portions:    2,
 			ImgUploadID: nil,
+			Publish:     true,
 		}
 
 		recipeContainer, err := s.CreateRecipe(ctx, createReq)
@@ -1521,9 +1580,9 @@ func TestGetRecipes_PaginatesAcrossPages(t *testing.T) {
 		middleCreatedAt := newestCreatedAt.Add(-1 * time.Minute)
 		oldestCreatedAt := newestCreatedAt.Add(-2 * time.Minute)
 
-		newest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "Newest", newestCreatedAt, nil, nil)
-		middle := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "Middle", middleCreatedAt, nil, nil)
-		oldest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "Oldest", oldestCreatedAt, nil, nil)
+		newest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "Newest", newestCreatedAt, nil, nil, true)
+		middle := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "Middle", middleCreatedAt, nil, nil, true)
+		oldest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "Oldest", oldestCreatedAt, nil, nil, true)
 
 		params := RecipeListParams{
 			Pagination: RecipePagination{
@@ -1842,9 +1901,9 @@ func TestGetRecipes_FiltersByUserID(t *testing.T) {
 		require.NoError(t, err)
 
 		base := time.Date(2026, time.March, 17, 11, 42, 48, 147630000, time.UTC)
-		aNewest := seedRecipeForListTests(t, ctx, tx, userA.ID, uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "A Newest", base, nil, nil)
-		aOlder := seedRecipeForListTests(t, ctx, tx, userA.ID, uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "A Older", base.Add(-1*time.Minute), nil, nil)
-		_ = seedRecipeForListTests(t, ctx, tx, userB.ID, uuid.MustParse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "B Recipe", base.Add(-2*time.Minute), nil, nil)
+		aNewest := seedRecipeForListTests(t, ctx, tx, userA.ID, uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "A Newest", base, nil, nil, true)
+		aOlder := seedRecipeForListTests(t, ctx, tx, userA.ID, uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "A Older", base.Add(-1*time.Minute), nil, nil, true)
+		_ = seedRecipeForListTests(t, ctx, tx, userB.ID, uuid.MustParse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "B Recipe", base.Add(-2*time.Minute), nil, nil, true)
 
 		userAID := userA.ID
 		params := RecipeListParams{
@@ -1886,9 +1945,9 @@ func TestGetRecipes_FiltersByAnimalProductLevel(t *testing.T) {
 		vegetarianLevel := 1
 		meatLevel := 2
 
-		vegan := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("12345678-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "Vegan Bowl", base, nil, &veganLevel)
-		vegetarian := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("12345678-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "Vegetarian Bowl", base.Add(-1*time.Minute), nil, &vegetarianLevel)
-		meat := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("12345678-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "Meat Bowl", base.Add(-2*time.Minute), nil, &meatLevel)
+		vegan := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("12345678-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "Vegan Bowl", base, nil, &veganLevel, true)
+		vegetarian := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("12345678-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "Vegetarian Bowl", base.Add(-1*time.Minute), nil, &vegetarianLevel, true)
+		meat := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("12345678-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "Meat Bowl", base.Add(-2*time.Minute), nil, &meatLevel, true)
 
 		veganFilter := 0
 		recipes, nextCursor, err := s.GetRecipes(ctx, RecipeListParams{
@@ -2015,9 +2074,9 @@ func setupRecipeListFixture(t *testing.T, tx *sql.Tx) (context.Context, *Service
 	middleCreatedAt := newestCreatedAt.Add(-1 * time.Minute)
 	oldestCreatedAt := newestCreatedAt.Add(-2 * time.Minute)
 
-	newest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "Newest", newestCreatedAt, nil, nil)
-	middle := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "Middle", middleCreatedAt, nil, nil)
-	oldest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "Oldest", oldestCreatedAt, nil, nil)
+	newest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "Newest", newestCreatedAt, nil, nil, true)
+	middle := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "Middle", middleCreatedAt, nil, nil, true)
+	oldest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "Oldest", oldestCreatedAt, nil, nil, true)
 
 	return ctx, s, newest, middle, oldest
 }
@@ -2037,10 +2096,10 @@ func setupRecipeSearchFixture(t *testing.T, tx *sql.Tx) (context.Context, *Servi
 	sameCreatedAt := time.Date(2026, time.March, 17, 11, 40, 48, 147630000, time.UTC)
 	olderCreatedAt := sameCreatedAt.Add(-1 * time.Minute)
 
-	exactHigh := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("ffffffff-ffff-ffff-ffff-fffffffffff1"), uuid.New(), "Chicken Soup", sameCreatedAt, nil, nil)
-	exactLow := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("00000000-0000-0000-0000-000000000002"), uuid.New(), "Chicken Soup", sameCreatedAt, nil, nil)
-	fuzzy := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("11111111-1111-1111-1111-111111111111"), uuid.New(), "Chikcen Soup", olderCreatedAt, nil, nil)
-	seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("22222222-2222-2222-2222-222222222222"), uuid.New(), "Beef Chili", olderCreatedAt, nil, nil)
+	exactHigh := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("ffffffff-ffff-ffff-ffff-fffffffffff1"), uuid.New(), "Chicken Soup", sameCreatedAt, nil, nil, true)
+	exactLow := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("00000000-0000-0000-0000-000000000002"), uuid.New(), "Chicken Soup", sameCreatedAt, nil, nil, true)
+	fuzzy := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("11111111-1111-1111-1111-111111111111"), uuid.New(), "Chikcen Soup", olderCreatedAt, nil, nil, true)
+	seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("22222222-2222-2222-2222-222222222222"), uuid.New(), "Beef Chili", olderCreatedAt, nil, nil, true)
 
 	return ctx, s, exactHigh, exactLow, fuzzy
 }

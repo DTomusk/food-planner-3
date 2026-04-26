@@ -9,10 +9,10 @@
     - Why: I could see the versioning system getting a bit annoying. If you make small edits and have to create a new recipe every time, then the recipe gets spread out and hard to track. It will make ratings and comments harder. We should make the versioning more in-your-face and allow users to create drafts before publishing a new version so they can make edits without a new version. We should only allow one draft at a time. Also, if you're just not ready to share a recipe, you should still be able to save your progress. And I think this will make the versioning system clearer to users.
     - DoD: 
         - [ ] users can choose to save and publish or save as draft when creating/updating a recipe 
-            - [ ] new recipe: can save and publish or save as draft 
+            - [x] new recipe: can save and publish or save as draft 
             - [ ] existing published recipe: can create new version from newest published version to save and publish or save as draft 
             - [ ] existing draft recipe: can edit draft or save and publish 
-        - [ ] each recipe (container id) can only have one draft version at a time 
+        - [x] each recipe (container id) can only have one draft version at a time 
             - [ ] the new draft version has to be based on the latest published version, users shouldn't be able to create new drafts from versions which aren't the newest published one
         - [ ] other users aren't able to see the draft version of a recipe, they can only see the latest published version
             - [ ] draft version not shown in recipe search 

@@ -7,13 +7,26 @@ import (
 	"github.com/google/uuid"
 )
 
-func InsertRecipeContainer(ctx context.Context, db db.DBTX, id, userID uuid.UUID) error {
+func InsertPublishedRecipeContainer(ctx context.Context, db db.DBTX, id, userID uuid.UUID) error {
+	query := `INSERT INTO recipe_containers (id, user_id, published_at) VALUES ($1, $2, NOW())`
+	_, err := db.ExecContext(ctx, query, id, userID)
+	return err
+}
+
+func InsertDraftRecipeContainer(ctx context.Context, db db.DBTX, id, userID uuid.UUID) error {
 	query := `INSERT INTO recipe_containers (id, user_id) VALUES ($1, $2)`
 	_, err := db.ExecContext(ctx, query, id, userID)
 	return err
 }
 
-func InsertRecipeVersion(ctx context.Context, db db.DBTX, id, recipeID uuid.UUID, name string, prepMins, cookMins, portions, version int) error {
+func InsertPublishedRecipeVersion(ctx context.Context, db db.DBTX, id, recipeID uuid.UUID, name string, prepMins, cookMins, portions, version int) error {
+	query := `INSERT INTO recipe_versions
+	(id, recipe_id, name, prep_mins, cook_mins, portions, version, published_at) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`
+	_, err := db.ExecContext(ctx, query, id, recipeID, name, prepMins, cookMins, portions, version)
+	return err
+}
+
+func InsertDraftRecipeVersion(ctx context.Context, db db.DBTX, id, recipeID uuid.UUID, name string, prepMins, cookMins, portions, version int) error {
 	query := `INSERT INTO recipe_versions
 	(id, recipe_id, name, prep_mins, cook_mins, portions, version) VALUES ($1, $2, $3, $4, $5, $6, $7)`
 	_, err := db.ExecContext(ctx, query, id, recipeID, name, prepMins, cookMins, portions, version)
