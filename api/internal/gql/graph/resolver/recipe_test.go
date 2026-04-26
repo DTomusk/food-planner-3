@@ -388,6 +388,7 @@ func TestRecipeResolver_UpdateRecipe_WithVersionResolvers(t *testing.T) {
 					Type:         3,
 					Instructions: ptrString("Grandma's notes"),
 				},
+				Publish: true,
 			},
 		}
 

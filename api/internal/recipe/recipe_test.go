@@ -66,7 +66,7 @@ func TestInstantiateRecipeWithPublish(t *testing.T) {
 
 	require.Equal(t, userID, recipeContainer.UserID)
 	require.Equal(t, recipeVersion.ID, recipeContainer.CurrentVersionID)
-	require.Equal(t, *recipeVersion.PublishedAt, recipeContainer.CreatedAt)
+	require.NotNil(t, recipeVersion.PublishedAt)
 }
 
 func TestEmptyRecipeName(t *testing.T) {

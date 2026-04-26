@@ -213,7 +213,7 @@ func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest)
 		return nil, err
 	}
 
-	// First, check whether the recipe has an existing draft (we need version id)
+	// Check whether the recipe has an existing draft (we need version id)
 	draftVersionID, err := s.recipeVersionRepo.getIDOfDraftVersionForRecipe(ctx, s.txRunner.DB(), existingRecipe.ID)
 	if err != nil {
 		logger.Error("Error checking for existing draft version", "error", err)
@@ -247,10 +247,17 @@ func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest)
 		imgSrc = existingRecipe.CurrentVersion.ImgSrc
 	}
 
+	// The new version number is usually current version + 1 (current version is the number of the previously published version)
+	// Except when the recipe has never been published, in which case it is always 1
+	newVersionNumber := 1
+	if existingRecipe.PublishedAt != nil {
+		newVersionNumber = existingRecipe.CurrentVersion.Version + 1
+	}
+
 	// Instantiate entity
 	recipeVersion, err := NewRecipeVersion(
 		existingRecipe.ID,
-		existingRecipe.CurrentVersion.Version+1,
+		newVersionNumber,
 		request.Request.Name,
 		request.Request.Description,
 		ingredientUsages,

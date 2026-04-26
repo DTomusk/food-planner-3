@@ -517,6 +517,7 @@ func TestUpdateRecipe_WithImageUploadID_PersistsAndRetrievesImageURL(t *testing.
 				CookMins:    0,
 				Portions:    6,
 				ImgUploadID: &uploadID,
+				Publish:     true,
 			},
 		}
 
@@ -620,6 +621,7 @@ func TestUpdateRecipe_PersistsDescriptionOnNewVersion(t *testing.T) {
 				PrepMins:    20,
 				CookMins:    0,
 				Portions:    6,
+				Publish:     true,
 			},
 		}
 
@@ -713,6 +715,7 @@ func TestUpdateRecipe_PublishesRecipeUpdatedEvent(t *testing.T) {
 				IPAddress:   "127.0.0.1",
 				UserAgent:   "test-agent/1.0",
 				Description: "Updated description",
+				Publish:     true,
 			},
 		}
 
@@ -800,6 +803,7 @@ func TestUpdateRecipe_SetsAnimalProductLevelOnNewVersionFromIngredients(t *testi
 				PrepMins: 5,
 				CookMins: 0,
 				Portions: 1,
+				Publish:  true,
 			},
 		}
 
@@ -947,6 +951,7 @@ func TestUpdateRecipe_SetsContainsGlutenOnNewVersionFromIngredients(t *testing.T
 				PrepMins: 5,
 				CookMins: 10,
 				Portions: 1,
+				Publish:  true,
 			},
 		}
 
@@ -1258,6 +1263,8 @@ func TestUpdateRecipe_WithRemoveImageFlag_RemovesImage(t *testing.T) {
 				CookMins:    20,
 				Portions:    4,
 				ImgUploadID: nil,
+				// If publish isn't true, current version will be the previous version
+				Publish: true,
 			},
 			RemoveImage: &trueFlag,
 		}
