@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"foodplanner/internal/db"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -70,6 +71,14 @@ func (r *recipeRepo) createRecipeContainer(ctx context.Context, tx *sql.Tx, reci
 func (r *recipeRepo) updateRecipeCurrentVersion(ctx context.Context, tx *sql.Tx, recipeID, versionID uuid.UUID) error {
 	updateQuery := `UPDATE recipe_containers SET current_version_id = $1 WHERE id = $2`
 	_, err := tx.ExecContext(ctx, updateQuery, versionID, recipeID)
+	return err
+}
+
+// When a recipe that has had drafts is published for the first time, need to set published on the container as well
+// If a recipe is created published, then we handle that at instantiation
+func (r *recipeRepo) setRecipePublishedAt(ctx context.Context, tx *sql.Tx, recipeID uuid.UUID, publishedAt *time.Time) error {
+	updateQuery := `UPDATE recipe_containers SET published_at = $1 WHERE id = $2`
+	_, err := tx.ExecContext(ctx, updateQuery, publishedAt, recipeID)
 	return err
 }
 

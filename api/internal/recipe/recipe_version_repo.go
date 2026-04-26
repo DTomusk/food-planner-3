@@ -73,6 +73,18 @@ func (r *recipeVersionRepo) createRecipeVersion(ctx context.Context, tx *sql.Tx,
 	return &dbRecipeVersion, nil
 }
 
+func (r *recipeVersionRepo) deleteRecipeVersionByID(ctx context.Context, tx *sql.Tx, id uuid.UUID) error {
+	deleteQuery := `DELETE FROM recipe_versions WHERE id = $1`
+	_, err := tx.ExecContext(ctx, deleteQuery, id)
+	return err
+}
+
+func (r *recipeVersionRepo) deleteRecipeSourceByRecipeVersionID(ctx context.Context, tx *sql.Tx, recipeVersionID uuid.UUID) error {
+	deleteQuery := `DELETE FROM recipe_sources WHERE recipe_version_id = $1`
+	_, err := tx.ExecContext(ctx, deleteQuery, recipeVersionID)
+	return err
+}
+
 func (r *recipeVersionRepo) insertRecipeSource(ctx context.Context, tx *sql.Tx, recipeVersionID uuid.UUID, source *RecipeSource) error {
 	sourceQuery := `INSERT INTO recipe_sources (recipe_version_id, type, url, book_title, book_page, instructions) VALUES ($1, $2, $3, $4, $5, $6)`
 	_, err := tx.ExecContext(ctx, sourceQuery, recipeVersionID, int(source.Type), source.URL, source.BookTitle, source.BookPage, source.Instructions)
@@ -93,6 +105,20 @@ func (r *recipeVersionRepo) getRecipeVersionByID(ctx context.Context, db db.DBTX
 		return nil, err
 	}
 	return &recipeVersion, nil
+}
+
+func (r *recipeVersionRepo) getIDOfDraftVersionForRecipe(ctx context.Context, db db.DBTX, recipeID uuid.UUID) (*uuid.UUID, error) {
+	var draftVersionID uuid.UUID
+	query := `SELECT id FROM recipe_versions WHERE recipe_id = $1 AND published_at IS NULL`
+	row := db.QueryRowContext(ctx, query, recipeID)
+	err := row.Scan(&draftVersionID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &draftVersionID, nil
 }
 
 func (r *recipeVersionRepo) getRecipeVersionByRecipeIDAndVersion(ctx context.Context, db db.DBTX, id uuid.UUID, version int) (*RecipeVersion, error) {

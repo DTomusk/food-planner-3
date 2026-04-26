@@ -2,8 +2,6 @@
 
 This file documents the current state of the PostgreSQL schema as of migration `0031`. It is derived from all up-migrations in `api/migrations/` and is intended as a quick reference for AI agents. Do not hand-edit column definitions here — regenerate from migrations when the schema changes.
 
-Regenerate with: `go run ./cmd/generate-db-schema-doc -migrations ./migrations -doc ../docs/ai/database_schema.md` (run from `api/`).
-
 ## Schemas
 
 - `public`: application tables

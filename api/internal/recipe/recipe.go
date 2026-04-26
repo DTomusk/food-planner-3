@@ -60,7 +60,7 @@ func NewRecipe(
 		publishedAt = &now
 	}
 
-	version, err := NewRecipeVersion(recipeID, 1, name, description, ingredients, prepMins, cookMins, portions, source, imgSrc, animalProductLevel, containsGluten, publishedAt)
+	version, err := NewRecipeVersion(recipeID, 1, name, description, ingredients, prepMins, cookMins, portions, source, imgSrc, animalProductLevel, containsGluten, publish)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +90,7 @@ func NewRecipeVersion(
 	imgSrc *string,
 	animalProductLevel int,
 	containsGluten bool,
-	publishedAt *time.Time,
+	publish bool,
 ) (*RecipeVersion, error) {
 	if name == "" {
 		return nil, ErrEmptyName
@@ -119,6 +119,10 @@ func NewRecipeVersion(
 	}
 
 	now := time.Now()
+	publishedAt := &now
+	if !publish {
+		publishedAt = nil
+	}
 	return &RecipeVersion{
 		ID:                 uuid.New(),
 		RecipeID:           recipeID,

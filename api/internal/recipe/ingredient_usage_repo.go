@@ -41,6 +41,12 @@ func (r *ingredientUsageRepo) insertIngredientUsages(ctx context.Context, tx *sq
 	return nil
 }
 
+func (r *ingredientUsageRepo) deleteIngredientUsagesByRecipeVersionID(ctx context.Context, tx *sql.Tx, recipeVersionID uuid.UUID) error {
+	deleteQuery := `DELETE FROM ingredient_usages WHERE recipe_version_id = $1`
+	_, err := tx.ExecContext(ctx, deleteQuery, recipeVersionID)
+	return err
+}
+
 func (r *ingredientUsageRepo) getIngredientUsagesForRecipeVersion(ctx context.Context, db db.DBTX, recipeVersionID uuid.UUID) ([]*IngredientUsage, error) {
 	rows, err := db.QueryContext(ctx, "SELECT id, ingredient_id, quantity, unit FROM ingredient_usages WHERE recipe_version_id = $1", recipeVersionID)
 	if err != nil {
