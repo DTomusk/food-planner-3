@@ -42,16 +42,18 @@ export function toRecipeSourceTypeValue(sourceType: RecipeSourceType): number {
 
 type MapCreateRecipeInputOptions = {
   imgUploadId?: string | null;
+  publish: boolean;
 };
 
 type MapUpdateRecipeInputOptions = {
   imgUploadId?: string | null;
   removeImage?: boolean;
+  publish: boolean;
 };
 
 export function mapFormValuesToCreateRecipeInput(
   values: RecipeFormValues,
-  options?: MapCreateRecipeInputOptions,
+  options: MapCreateRecipeInputOptions,
 ): CreateRecipeInput {
   return {
     name: values.name,
@@ -72,16 +74,18 @@ export function mapFormValuesToCreateRecipeInput(
       instructions: values.sourceType === RecipeSourceType.Original ? values.instructions : undefined,
     },
     imgUploadId: options?.imgUploadId ?? undefined,
+    publish: options.publish,
   };
 }
 
 export function mapFormValuesToUpdateRecipeInput(
   values: RecipeFormValues,
-  options?: MapUpdateRecipeInputOptions,
+  options: MapUpdateRecipeInputOptions,
 ): { input: CreateRecipeInput; removeImage?: boolean } {
   return {
     input: mapFormValuesToCreateRecipeInput(values, {
       imgUploadId: options?.imgUploadId,
+      publish: options.publish,
     }),
     removeImage: options?.removeImage,
   };

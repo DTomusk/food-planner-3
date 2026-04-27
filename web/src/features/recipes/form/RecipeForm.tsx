@@ -14,7 +14,7 @@ import type { IngredientOptionModel } from "@/features/ingredients/types";
 import { DEFAULT_RECIPE_FORM_VALUES } from "../mappers/recipeFormMapper";
 
 type RecipeFormProps = {
-  onSubmit: (values: RecipeFormValues) => void;
+  onSubmit: (values: RecipeFormValues, options: { publish: boolean }) => void;
   isSubmitting?: boolean;
   isPreparingImageUpload?: boolean;
   ingredients: IngredientOptionModel[];
@@ -24,7 +24,6 @@ type RecipeFormProps = {
   onImageFileChange?: (file: File | null) => void;
   existingImageUrl?: string | null;
   onRemoveExistingImage?: () => void;
-  isCreateForm?: boolean;
 };
 
 export default function RecipeForm({
@@ -38,7 +37,6 @@ export default function RecipeForm({
   onImageFileChange = () => {},
   existingImageUrl = null,
   onRemoveExistingImage = () => {},
-  isCreateForm = true,
 }: RecipeFormProps) {
   const methods = useForm<RecipeFormValues>({
     resolver: zodResolver(recipeFormSchema),
@@ -47,18 +45,27 @@ export default function RecipeForm({
   });
 
   const {
-    handleSubmit,
     formState: { isDirty, isValid, isSubmitted },
+    trigger,
+    getValues,
   } = methods;
 
   useEffect(() => {
     onDirtyChange?.(isDirty);
   }, [isDirty, onDirtyChange]);
 
+  const handleSubmit = async (publish: boolean) => {
+    const isValid = await trigger();
+    if (isValid) {      
+      const values = getValues();
+      onSubmit(values, { publish });
+    }
+  };
+
   return (
     <Container size="md">
       <FormProvider {...methods}>
-        <Form onSubmit={handleSubmit(onSubmit)}>
+        <Form>
           <Stack space="lg">
             <RecipeDetailSection
               imageFile={imageFile}
@@ -69,9 +76,12 @@ export default function RecipeForm({
             <IngredientSection ingredients={ingredients} />
             <RecipeSourceSection />
             <Inline justify="start">
-            <Button disabled={isSubmitting || isPreparingImageUpload || (isSubmitted && !isValid)} type="submit" loading={isSubmitting || isPreparingImageUpload}>
-              {isCreateForm ? commonStrings.forms.create : commonStrings.forms.update}
-            </Button>
+              <Button onClick={() => handleSubmit(false)} disabled={isSubmitting || isPreparingImageUpload || (isSubmitted && !isValid)} type="submit" loading={isSubmitting || isPreparingImageUpload}>
+                {commonStrings.forms.save_as_draft}
+              </Button>
+              <Button onClick={() => handleSubmit(true)} disabled={isSubmitting || isPreparingImageUpload || (isSubmitted && !isValid)} type="submit" loading={isSubmitting || isPreparingImageUpload}>
+                {commonStrings.forms.save_and_publish}
+              </Button>
             </Inline>
           </Stack>
         </Form>

@@ -90,7 +90,7 @@ export default function RecipeUpdatePage() {
         setUploadError(null);
     };
 
-    const handleSubmit = (values: RecipeFormValues) => {
+    const handleSubmit = (values: RecipeFormValues, options: { publish: boolean }) => {
         if (!id) {
             return;
         }
@@ -105,6 +105,7 @@ export default function RecipeUpdatePage() {
         const { input } = mapFormValuesToUpdateRecipeInput(values, {
             imgUploadId: imageUploadPayload?.uploadId,
             removeImage: imageChangedOrRemoved,
+            publish: options.publish,
         });
 
         mutate(
@@ -145,7 +146,6 @@ export default function RecipeUpdatePage() {
                     onImageFileChange={handleImageFileChange}
                     existingImageUrl={hasRemovedExistingImage ? null : existingImageUrl}
                     onRemoveExistingImage={handleRemoveExistingImage}
-                    isCreateForm={false}
                     onDirtyChange={setIsFormDirty}
                 />
             )}

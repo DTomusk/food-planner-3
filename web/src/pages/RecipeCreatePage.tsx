@@ -77,7 +77,7 @@ export default function RecipeCreatePage() {
     }
   };
 
-  const handleSubmit = async (values: RecipeFormValues) => {
+  const handleSubmit = async (values: RecipeFormValues, options: { publish: boolean }) => {
     if (imageFile && !imageUploadPayload) {
       setUploadError("Image is not uploaded yet. Please re-select your image and try again.");
       return;
@@ -87,6 +87,7 @@ export default function RecipeCreatePage() {
       const data = await createRecipe({
         input: mapFormValuesToCreateRecipeInput(values, {
           imgUploadId: imageUploadPayload?.uploadId,
+          publish: options.publish,
         }),
       });
 

@@ -42,6 +42,7 @@ export type CreateRecipeInput = {
   name: Scalars['String']['input'];
   portions: Scalars['Int']['input'];
   prepMins: Scalars['Int']['input'];
+  publish: Scalars['Boolean']['input'];
   recipeSource: CreateRecipeSourceInput;
 };
 
@@ -245,7 +246,6 @@ export type UpdateRecipeInput = {
 
 export type User = {
   __typename?: 'User';
-  email: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   recipes: RecipeConnection;
   username: Scalars['String']['output'];
