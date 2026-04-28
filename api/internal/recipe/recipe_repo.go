@@ -74,6 +74,13 @@ func (r *recipeRepo) updateRecipeCurrentVersion(ctx context.Context, tx *sql.Tx,
 	return err
 }
 
+// When a new draft version is created, call this to set the draft version id on the container. If publish is true, this should be set to null as there won't be a draft version
+func (r *recipeRepo) updateRecipeDraftVersion(ctx context.Context, tx *sql.Tx, recipeID uuid.UUID, draftVersionID *uuid.UUID) error {
+	updateQuery := `UPDATE recipe_containers SET draft_version_id = $1 WHERE id = $2`
+	_, err := tx.ExecContext(ctx, updateQuery, draftVersionID, recipeID)
+	return err
+}
+
 // When a recipe that has had drafts is published for the first time, need to set published on the container as well
 // If a recipe is created published, then we handle that at instantiation
 func (r *recipeRepo) setRecipePublishedAt(ctx context.Context, tx *sql.Tx, recipeID uuid.UUID, publishedAt *time.Time) error {

@@ -142,7 +142,7 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 		// Only set draft version if this new recipe is a draft
 		// If published, draft version remains null
 		if !request.Publish {
-			err = s.recipeRepo.updateRecipeDraftVersion(ctx, tx, recipeContainer.ID, recipeContainer.CurrentVersion.ID)
+			err = s.recipeRepo.updateRecipeDraftVersion(ctx, tx, recipeContainer.ID, &recipeContainer.CurrentVersion.ID)
 			if err != nil {
 				return err
 			}
