@@ -69,3 +69,9 @@ export const RecipeSourceType = {
 } as const;
 
 export type RecipeSourceType = typeof RecipeSourceType[keyof typeof RecipeSourceType];
+
+export type Version = {
+    version: number;
+    createdAt: string;
+    draft: boolean;
+}

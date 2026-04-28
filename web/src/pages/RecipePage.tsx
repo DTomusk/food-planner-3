@@ -1,5 +1,5 @@
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { Alert, Inline, Spinner } from "@/components";
+import { Alert, Button, Inline, Spinner } from "@/components";
 import { useRecipe } from "@/features/recipes";
 import { Page } from "@/layout";
 import Container from "@/components/layout/Container";
@@ -86,11 +86,16 @@ export default function RecipePage() {
                         <Inline align="start" justify="center" className="w-full" gap="lg">
                             <RecipeContentSections recipe={recipe} user={user} />
                             {versions?.length ? (
-                                <VersionSelector
-                                    recipeId={recipeId}
-                                    versions={versions}
-                                    currentVersionNumber={currentVersionNumber}
-                                />
+                                <Stack>
+                                    <VersionSelector
+                                        recipeId={recipeId}
+                                        versions={versions}
+                                        currentVersionNumber={currentVersionNumber}
+                                    />
+                                    <Button variant="secondary" onClick={() => navigate(`/recipes/${recipeId}/edit`)}>
+                                        Create new version
+                                    </Button>
+                                </Stack>
                             ) : null}
                         </Inline>
                 ) : (

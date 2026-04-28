@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { Alert, Spinner } from "@/components";
+import { Alert, Button, Inline, Spinner } from "@/components";
 import { Page } from "@/layout";
 import Container from "@/components/layout/Container";
 import Stack from "@/components/layout/Stack";
@@ -10,6 +10,7 @@ import Dropdown from "@/components/ui/Dropdown";
 import { useRecipeVersions } from "@/features/recipes/hooks/useRecipeVersions";
 import { useRecipeVersion } from "@/features/recipes/hooks/useRecipeVersion";
 import RecipeContentSections from "@/features/recipes/components/RecipeContentSections";
+import VersionSelector from "@/features/recipes/components/VersionSelector";
 
 export default function RecipeVersionPage() {
     const { id } = useParams<{ id: string }>();
@@ -51,13 +52,27 @@ export default function RecipeVersionPage() {
 
     return (
         <Page toolbarActions={toolbarActions}>
-            <Container size="md">
+            <Container size="xl">
                 <Stack space="xl">
                     {!recipeId && <Alert message="No recipe ID provided." />}
                     {recipeQuery.isLoading && <Spinner />}
                     {recipeQuery.error && <Alert message={extractErrorMessage(recipeQuery.error)} closable />}
                     {recipe ? (
-                        <RecipeContentSections recipe={recipe} user={user} versionNumber={versionNumber} />
+                        <Inline align="start" justify="center" className="w-full" gap="lg">
+                            <RecipeContentSections recipe={recipe} user={user} />
+                            {versions?.length ? (
+                                <Stack>
+                                    <VersionSelector
+                                        recipeId={recipeId}
+                                        versions={versions}
+                                        currentVersionNumber={versionNumber}
+                                    />
+                                    <Button variant="secondary" onClick={() => navigate(`/recipes/${recipeId}/edit`)}>
+                                        Create new version
+                                    </Button>
+                                </Stack>
+                            ) : null}
+                        </Inline>
                 ) : (
                     !recipeQuery.isLoading && recipeId && !recipeQuery.error && <Alert message="Recipe not found." />
                 )}
