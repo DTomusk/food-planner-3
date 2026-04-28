@@ -108,6 +108,7 @@ type ComplexityRoot struct {
 		Author         func(childComplexity int) int
 		CreatedAt      func(childComplexity int) int
 		CurrentVersion func(childComplexity int) int
+		DraftVersion   func(childComplexity int) int
 		ID             func(childComplexity int) int
 		Version        func(childComplexity int, version int32) int
 		Versions       func(childComplexity int) int
@@ -185,6 +186,7 @@ type RecipeResolver interface {
 
 	CurrentVersion(ctx context.Context, obj *model.Recipe) (*model.RecipeVersion, error)
 	Versions(ctx context.Context, obj *model.Recipe) ([]*model.RecipeVersion, error)
+	DraftVersion(ctx context.Context, obj *model.Recipe) (*model.RecipeVersion, error)
 	Version(ctx context.Context, obj *model.Recipe, version int32) (*model.RecipeVersion, error)
 }
 type RecipeVersionResolver interface {
@@ -468,6 +470,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Recipe.CurrentVersion(childComplexity), true
+	case "Recipe.draftVersion":
+		if e.complexity.Recipe.DraftVersion == nil {
+			break
+		}
+
+		return e.complexity.Recipe.DraftVersion(childComplexity), true
 	case "Recipe.id":
 		if e.complexity.Recipe.ID == nil {
 			break
@@ -1712,6 +1720,8 @@ func (ec *executionContext) fieldContext_Mutation_createRecipe(ctx context.Conte
 				return ec.fieldContext_Recipe_currentVersion(ctx, field)
 			case "versions":
 				return ec.fieldContext_Recipe_versions(ctx, field)
+			case "draftVersion":
+				return ec.fieldContext_Recipe_draftVersion(ctx, field)
 			case "version":
 				return ec.fieldContext_Recipe_version(ctx, field)
 			}
@@ -1780,6 +1790,8 @@ func (ec *executionContext) fieldContext_Mutation_updateRecipe(ctx context.Conte
 				return ec.fieldContext_Recipe_currentVersion(ctx, field)
 			case "versions":
 				return ec.fieldContext_Recipe_versions(ctx, field)
+			case "draftVersion":
+				return ec.fieldContext_Recipe_draftVersion(ctx, field)
 			case "version":
 				return ec.fieldContext_Recipe_version(ctx, field)
 			}
@@ -2076,6 +2088,8 @@ func (ec *executionContext) fieldContext_Query_recipe(ctx context.Context, field
 				return ec.fieldContext_Recipe_currentVersion(ctx, field)
 			case "versions":
 				return ec.fieldContext_Recipe_versions(ctx, field)
+			case "draftVersion":
+				return ec.fieldContext_Recipe_draftVersion(ctx, field)
 			case "version":
 				return ec.fieldContext_Recipe_version(ctx, field)
 			}
@@ -2516,6 +2530,78 @@ func (ec *executionContext) fieldContext_Recipe_versions(_ context.Context, fiel
 	return fc, nil
 }
 
+func (ec *executionContext) _Recipe_draftVersion(ctx context.Context, field graphql.CollectedField, obj *model.Recipe) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Recipe_draftVersion,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Recipe().DraftVersion(ctx, obj)
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				if ec.directives.Auth == nil {
+					var zeroVal *model.RecipeVersion
+					return zeroVal, errors.New("directive auth is not implemented")
+				}
+				return ec.directives.Auth(ctx, obj, directive0)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalORecipeVersion2ᚖfoodplannerᚋinternalᚋgqlᚋgraphᚋmodelᚐRecipeVersion,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Recipe_draftVersion(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Recipe",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_RecipeVersion_id(ctx, field)
+			case "recipe":
+				return ec.fieldContext_RecipeVersion_recipe(ctx, field)
+			case "version":
+				return ec.fieldContext_RecipeVersion_version(ctx, field)
+			case "name":
+				return ec.fieldContext_RecipeVersion_name(ctx, field)
+			case "description":
+				return ec.fieldContext_RecipeVersion_description(ctx, field)
+			case "ingredientUsages":
+				return ec.fieldContext_RecipeVersion_ingredientUsages(ctx, field)
+			case "prepMins":
+				return ec.fieldContext_RecipeVersion_prepMins(ctx, field)
+			case "cookMins":
+				return ec.fieldContext_RecipeVersion_cookMins(ctx, field)
+			case "portions":
+				return ec.fieldContext_RecipeVersion_portions(ctx, field)
+			case "imgSrc":
+				return ec.fieldContext_RecipeVersion_imgSrc(ctx, field)
+			case "animalProductLevel":
+				return ec.fieldContext_RecipeVersion_animalProductLevel(ctx, field)
+			case "containsGluten":
+				return ec.fieldContext_RecipeVersion_containsGluten(ctx, field)
+			case "source":
+				return ec.fieldContext_RecipeVersion_source(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_RecipeVersion_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RecipeVersion", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Recipe_version(ctx context.Context, field graphql.CollectedField, obj *model.Recipe) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2720,6 +2806,8 @@ func (ec *executionContext) fieldContext_RecipeEdge_node(_ context.Context, fiel
 				return ec.fieldContext_Recipe_currentVersion(ctx, field)
 			case "versions":
 				return ec.fieldContext_Recipe_versions(ctx, field)
+			case "draftVersion":
+				return ec.fieldContext_Recipe_draftVersion(ctx, field)
 			case "version":
 				return ec.fieldContext_Recipe_version(ctx, field)
 			}
@@ -2966,6 +3054,8 @@ func (ec *executionContext) fieldContext_RecipeVersion_recipe(_ context.Context,
 				return ec.fieldContext_Recipe_currentVersion(ctx, field)
 			case "versions":
 				return ec.fieldContext_Recipe_versions(ctx, field)
+			case "draftVersion":
+				return ec.fieldContext_Recipe_draftVersion(ctx, field)
 			case "version":
 				return ec.fieldContext_Recipe_version(ctx, field)
 			}
@@ -6025,6 +6115,39 @@ func (ec *executionContext) _Recipe(ctx context.Context, sel ast.SelectionSet, o
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "draftVersion":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Recipe_draftVersion(ctx, field, obj)
 				return res
 			}
 

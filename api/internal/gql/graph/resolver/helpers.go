@@ -46,12 +46,21 @@ func mapRecipe(recipe *recipe.RecipeContainer) *model.Recipe {
 	if recipe == nil {
 		return nil
 	}
+
+	var draftVersionID *string
+	if recipe.DraftVersionID != nil {
+		draftVersionIDStr := recipe.DraftVersionID.String()
+		draftVersionID = &draftVersionIDStr
+	}
+
 	return &model.Recipe{
 		ID:               recipe.ID.String(),
 		CreatedAt:        recipe.CreatedAt,
 		AuthorID:         recipe.UserID.String(),
 		CurrentVersionID: recipe.CurrentVersionID.String(),
 		CurrentVersion:   mapRecipeVersion(recipe.CurrentVersion),
+		DraftVersionID:   draftVersionID,
+		DraftVersion:     mapRecipeVersion(recipe.DraftVersion),
 	}
 }
 

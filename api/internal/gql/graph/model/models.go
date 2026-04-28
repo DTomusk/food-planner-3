@@ -8,8 +8,10 @@ type Recipe struct {
 
 	AuthorID         string
 	CurrentVersionID string
+	CurrentVersion   *RecipeVersion
 
-	CurrentVersion *RecipeVersion
+	DraftVersionID *string
+	DraftVersion   *RecipeVersion
 }
 
 type RecipeVersion struct {
