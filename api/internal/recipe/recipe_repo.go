@@ -18,7 +18,7 @@ type recipeRepo struct {
 
 const (
 	selectRecipeContainerWithVersionBaseQuery = `SELECT 
-	rc.id, rc.user_id, rc.created_at, rc.published_at, rc.current_version_id,
+	rc.id, rc.user_id, rc.created_at, rc.published_at, rc.current_version_id, rc.draft_version_id,
 	rv.id, rv.recipe_id, rv.name, rv.prep_mins, rv.cook_mins, rv.portions, rv.created_at, rv.published_at, rv.version, rv.img_src, rv.description, rv.animal_product_level, rv.contains_gluten
 	FROM recipe_containers rc
 	JOIN recipe_versions rv ON rc.current_version_id = rv.id`
@@ -306,12 +306,15 @@ func scanRecipeContainerWithVersion(
 	var rc RecipeContainer
 	var rv RecipeVersion
 
+	var draftVersionID uuid.NullUUID
+
 	err := scanner.Scan(
 		&rc.ID,
 		&rc.UserID,
 		&rc.CreatedAt,
 		&rc.PublishedAt,
 		&rc.CurrentVersionID,
+		&draftVersionID,
 		&rv.ID,
 		&rv.RecipeID,
 		&rv.Name,
@@ -331,5 +334,8 @@ func scanRecipeContainerWithVersion(
 	}
 
 	rc.CurrentVersion = &rv
+	if draftVersionID.Valid {
+		rc.DraftVersionID = &draftVersionID.UUID
+	}
 	return &rc, nil
 }

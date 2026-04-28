@@ -101,6 +101,9 @@ func TestCreateRecipe(t *testing.T) {
 		require.Equal(t, 6, recipeVersion.Portions, "Expected portions to match the request")
 		require.Nil(t, recipeContainer.PublishedAt, "Expected container published_at to be nil when publish is false")
 		require.Nil(t, recipeVersion.PublishedAt, "Expected version published_at to be nil when publish is false")
+
+		require.NotNil(t, recipeContainer.DraftVersionID, "Expected draft_version_id to be set when publish is false")
+		require.Equal(t, recipeContainer.CurrentVersionID, *recipeContainer.DraftVersionID, "Expected draft_version_id to equal the current version id for a draft recipe")
 	})
 }
 
@@ -149,6 +152,8 @@ func TestCreateRecipe_WhenPublishTrue_SetsPublishedAtEqualToCreatedAt(t *testing
 		require.NotNil(t, recipeContainer.CurrentVersion)
 		require.NotNil(t, recipeContainer.PublishedAt, "Expected container published_at to be set when publish is true")
 		require.NotNil(t, recipeContainer.CurrentVersion.PublishedAt, "Expected version published_at to be set when publish is true")
+
+		require.Nil(t, recipeContainer.DraftVersionID, "Expected draft_version_id to be null when publish is true")
 	})
 }
 
@@ -1425,6 +1430,9 @@ func TestUpdateRecipe_UnpublishedRecipe_DraftUpdateAdvancesCurrentVersion(t *tes
 		require.Nil(t, createdRecipe.PublishedAt)
 		firstDraftID := createdRecipe.CurrentVersionID
 
+		require.NotNil(t, createdRecipe.DraftVersionID, "Expected draft_version_id to be set after creating a draft recipe")
+		require.Equal(t, firstDraftID, *createdRecipe.DraftVersionID, "Expected draft_version_id to equal the current version id")
+
 		updateReq := UpdateRecipeRequest{
 			RecipeId: createdRecipe.ID.String(),
 			Request: CreateRecipeRequest{
@@ -1456,6 +1464,9 @@ func TestUpdateRecipe_UnpublishedRecipe_DraftUpdateAdvancesCurrentVersion(t *tes
 		err = tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM recipe_versions WHERE recipe_id = $1`, createdRecipe.ID).Scan(&versionCount)
 		require.NoError(t, err)
 		require.Equal(t, 1, versionCount)
+
+		require.NotNil(t, updatedRecipe.DraftVersionID, "Expected draft_version_id to be set after updating a draft recipe")
+		require.Equal(t, updatedRecipe.CurrentVersionID, *updatedRecipe.DraftVersionID, "Expected draft_version_id to equal the new draft version id")
 	})
 }
 
@@ -1526,6 +1537,9 @@ func TestUpdateRecipe_PublishedRecipe_DraftKeepsCurrentVersionOnLatestPublished(
 		require.NotNil(t, draftVersion)
 		require.Nil(t, draftVersion.PublishedAt)
 		require.NotEqual(t, publishedVersionID, draftVersion.ID)
+
+		require.NotNil(t, updatedRecipe.DraftVersionID, "Expected draft_version_id to be set after creating a draft for a published recipe")
+		require.Equal(t, draftVersion.ID, *updatedRecipe.DraftVersionID, "Expected draft_version_id to equal the draft version id")
 	})
 }
 
@@ -1597,6 +1611,9 @@ func TestUpdateRecipe_PublishedRecipe_ReplacesExistingDraftAndDeletesOldDraftDat
 		require.NotNil(t, firstDraftVersion)
 		firstDraftID := firstDraftVersion.ID
 
+		require.NotNil(t, firstDraftResult.DraftVersionID, "Expected draft_version_id to be set after creating first draft")
+		require.Equal(t, firstDraftID, *firstDraftResult.DraftVersionID, "Expected draft_version_id to equal first draft version id")
+
 		var firstDraftUsageCount int
 		err = tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM ingredient_usages WHERE recipe_version_id = $1`, firstDraftID).Scan(&firstDraftUsageCount)
 		require.NoError(t, err)
@@ -1636,6 +1653,9 @@ func TestUpdateRecipe_PublishedRecipe_ReplacesExistingDraftAndDeletesOldDraftDat
 		require.NotNil(t, secondDraftVersion)
 		require.NotEqual(t, firstDraftID, secondDraftVersion.ID)
 
+		require.NotNil(t, secondDraftResult.DraftVersionID, "Expected draft_version_id to be set after creating second draft")
+		require.Equal(t, secondDraftVersion.ID, *secondDraftResult.DraftVersionID, "Expected draft_version_id to equal second draft version id")
+
 		deletedFirstDraft, err := s.GetRecipeVersionByID(ctx, firstDraftID)
 		require.NoError(t, err)
 		require.Nil(t, deletedFirstDraft)
@@ -1654,6 +1674,74 @@ func TestUpdateRecipe_PublishedRecipe_ReplacesExistingDraftAndDeletesOldDraftDat
 		err = tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM recipe_versions WHERE recipe_id = $1 AND published_at IS NULL`, createdRecipe.ID).Scan(&draftCount)
 		require.NoError(t, err)
 		require.Equal(t, 1, draftCount)
+	})
+}
+
+func TestUpdateRecipe_PublishAfterDraft_ClearsDraftVersionID(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+
+		ingredientID := uuid.New()
+		testIngredient := ingredient.Ingredient{
+			ID:            ingredientID,
+			FileKey:       "test_ingredient_publish_clears_draft",
+			Name:          "Test Ingredient",
+			PreferredUnit: 1,
+		}
+		err := seeds.InsertIngredient(ctx, tx, &testIngredient)
+		require.NoError(t, err)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		s := newTestRecipeService(t, tx, txRunner, repo, nil)
+
+		createdRecipe, err := s.CreateRecipe(ctx, CreateRecipeRequest{
+			Name:        "Published Recipe",
+			Ingredients: []CreateIngredientUsageRequest{{IngredientID: ingredientID.String(), Quantity: 100, Unit: 1}},
+			UserID:      testUser.ID.String(),
+			PrepMins:    10,
+			CookMins:    10,
+			Portions:    2,
+			Publish:     true,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, createdRecipe)
+
+		draftRecipe, err := s.UpdateRecipe(ctx, UpdateRecipeRequest{
+			RecipeId: createdRecipe.ID.String(),
+			Request: CreateRecipeRequest{
+				Name:        "Draft Update",
+				Ingredients: []CreateIngredientUsageRequest{{IngredientID: ingredientID.String(), Quantity: 120, Unit: 1}},
+				UserID:      testUser.ID.String(),
+				PrepMins:    10,
+				CookMins:    10,
+				Portions:    2,
+				Publish:     false,
+			},
+		})
+		require.NoError(t, err)
+
+		require.NotNil(t, draftRecipe.DraftVersionID, "Expected draft_version_id to be set after saving a draft")
+
+		publishedRecipe, err := s.UpdateRecipe(ctx, UpdateRecipeRequest{
+			RecipeId: createdRecipe.ID.String(),
+			Request: CreateRecipeRequest{
+				Name:        "Published Update",
+				Ingredients: []CreateIngredientUsageRequest{{IngredientID: ingredientID.String(), Quantity: 130, Unit: 1}},
+				UserID:      testUser.ID.String(),
+				PrepMins:    10,
+				CookMins:    10,
+				Portions:    2,
+				Publish:     true,
+			},
+		})
+		require.NoError(t, err)
+
+		require.Nil(t, publishedRecipe.DraftVersionID, "Expected draft_version_id to be null after publishing")
 	})
 }
 
