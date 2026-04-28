@@ -139,6 +139,15 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 			return err
 		}
 
+		// Only set draft version if this new recipe is a draft
+		// If published, draft version remains null
+		if !request.Publish {
+			err = s.recipeRepo.updateRecipeDraftVersion(ctx, tx, recipeContainer.ID, recipeContainer.CurrentVersion.ID)
+			if err != nil {
+				return err
+			}
+		}
+
 		err = s.ingredientUsageRepo.insertIngredientUsages(ctx, tx, ingredientUsages, recipeContainer.CurrentVersion.ID)
 		if err != nil {
 			return err
@@ -213,13 +222,6 @@ func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest)
 		return nil, err
 	}
 
-	// Check whether the recipe has an existing draft (we need version id)
-	draftVersionID, err := s.recipeVersionRepo.getIDOfDraftVersionForRecipe(ctx, s.txRunner.DB(), existingRecipe.ID)
-	if err != nil {
-		logger.Error("Error checking for existing draft version", "error", err)
-		return nil, err
-	}
-
 	// No upload id, no remove image flag (or remove image flag false), set imgSrc to previous version
 	// No upload id, remove image flag true, set imgSrc to nil
 	// Upload id provided, validate and set imgSrc to new value regardless of remove image flag
@@ -279,18 +281,18 @@ func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest)
 		// Always do this as:
 		// New published version: there won't be a draft
 		// New draft version: draft will be replaced
-		if draftVersionID != nil {
-			err := s.ingredientUsageRepo.deleteIngredientUsagesByRecipeVersionID(ctx, tx, *draftVersionID)
+		if existingRecipe.DraftVersionID != nil {
+			err := s.ingredientUsageRepo.deleteIngredientUsagesByRecipeVersionID(ctx, tx, *existingRecipe.DraftVersionID)
 			if err != nil {
 				logger.Error("Error deleting ingredient usages for existing draft version", "error", err)
 				return err
 			}
-			err = s.recipeVersionRepo.deleteRecipeSourceByRecipeVersionID(ctx, tx, *draftVersionID)
+			err = s.recipeVersionRepo.deleteRecipeSourceByRecipeVersionID(ctx, tx, *existingRecipe.DraftVersionID)
 			if err != nil {
 				logger.Error("Error deleting recipe sources for existing draft version", "error", err)
 				return err
 			}
-			err = s.recipeVersionRepo.deleteRecipeVersionByID(ctx, tx, *draftVersionID)
+			err = s.recipeVersionRepo.deleteRecipeVersionByID(ctx, tx, *existingRecipe.DraftVersionID)
 			if err != nil {
 				logger.Error("Error deleting existing draft version", "error", err)
 				return err
@@ -341,6 +343,17 @@ func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest)
 			if err != nil {
 				return err
 			}
+		}
+
+		var newDraftVersionID *uuid.UUID
+		if !request.Request.Publish {
+			newDraftVersionID = &recipeVersion.ID
+		}
+
+		// If the new version is a draft, set the draft version id on the container
+		err = s.recipeRepo.updateRecipeDraftVersion(ctx, tx, existingRecipe.ID, newDraftVersionID)
+		if err != nil {
+			return err
 		}
 
 		if recipeVersion.Source != nil {

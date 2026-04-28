@@ -11,6 +11,8 @@ type RecipeContainer struct {
 	UserID           uuid.UUID
 	CurrentVersionID uuid.UUID
 	CurrentVersion   *RecipeVersion
+	DraftVersionID   *uuid.UUID
+	DraftVersion     *RecipeVersion
 
 	CreatedAt   time.Time
 	DeletedAt   *time.Time
@@ -65,11 +67,21 @@ func NewRecipe(
 		return nil, err
 	}
 
+	var draftVersionID *uuid.UUID
+	var draftVersion *RecipeVersion
+
+	if !publish {
+		draftVersionID = &version.ID
+		draftVersion = version
+	}
+
 	recipe := &RecipeContainer{
 		ID:               recipeID,
 		UserID:           userID,
 		CurrentVersionID: version.ID,
 		CurrentVersion:   version,
+		DraftVersionID:   draftVersionID,
+		DraftVersion:     draftVersion,
 		CreatedAt:        now,
 		PublishedAt:      publishedAt,
 	}
