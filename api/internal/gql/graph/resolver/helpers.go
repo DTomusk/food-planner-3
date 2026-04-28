@@ -89,6 +89,7 @@ func mapRecipeVersion(recipeVersion *recipe.RecipeVersion) *model.RecipeVersion 
 func buildRecipeListParams(
 	pagination *model.PaginationInput,
 	filter *model.RecipeFilterInput,
+	includeDrafts bool,
 ) (recipe.RecipeListParams, error) {
 	first := 20
 	var after *string
@@ -133,6 +134,7 @@ func buildRecipeListParams(
 			AnimalProductLevel: animalProductLevel,
 			ContainsGluten:     containsGluten,
 		},
+		IncludeDrafts: includeDrafts,
 	}, nil
 }
 
@@ -168,8 +170,9 @@ func (r *Resolver) listRecipes(
 	ctx context.Context,
 	pagination *model.PaginationInput,
 	filter *model.RecipeFilterInput,
+	includeDrafts bool,
 ) (*model.RecipeConnection, error) {
-	params, err := buildRecipeListParams(pagination, filter)
+	params, err := buildRecipeListParams(pagination, filter, includeDrafts)
 	if err != nil {
 		return nil, err
 	}

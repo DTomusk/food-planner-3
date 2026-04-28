@@ -7,6 +7,7 @@ package resolver
 
 import (
 	"context"
+	"foodplanner/internal/auth"
 	"foodplanner/internal/gql/graph"
 	"foodplanner/internal/gql/graph/model"
 	"foodplanner/internal/logging"
@@ -56,7 +57,10 @@ func (r *userResolver) Recipes(ctx context.Context, obj *model.User, pagination 
 		effectiveFilter.Query = filter.Query
 	}
 
-	connection, err := r.listRecipes(ctx, pagination, effectiveFilter)
+	claims, isAuthenticated := auth.ClaimsFromContext(ctx)
+	includeDrafts := isAuthenticated && claims.UserID == obj.ID
+
+	connection, err := r.listRecipes(ctx, pagination, effectiveFilter, includeDrafts)
 	if err != nil {
 		logger.Error("Failed to get all recipes", "error", err)
 		return nil, err

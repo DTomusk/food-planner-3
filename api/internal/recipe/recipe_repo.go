@@ -106,8 +106,11 @@ func (r *recipeRepo) getRecipeByID(ctx context.Context, db db.DBTX, id uuid.UUID
 
 // For recipe listing ordered by created at
 // Must only retrieve published and not deleted recipes
-func (r *recipeRepo) getRecipesByCreatedAt(ctx context.Context, db db.DBTX, limit int, cursor *RecipeCursor, filter normalizedRecipeFilter) ([]*RecipeListRow, error) {
-	conditions := []string{"rc.deleted_on IS NULL", "rc.published_at IS NOT NULL"}
+func (r *recipeRepo) getRecipesByCreatedAt(ctx context.Context, db db.DBTX, limit int, cursor *RecipeCursor, filter normalizedRecipeFilter, includeDrafts bool) ([]*RecipeListRow, error) {
+	conditions := []string{"rc.deleted_on IS NULL"}
+	if !includeDrafts {
+		conditions = append(conditions, "rc.published_at IS NOT NULL")
+	}
 	args := make([]any, 0, 4)
 
 	filterConditions, args := buildFilterConditions(filter, args)

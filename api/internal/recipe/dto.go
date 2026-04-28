@@ -36,8 +36,9 @@ type UpdateRecipeRequest struct {
 }
 
 type RecipeListParams struct {
-	Pagination RecipePagination
-	Filter     RecipeFilter
+	Pagination    RecipePagination
+	Filter        RecipeFilter
+	IncludeDrafts bool
 }
 
 type RecipePagination struct {

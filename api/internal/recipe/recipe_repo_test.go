@@ -173,7 +173,7 @@ func TestGetRecipes_ReturnsActiveRecipesOrderedByCreatedAtAndIDDesc(t *testing.T
 		older := seedRecipeForListTests(t, ctx, tx, testUser.ID, olderID, uuid.New(), "Older", olderCreatedAt, nil, nil, true)
 		seedRecipeForListTests(t, ctx, tx, testUser.ID, deletedID, uuid.New(), "Deleted", deletedCreatedAt, &deletedOn, nil, true)
 
-		recipes, err := r.getRecipesByCreatedAt(ctx, tx, 10, nil, normalizedRecipeFilter{})
+		recipes, err := r.getRecipesByCreatedAt(ctx, tx, 10, nil, normalizedRecipeFilter{}, false)
 
 		require.NoError(t, err)
 		require.Len(t, recipes, 3)
@@ -204,7 +204,7 @@ func TestGetRecipes_AppliesCursorBoundary(t *testing.T) {
 			ID:        newestHigh.RecipeID,
 		}
 
-		recipes, err := r.getRecipesByCreatedAt(ctx, tx, 10, cursor, normalizedRecipeFilter{})
+		recipes, err := r.getRecipesByCreatedAt(ctx, tx, 10, cursor, normalizedRecipeFilter{}, false)
 
 		require.NoError(t, err)
 		require.Len(t, recipes, 2)
@@ -337,19 +337,19 @@ func TestGetRecipesByCreatedAt_FiltersByAnimalProductLevel(t *testing.T) {
 		meat := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "Meat Soup", base.Add(-2*time.Minute), nil, &meatLevel, true)
 
 		veganFilter := 0
-		recipes, err := r.getRecipesByCreatedAt(ctx, tx, 10, nil, normalizedRecipeFilter{AnimalProductLevel: &veganFilter})
+		recipes, err := r.getRecipesByCreatedAt(ctx, tx, 10, nil, normalizedRecipeFilter{AnimalProductLevel: &veganFilter}, false)
 		require.NoError(t, err)
 		require.Len(t, recipes, 1)
 		require.Equal(t, vegan.RecipeID, recipes[0].Recipe.ID)
 
 		vegetarianFilter := 1
-		recipes, err = r.getRecipesByCreatedAt(ctx, tx, 10, nil, normalizedRecipeFilter{AnimalProductLevel: &vegetarianFilter})
+		recipes, err = r.getRecipesByCreatedAt(ctx, tx, 10, nil, normalizedRecipeFilter{AnimalProductLevel: &vegetarianFilter}, false)
 		require.NoError(t, err)
 		require.Len(t, recipes, 2)
 		require.Equal(t, vegan.RecipeID, recipes[0].Recipe.ID)
 		require.Equal(t, vegetarian.RecipeID, recipes[1].Recipe.ID)
 
-		recipes, err = r.getRecipesByCreatedAt(ctx, tx, 10, nil, normalizedRecipeFilter{})
+		recipes, err = r.getRecipesByCreatedAt(ctx, tx, 10, nil, normalizedRecipeFilter{}, false)
 		require.NoError(t, err)
 		require.Len(t, recipes, 3)
 		require.Equal(t, vegan.RecipeID, recipes[0].Recipe.ID)
@@ -424,13 +424,13 @@ func TestGetRecipesByCreatedAt_FiltersByContainsGluten(t *testing.T) {
 		require.NoError(t, err)
 
 		trueFilter := true
-		recipes, err := r.getRecipesByCreatedAt(ctx, tx, 10, nil, normalizedRecipeFilter{ContainsGluten: &trueFilter})
+		recipes, err := r.getRecipesByCreatedAt(ctx, tx, 10, nil, normalizedRecipeFilter{ContainsGluten: &trueFilter}, false)
 		require.NoError(t, err)
 		require.Len(t, recipes, 1)
 		require.Equal(t, containsGluten.RecipeID, recipes[0].Recipe.ID)
 
 		falseFilter := false
-		recipes, err = r.getRecipesByCreatedAt(ctx, tx, 10, nil, normalizedRecipeFilter{ContainsGluten: &falseFilter})
+		recipes, err = r.getRecipesByCreatedAt(ctx, tx, 10, nil, normalizedRecipeFilter{ContainsGluten: &falseFilter}, false)
 		require.NoError(t, err)
 		require.Len(t, recipes, 1)
 		require.Equal(t, glutenFree.RecipeID, recipes[0].Recipe.ID)

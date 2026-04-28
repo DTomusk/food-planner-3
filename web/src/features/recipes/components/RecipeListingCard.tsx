@@ -27,11 +27,11 @@ export default function RecipeListingCard({ recipe, onClick, actions, dietLevel 
                 />
                 <div className="flex min-w-0 flex-1 flex-col justify-between gap-3 p-4">
                     <Stack space="sm">
-                    <Tag>Version {recipe.version}</Tag>
                     <Inline justify="between" align="start" gap="md">
                         <Heading text={recipe.name} />
                         {actions && <Inline className="shrink-0 self-start">{actions}</Inline>}
                     </Inline>
+                    <Tag>Version {recipe.version} {recipe.isDraft && "(Draft)"}</Tag>
                     <SharedBy user={recipe.author} />
                     <div className="hidden md:block">
                         <Text variant="muted">Created on {new Date(recipe.createdAt).toLocaleDateString()}</Text>

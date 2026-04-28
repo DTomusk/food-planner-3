@@ -1,4 +1,4 @@
-import type { GetRecipeQuery, GetRecipeVersionQuery, RecipeConnectionListFieldsFragment } from "@/lib";
+import type { GetMyRecipesQuery, GetRecipeQuery, GetRecipeVersionQuery, RecipeConnectionListFieldsFragment } from "@/lib";
 import type { Recipe, RecipePage, User } from "../types";
 
 export function mapRecipeDetail(
@@ -102,4 +102,38 @@ export function mapRecipeSummary(
         endCursor: gqlRecipes.pageInfo.endCursor || null,
         hasNextPage: gqlRecipes.pageInfo.hasNextPage,
     };
+}
+
+export function mapMyRecipeSummary(
+    gqlRecipes: NonNullable<NonNullable<GetMyRecipesQuery["me"]>["recipes"]>
+): RecipePage {
+    return {
+        recipes: gqlRecipes.edges.map((edge) => {
+            const displayVersion = edge.node.draftVersion ?? edge.node.currentVersion;
+
+            return {
+                id: edge.node.id,
+                name: displayVersion.name,
+                imageUrl: displayVersion.imgSrc || null,
+                description: displayVersion.description,
+                createdAt: edge.node.createdAt,
+                author: {
+                    id: edge.node.author.id,
+                    username: edge.node.author.username,
+                },
+                animalProductLevel: displayVersion.animalProductLevel,
+                containsGluten: displayVersion.containsGluten,
+                version: displayVersion.version,
+                isDraft: displayVersion.publishedAt === null,
+            };
+        }),
+        endCursor: gqlRecipes.pageInfo.endCursor || null,
+        hasNextPage: gqlRecipes.pageInfo.hasNextPage,
+    };
+}
+
+export function mapMyRecipeSummaryList(
+    gqlRecipes: NonNullable<NonNullable<GetMyRecipesQuery["me"]>["recipes"]>
+) {
+    return mapMyRecipeSummary(gqlRecipes).recipes;
 }
