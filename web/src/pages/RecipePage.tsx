@@ -1,6 +1,8 @@
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Alert, Button, Inline, Spinner } from "@/components";
+import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useRecipe } from "@/features/recipes";
+import { useMe } from "@/features/users/hooks/useMe";
 import { Page } from "@/layout";
 import Container from "@/components/layout/Container";
 import Stack from "@/components/layout/Stack";
@@ -18,6 +20,7 @@ type RecipePageLocationState = {
 };
 
 export default function RecipePage() {
+    const { isAuthenticated } = useAuth();
     const { id } = useParams<{ id: string }>();
     const recipeId = id ?? "";
     const location = useLocation();
@@ -28,6 +31,8 @@ export default function RecipePage() {
     const recipeQuery = useRecipe(recipeId);
     const recipe = recipeQuery.data?.recipe;
     const user = recipeQuery.data?.user;
+    const meQuery = useMe({ enabled: isAuthenticated });
+    const canEditRecipe = Boolean(user?.id && meQuery.data?.id && user.id === meQuery.data.id);
 
     const versionsQuery = useRecipeVersions(recipeId);
     const versions = versionsQuery.data;
@@ -68,9 +73,11 @@ export default function RecipePage() {
                     ]}
                 />
             ) : null}
-            <IconButton variant="primary-outline" onClick={() => navigate(`/recipes/${recipeId}/edit`)}>
-                <SquarePen size={16} />
-            </IconButton>
+            {canEditRecipe ? (
+                <IconButton variant="primary-outline" onClick={() => navigate(`/recipes/${recipeId}/edit`)}>
+                    <SquarePen size={16} />
+                </IconButton>
+            ) : null}
         </>
     );
 
@@ -92,9 +99,11 @@ export default function RecipePage() {
                                         versions={versions}
                                         currentVersionNumber={currentVersionNumber}
                                     />
-                                    <Button variant="secondary" onClick={() => navigate(`/recipes/${recipeId}/edit`)}>
-                                        Create new version
-                                    </Button>
+                                    {canEditRecipe ? (
+                                        <Button variant="secondary" onClick={() => navigate(`/recipes/${recipeId}/edit`)}>
+                                            Create new version
+                                        </Button>
+                                    ) : null}
                                 </Stack>
                             ) : null}
                         </Inline>

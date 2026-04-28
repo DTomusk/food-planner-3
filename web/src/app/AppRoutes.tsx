@@ -11,6 +11,7 @@ import ProtectedLayout from "./ProtectedLayout";
 import MyRecipesPage from "@/pages/MyRecipesPage";
 import UserPage from "@/pages/UserPage";
 import RecipeUpdatePage from "@/pages/RecipeUpdatePage";
+import RecipeOwnerLayout from "@/features/recipes/layouts/RecipeOwnerLayout";
 import { AppLayout } from "@/layout";
 import type { GetRecipeQuery, GetRecipeVersionQuery, GetUserQuery } from "@/lib";
 import { queryClient } from "./queryClient";
@@ -127,9 +128,14 @@ export const router = createBrowserRouter([
                 element: <ProtectedLayout />,
                 children: [
                   {
-                    path: "edit",
-                    element: <RecipeUpdatePage />,
-                    handle: { crumb: () => "Edit" },
+                    element: <RecipeOwnerLayout />,
+                    children: [
+                      {
+                        path: "edit",
+                        element: <RecipeUpdatePage />,
+                        handle: { crumb: () => "Edit" },
+                      },
+                    ],
                   },
                 ],
               },
