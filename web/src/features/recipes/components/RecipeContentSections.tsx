@@ -8,7 +8,6 @@ import RecipeDetailsCard from "./RecipeDetailsCard";
 type RecipeContentSectionsProps = {
     recipe: Recipe;
     user?: User;
-    versionNumber?: number;
 };
 
 function BorderedSection({
@@ -29,7 +28,6 @@ function BorderedSection({
 export default function RecipeContentSections({
     recipe,
     user,
-    versionNumber,
 }: RecipeContentSectionsProps) {
     return (
         <Stack space="sm">
@@ -40,7 +38,8 @@ export default function RecipeContentSections({
                 prepTimeMinutes={recipe.prepMins}
                 cookTimeMinutes={recipe.cookMins}
                 portions={recipe.portions}
-                versionNumber={versionNumber}
+                versionNumber={recipe.version}
+                isDraft={recipe.isDraft}
                 sharedBy={user ? { username: user.username, id: user.id } : undefined}
                 dietLevel={recipe.animalProductLevel}
                 containsGluten={recipe.containsGluten}

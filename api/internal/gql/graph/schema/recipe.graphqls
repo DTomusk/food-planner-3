@@ -2,6 +2,7 @@ type Recipe {
   id: ID!
   author: User! @goField(forceResolver: true)
   createdAt: Time!
+  publishedAt: Time
 
   currentVersion: RecipeVersion! @goField(forceResolver: true)
   versions: [RecipeVersion!]! @goField(forceResolver: true)
@@ -28,6 +29,7 @@ type RecipeVersion {
   source: RecipeSource! @goField(forceResolver: true)
 
   createdAt: Time!
+  publishedAt: Time
 }
 
 type IngredientUsage {

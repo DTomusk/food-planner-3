@@ -3,8 +3,9 @@ package model
 import "time"
 
 type Recipe struct {
-	ID        string
-	CreatedAt time.Time
+	ID          string
+	CreatedAt   time.Time
+	PublishedAt *time.Time
 
 	AuthorID         string
 	CurrentVersionID string
@@ -25,6 +26,7 @@ type RecipeVersion struct {
 	CookMins           int32
 	Portions           int32
 	CreatedAt          time.Time
+	PublishedAt        *time.Time
 	ImgSrc             *string
 	AnimalProductLevel int32
 	ContainsGluten     bool

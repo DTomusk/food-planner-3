@@ -11,13 +11,14 @@ type RecipeDetailsCardProps = {
     prepTimeMinutes: number;
     cookTimeMinutes: number;
     portions: number;
-    versionNumber?: number;
+    versionNumber: number;
     sharedBy?: {
         username: string;
         id: string;
     },
     dietLevel: number;
     containsGluten: boolean;
+    isDraft: boolean;
 };
 
 export default function RecipeDetailsCard({ 
@@ -31,6 +32,7 @@ export default function RecipeDetailsCard({
     sharedBy,
     dietLevel,
     containsGluten,
+    isDraft,
 }: RecipeDetailsCardProps) {
     return (
         <div className="flex flex-col border border-black bg-white rounded shadow">
@@ -41,9 +43,7 @@ export default function RecipeDetailsCard({
                     containerClassName="aspect-square w-full shrink-0 md:w-64 overflow-hidden"
                 />
                 <Stack className="py-3 px-4">
-                    {versionNumber !== undefined && (
-                        <Tag>Version {versionNumber}</Tag>
-                    )}
+                    <Tag>Version {versionNumber} {isDraft ? "(Draft)" : ""}</Tag>
                     <h2 className="text-3xl font-bold">{recipeTitle}</h2>
                     {sharedBy && <SharedBy user={sharedBy} />}
                     <p className="text-gray-700">{description}</p>

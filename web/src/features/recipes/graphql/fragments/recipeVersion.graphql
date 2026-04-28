@@ -29,4 +29,6 @@ fragment RecipeVersionFields on RecipeVersion {
   imgSrc
   animalProductLevel
   containsGluten
+  createdAt
+  publishedAt
 }

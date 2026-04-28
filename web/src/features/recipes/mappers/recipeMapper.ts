@@ -30,6 +30,7 @@ export function mapRecipeDetail(
         imageUrl: gqlRecipe.currentVersion.imgSrc || null,
         animalProductLevel: gqlRecipe.currentVersion.animalProductLevel,
         containsGluten: gqlRecipe.currentVersion.containsGluten,
+        isDraft: gqlRecipe.currentVersion.publishedAt === null,
         },
         user: {
             id: gqlRecipe.author.id,
@@ -70,11 +71,12 @@ export function mapRecipeVersionDetail(
         imageUrl: gqlRecipe.version.imgSrc || null,
         animalProductLevel: gqlRecipe.version.animalProductLevel,
         containsGluten: gqlRecipe.version.containsGluten,
+        isDraft: gqlRecipe.version.publishedAt === null,
         },
         user: {
             id: gqlRecipe.author.id,
             username: gqlRecipe.author.username,
-        } 
+        }
     }
 }
 
@@ -94,6 +96,8 @@ export function mapRecipeSummary(
             },
             animalProductLevel: edge.node.currentVersion.animalProductLevel,
             containsGluten: edge.node.currentVersion.containsGluten,
+            version: edge.node.currentVersion.version,
+            isDraft: edge.node.currentVersion.publishedAt === null,
         })),
         endCursor: gqlRecipes.pageInfo.endCursor || null,
         hasNextPage: gqlRecipes.pageInfo.hasNextPage,

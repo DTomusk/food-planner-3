@@ -56,6 +56,7 @@ func mapRecipe(recipe *recipe.RecipeContainer) *model.Recipe {
 	return &model.Recipe{
 		ID:               recipe.ID.String(),
 		CreatedAt:        recipe.CreatedAt,
+		PublishedAt:      recipe.PublishedAt,
 		AuthorID:         recipe.UserID.String(),
 		CurrentVersionID: recipe.CurrentVersionID.String(),
 		CurrentVersion:   mapRecipeVersion(recipe.CurrentVersion),
@@ -77,6 +78,7 @@ func mapRecipeVersion(recipeVersion *recipe.RecipeVersion) *model.RecipeVersion 
 		CookMins:           int32(recipeVersion.CookMins),
 		Portions:           int32(recipeVersion.Portions),
 		CreatedAt:          recipeVersion.CreatedAt,
+		PublishedAt:        recipeVersion.PublishedAt,
 		Version:            int32(recipeVersion.Version),
 		ImgSrc:             recipeVersion.ImgSrc,
 		AnimalProductLevel: int32(recipeVersion.AnimalProductLevel),
