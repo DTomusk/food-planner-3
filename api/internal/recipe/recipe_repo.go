@@ -184,6 +184,7 @@ WITH ranked AS (
 		rv.img_src,
 		rv.animal_product_level,
 		rv.contains_gluten,
+		rv.published_at AS version_published_at,
     ` + scoreExpression + `
     FROM recipe_containers rc
     JOIN recipe_versions rv ON rc.current_version_id = rv.id
@@ -212,6 +213,7 @@ SELECT
     description,
 	animal_product_level,
 	contains_gluten,
+	version_published_at,
     relevance_score
 FROM ranked
 `
@@ -269,6 +271,7 @@ FROM ranked
 			&rv.Description,
 			&rv.AnimalProductLevel,
 			&rv.ContainsGluten,
+			&rv.PublishedAt,
 			score,
 		)
 		if err != nil {
