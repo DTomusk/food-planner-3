@@ -1,5 +1,5 @@
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { Alert, Spinner } from "@/components";
+import { Alert, Inline, Spinner } from "@/components";
 import { useRecipe } from "@/features/recipes";
 import { Page } from "@/layout";
 import Container from "@/components/layout/Container";
@@ -11,6 +11,7 @@ import { ClockFading, SquarePen } from "lucide-react";
 import Dropdown from "@/components/ui/Dropdown";
 import { useRecipeVersions } from "@/features/recipes/hooks/useRecipeVersions";
 import RecipeContentSections from "@/features/recipes/components/RecipeContentSections";
+import VersionSelector from "@/features/recipes/components/VersionSelector";
 
 type RecipePageLocationState = {
     successMessage?: string;
@@ -75,14 +76,23 @@ export default function RecipePage() {
 
     return (
         <Page toolbarActions={toolbarActions}>
-            <Container size="md">
+            <Container size="xl">
                 <Stack space="xl">
                     {!recipeId && <Alert message="No recipe ID provided." />}
                     {recipeQuery.isLoading && <Spinner />}
                     {recipeQuery.error && <Alert message={extractErrorMessage(recipeQuery.error)} closable />}
                     {successMessage && <Alert message={successMessage} type="success" closable duration={3000} onClose={() => setSuccessMessage(undefined)} />}
                     {recipe ? (
-                        <RecipeContentSections recipe={recipe} user={user} />
+                        <Inline align="start" justify="center" className="w-full" gap="lg">
+                            <RecipeContentSections recipe={recipe} user={user} />
+                            {versions?.length ? (
+                                <VersionSelector
+                                    recipeId={recipeId}
+                                    versions={versions}
+                                    currentVersionNumber={currentVersionNumber}
+                                />
+                            ) : null}
+                        </Inline>
                 ) : (
                     !recipeQuery.isLoading && recipeId && !recipeQuery.error && <Alert message="Recipe not found." />
                 )}
