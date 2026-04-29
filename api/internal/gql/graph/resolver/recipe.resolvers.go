@@ -203,6 +203,9 @@ func (r *recipeResolver) Version(ctx context.Context, obj *model.Recipe, version
 
 	if recipeVersion.PublishedAt == nil {
 		claims, isAuthenticated := auth.ClaimsFromContext(ctx)
+		if !isAuthenticated && auth.InvalidAuthTokenFromContext(ctx) {
+			return nil, grapherrors.NewUnauthenticatedError("user is not authenticated")
+		}
 		isOwner := isAuthenticated && claims.UserID == obj.AuthorID
 		if !isOwner {
 			return nil, nil
