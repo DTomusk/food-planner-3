@@ -537,6 +537,82 @@ func TestRecipeResolver_DraftVisibility_RestrictedToOwner(t *testing.T) {
 	})
 }
 
+func TestRecipeResolver_Versions_InvalidBearerTokenReturnsUnauthenticated(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := authContext(nil)
+
+		testIngredient, err := seeds.SeedTestIngredient(ctx, tx)
+		require.NoError(t, err, "Failed to seed test ingredient")
+
+		ownerUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err, "Failed to seed owner user")
+
+		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100)
+		service := newTestRecipeService(t, tx, txRunner, ingredientService)
+		r := &Resolver{RecipeService: service}
+
+		mutationResolver := &mutationResolver{r}
+		queryResolver := &queryResolver{r}
+		recipeResolver := &recipeResolver{r}
+
+		ownerCtx := auth.ContextWithClaims(ctx, &auth.Claims{UserID: ownerUser.ID.String()})
+
+		createdRecipe, err := mutationResolver.CreateRecipe(ownerCtx, model.CreateRecipeInput{
+			Name: "Published Cake",
+			IngredientUsages: []*model.CreateIngredientUsageInput{{
+				IngredientID: testIngredient.ID.String(),
+				Quantity:     200,
+				Unit:         1,
+			}},
+			PrepMins: 30,
+			CookMins: 45,
+			Portions: 4,
+			RecipeSource: &model.CreateRecipeSourceInput{
+				Type: 1,
+				URL:  ptrString("https://example.com/published-cake"),
+			},
+			Publish: true,
+		})
+		require.NoError(t, err)
+
+		_, err = mutationResolver.UpdateRecipe(ownerCtx, model.UpdateRecipeInput{
+			ID: createdRecipe.ID,
+			Details: &model.CreateRecipeInput{
+				Name: "Draft Cake",
+				IngredientUsages: []*model.CreateIngredientUsageInput{{
+					IngredientID: testIngredient.ID.String(),
+					Quantity:     210,
+					Unit:         1,
+				}},
+				PrepMins: 32,
+				CookMins: 46,
+				Portions: 4,
+				RecipeSource: &model.CreateRecipeSourceInput{
+					Type: 1,
+					URL:  ptrString("https://example.com/draft-cake"),
+				},
+				Publish: false,
+			},
+		})
+		require.NoError(t, err)
+
+		fetchedRecipe, err := queryResolver.Recipe(ctx, createdRecipe.ID)
+		require.NoError(t, err)
+		require.NotNil(t, fetchedRecipe)
+
+		invalidTokenCtx := auth.ContextWithInvalidAuthToken(ctx)
+		versions, err := recipeResolver.Versions(invalidTokenCtx, fetchedRecipe)
+		require.Nil(t, versions)
+		require.Error(t, err, "Expected unauthenticated error for invalid bearer token")
+
+		gqlErr, ok := err.(*gqlerror.Error)
+		require.True(t, ok, "Expected GraphQL error type")
+		require.Equal(t, "user is not authenticated", gqlErr.Message)
+		require.Equal(t, "UNAUTHENTICATED", gqlErr.Extensions["code"])
+	})
+}
+
 func TestRecipeResolver_CurrentVersion_UsesPreloadedValue(t *testing.T) {
 	// Arrange
 	r := &recipeResolver{&Resolver{}}

@@ -106,7 +106,6 @@ export default function RecipePage() {
                                     versions={versions}
                                     currentVersionNumber={selectedVersionNumber}
                                     canEdit={canEditRecipe}
-                                    hasDraft={Boolean(versions?.some((version) => version.draft))}
                                 />
                             ) : null}
                         </Inline>

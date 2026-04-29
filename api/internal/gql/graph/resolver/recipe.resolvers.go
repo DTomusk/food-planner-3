@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"foodplanner/internal/auth"
 	"foodplanner/internal/gql/graph"
+	grapherrors "foodplanner/internal/gql/graph/errors"
 	"foodplanner/internal/gql/graph/model"
 	"foodplanner/internal/logging"
 	"foodplanner/internal/recipe"
@@ -139,6 +140,9 @@ func (r *recipeResolver) CurrentVersion(ctx context.Context, obj *model.Recipe) 
 // Versions is the resolver for the versions field.
 func (r *recipeResolver) Versions(ctx context.Context, obj *model.Recipe) ([]*model.RecipeVersion, error) {
 	claims, isAuthenticated := auth.ClaimsFromContext(ctx)
+	if !isAuthenticated && auth.InvalidAuthTokenFromContext(ctx) {
+		return nil, grapherrors.NewUnauthenticatedError("user is not authenticated")
+	}
 	isOwner := isAuthenticated && claims.UserID == obj.AuthorID
 
 	versions, err := r.RecipeService.GetRecipeVersionsByRecipeID(ctx, uuid.MustParse(obj.ID))

@@ -14,11 +14,11 @@ type VersionSelectorProps = {
     versions: Version[];
     currentVersionNumber: number | undefined;
     canEdit: boolean;
-    hasDraft: boolean;
 };
 
-export default function VersionSelector({ recipeId, versions, currentVersionNumber, canEdit, hasDraft }: VersionSelectorProps) {
+export default function VersionSelector({ recipeId, versions, currentVersionNumber, canEdit }: VersionSelectorProps) {
     const navigate = useNavigate();
+    const hasDraft = versions.some((version) => version.draft);
 
     return (
         <aside className="w-full rounded-md border border-black bg-white p-3 md:w-56 md:shrink-0">
@@ -33,7 +33,7 @@ export default function VersionSelector({ recipeId, versions, currentVersionNumb
                     items={versions.map((version) => {
                         const isCurrentVersion = version.version === currentVersionNumber;
                         return {
-                            label: `Version ${version.version}${version.draft ? " (draft)" : ""}`,
+                            label: `v${version.version}${version.draft ? " (draft)" : ""}`,
                             onClick: () => navigate(`/recipes/${recipeId}/versions/${version.version}`),
                             selected: isCurrentVersion,
                         };
