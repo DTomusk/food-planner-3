@@ -6,6 +6,7 @@ type ResizableSidebarProps = {
     maxWidth?: number;
     defaultWidth?: number;
     className?: string;
+    storageKey?: string;
 };
 
 const DEFAULT_MIN_WIDTH = 160;
@@ -19,8 +20,10 @@ export default function ResizableSidebar({
     maxWidth = DEFAULT_MAX_WIDTH,
     defaultWidth = DEFAULT_WIDTH,
     className = "",
+    storageKey,
 }: ResizableSidebarProps) {
-    const initialWidth = Math.min(maxWidth, Math.max(minWidth, defaultWidth));
+    const storedWidth = storageKey ? Number(localStorage.getItem(storageKey)) || defaultWidth : defaultWidth;
+    const initialWidth = Math.min(maxWidth, Math.max(minWidth, storedWidth));
     const [width, setWidth] = useState(initialWidth);
     const [isResizing, setIsResizing] = useState(false);
     const resizeStartX = useRef(0);
@@ -45,6 +48,9 @@ export default function ResizableSidebar({
             );
 
             setWidth(nextWidth);
+            if (storageKey) {
+                localStorage.setItem(storageKey, String(nextWidth));
+            }
         };
 
         const onPointerUp = () => {

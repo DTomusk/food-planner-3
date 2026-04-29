@@ -51,7 +51,7 @@ export default function NavBar() {
             </nav>
 
             {/* Desktop: brand + nav items */}
-            <ResizableSidebar className="sticky top-0 z-40 h-screen shrink-0 border-r border-black bg-white px-4 py-6">
+            <ResizableSidebar storageKey="nav-sidebar-width" className="sticky top-0 z-40 h-screen shrink-0 border-r border-black bg-white px-4 py-6">
                 <Stack space="lg">
                     {title}
                     {navItems}
