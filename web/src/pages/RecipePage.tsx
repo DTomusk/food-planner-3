@@ -72,7 +72,7 @@ export default function RecipePage() {
                                 const isCurrentVersion = version.version === selectedVersionNumber;
 
                                 return {
-                                    label: `v${version.version}${isCurrentVersion ? " (current)" : ""}`,
+                                    label: `v${version.version}${version.draft ? " (draft)" : ""}`,
                                     onClick: () => navigate(`/recipes/${recipeId}/versions/${version.version}`),
                                     disabled: isCurrentVersion,
                                 };

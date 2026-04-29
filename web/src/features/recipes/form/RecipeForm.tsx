@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import type { RecipeFormValues } from "../types";
 import { Form, Button, Inline } from "@/components/";
@@ -12,6 +12,7 @@ import { recipeFormSchema } from "../schemas/recipeFormSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { IngredientOptionModel } from "@/features/ingredients/types";
 import { DEFAULT_RECIPE_FORM_VALUES } from "../mappers/recipeFormMapper";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 type RecipeFormProps = {
   onSubmit: (values: RecipeFormValues, options: { publish: boolean }) => void;
@@ -50,6 +51,8 @@ export default function RecipeForm({
     getValues,
   } = methods;
 
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+
   useEffect(() => {
     onDirtyChange?.(isDirty);
   }, [isDirty, onDirtyChange]);
@@ -61,6 +64,10 @@ export default function RecipeForm({
       onSubmit(values, { publish });
     }
   };
+
+  const handleSubmitWithPublish = async () => {
+    setConfirmModalOpen(true);
+  }
 
   return (
     <Container size="md">
@@ -83,7 +90,7 @@ export default function RecipeForm({
                 variant="primaryOutline">
                 {commonStrings.forms.save_as_draft}
               </Button>
-              <Button onClick={() => handleSubmit(true)} 
+              <Button onClick={() => handleSubmitWithPublish()} 
                 disabled={isSubmitting || isPreparingImageUpload || (isSubmitted && !isValid)} 
                 type="submit" 
                 loading={isSubmitting || isPreparingImageUpload}>
@@ -93,6 +100,15 @@ export default function RecipeForm({
           </Stack>
         </Form>
       </FormProvider>
+      <ConfirmModal
+        isOpen={confirmModalOpen}
+        title="Publish recipe?"
+        description="Publishing your recipe will make it available to everyone, and you won't be able to make changes without creating a new version. Do you still wanna do it?"
+        onCancel={() => setConfirmModalOpen(false)}
+        onConfirm={() => handleSubmit(true)}
+        confirmText="Yup"
+        cancelText="Nope"
+      />
     </Container>
   );
 }
