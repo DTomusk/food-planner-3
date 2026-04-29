@@ -8,8 +8,5 @@ query GetRecipe($id: ID!) {
         currentVersion {
             ...RecipeVersionFields
         }
-        draftVersion {
-            ...RecipeVersionFields
-        }
     }
 }

@@ -4,7 +4,7 @@ import type { Recipe, RecipePage, User } from "../types";
 export function mapRecipeDetail(
     gqlRecipe: NonNullable<GetRecipeQuery["recipe"]>
 ): { recipe: Recipe, user: User }  {
-    var valuesToUse = gqlRecipe.draftVersion ?? gqlRecipe.currentVersion;
+    var valuesToUse = gqlRecipe.currentVersion;
     return { recipe:{
         id: gqlRecipe.id,
         name: valuesToUse.name,
