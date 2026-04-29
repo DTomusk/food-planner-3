@@ -1,5 +1,4 @@
 import clsx from "clsx";
-import Text from "./Text";
 import Stack from "../layout/Stack";
 
 type ListItem = {
@@ -10,14 +9,12 @@ type ListItem = {
 };
 
 type ActionListProps = {
-    title? : string;
     items: ListItem[];
 };
 
-export default function ActionList({ title, items }: ActionListProps) {
+export default function ActionList({ items }: ActionListProps) {
     return (
         <Stack space="sm">
-        {title && <Text>{title}</Text>}
             <ul>
                 {items.map((item) => (
                     <li key={item.label}>
