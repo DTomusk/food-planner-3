@@ -72,7 +72,7 @@ export default function RecipePage() {
                                 const isCurrentVersion = version.version === selectedVersionNumber;
 
                                 return {
-                                    label: `Version ${version.version} - ${new Date(version.createdAt).toLocaleString()}${isCurrentVersion ? " (current)" : ""}`,
+                                    label: `v${version.version}${isCurrentVersion ? " (current)" : ""}`,
                                     onClick: () => navigate(`/recipes/${recipeId}/versions/${version.version}`),
                                     disabled: isCurrentVersion,
                                 };
@@ -90,7 +90,7 @@ export default function RecipePage() {
     );
 
     return (
-        <Page toolbarActions={toolbarActions}>
+        <Page toolbarActions={toolbarActions} toolbarClass="block lg:hidden">
             <Container size="xl">
                 <Stack space="xl">
                     {!recipeId && <Alert message="No recipe ID provided." />}
@@ -106,6 +106,7 @@ export default function RecipePage() {
                                     versions={versions}
                                     currentVersionNumber={selectedVersionNumber}
                                     canEdit={canEditRecipe}
+                                    className="hidden lg:block"
                                 />
                             ) : null}
                         </Inline>

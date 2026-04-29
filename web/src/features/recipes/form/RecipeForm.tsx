@@ -76,10 +76,17 @@ export default function RecipeForm({
             <IngredientSection ingredients={ingredients} />
             <RecipeSourceSection />
             <Inline justify="start">
-              <Button onClick={() => handleSubmit(false)} disabled={isSubmitting || isPreparingImageUpload || (isSubmitted && !isValid)} type="submit" loading={isSubmitting || isPreparingImageUpload}>
+              <Button onClick={() => handleSubmit(false)} 
+                disabled={isSubmitting || isPreparingImageUpload || (isSubmitted && !isValid)} 
+                type="submit" 
+                loading={isSubmitting || isPreparingImageUpload}
+                variant="primaryOutline">
                 {commonStrings.forms.save_as_draft}
               </Button>
-              <Button onClick={() => handleSubmit(true)} disabled={isSubmitting || isPreparingImageUpload || (isSubmitted && !isValid)} type="submit" loading={isSubmitting || isPreparingImageUpload}>
+              <Button onClick={() => handleSubmit(true)} 
+                disabled={isSubmitting || isPreparingImageUpload || (isSubmitted && !isValid)} 
+                type="submit" 
+                loading={isSubmitting || isPreparingImageUpload}>
                 {commonStrings.forms.save_and_publish}
               </Button>
             </Inline>
