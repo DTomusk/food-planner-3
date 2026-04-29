@@ -1,0 +1,15 @@
+query GetEditRecipe($id: ID!) {
+    recipe(id: $id) {
+        id
+        author {
+            id
+            username
+        }
+        currentVersion {
+            ...RecipeVersionFields
+        }
+        draftVersion {
+            ...RecipeVersionFields
+        }
+    }
+}
