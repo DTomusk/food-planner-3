@@ -9,6 +9,8 @@ fragment RecipeConnectionListFields on RecipeConnection {
         description
         animalProductLevel
         containsGluten
+        version
+        publishedAt
       }
       author {
         id

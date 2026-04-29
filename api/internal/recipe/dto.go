@@ -12,6 +12,7 @@ type CreateRecipeRequest struct {
 	ImgUploadID *string                        `json:"img_upload_id,omitempty"`
 	IPAddress   string                         `json:"ip_address" validate:"required,ip"`
 	UserAgent   string                         `json:"user_agent" validate:"required"`
+	Publish     bool                           `json:"publish"`
 }
 
 type CreateIngredientUsageRequest struct {
@@ -35,8 +36,9 @@ type UpdateRecipeRequest struct {
 }
 
 type RecipeListParams struct {
-	Pagination RecipePagination
-	Filter     RecipeFilter
+	Pagination    RecipePagination
+	Filter        RecipeFilter
+	IncludeDrafts bool
 }
 
 type RecipePagination struct {

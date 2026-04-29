@@ -31,6 +31,7 @@ export default function RecipeListingCard({ recipe, onClick, actions, dietLevel 
                         <Heading text={recipe.name} />
                         {actions && <Inline className="shrink-0 self-start">{actions}</Inline>}
                     </Inline>
+                    <Tag>Version {recipe.version} {recipe.isDraft && "(Draft)"}</Tag>
                     <SharedBy user={recipe.author} />
                     <div className="hidden md:block">
                         <Text variant="muted">Created on {new Date(recipe.createdAt).toLocaleDateString()}</Text>

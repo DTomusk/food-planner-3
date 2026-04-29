@@ -29,7 +29,6 @@ func mapUser(user *user.User) *model.User {
 	}
 	return &model.User{
 		ID:       user.ID.String(),
-		Email:    user.Email,
 		Username: user.Username,
 	}
 }
@@ -47,12 +46,22 @@ func mapRecipe(recipe *recipe.RecipeContainer) *model.Recipe {
 	if recipe == nil {
 		return nil
 	}
+
+	var draftVersionID *string
+	if recipe.DraftVersionID != nil {
+		draftVersionIDStr := recipe.DraftVersionID.String()
+		draftVersionID = &draftVersionIDStr
+	}
+
 	return &model.Recipe{
 		ID:               recipe.ID.String(),
 		CreatedAt:        recipe.CreatedAt,
+		PublishedAt:      recipe.PublishedAt,
 		AuthorID:         recipe.UserID.String(),
 		CurrentVersionID: recipe.CurrentVersionID.String(),
 		CurrentVersion:   mapRecipeVersion(recipe.CurrentVersion),
+		DraftVersionID:   draftVersionID,
+		DraftVersion:     mapRecipeVersion(recipe.DraftVersion),
 	}
 }
 
@@ -69,6 +78,7 @@ func mapRecipeVersion(recipeVersion *recipe.RecipeVersion) *model.RecipeVersion 
 		CookMins:           int32(recipeVersion.CookMins),
 		Portions:           int32(recipeVersion.Portions),
 		CreatedAt:          recipeVersion.CreatedAt,
+		PublishedAt:        recipeVersion.PublishedAt,
 		Version:            int32(recipeVersion.Version),
 		ImgSrc:             recipeVersion.ImgSrc,
 		AnimalProductLevel: int32(recipeVersion.AnimalProductLevel),
@@ -79,6 +89,7 @@ func mapRecipeVersion(recipeVersion *recipe.RecipeVersion) *model.RecipeVersion 
 func buildRecipeListParams(
 	pagination *model.PaginationInput,
 	filter *model.RecipeFilterInput,
+	includeDrafts bool,
 ) (recipe.RecipeListParams, error) {
 	first := 20
 	var after *string
@@ -123,6 +134,7 @@ func buildRecipeListParams(
 			AnimalProductLevel: animalProductLevel,
 			ContainsGluten:     containsGluten,
 		},
+		IncludeDrafts: includeDrafts,
 	}, nil
 }
 
@@ -158,8 +170,9 @@ func (r *Resolver) listRecipes(
 	ctx context.Context,
 	pagination *model.PaginationInput,
 	filter *model.RecipeFilterInput,
+	includeDrafts bool,
 ) (*model.RecipeConnection, error) {
-	params, err := buildRecipeListParams(pagination, filter)
+	params, err := buildRecipeListParams(pagination, filter, includeDrafts)
 	if err != nil {
 		return nil, err
 	}
@@ -204,6 +217,7 @@ func toCreateRecipeRequest(input *model.CreateRecipeInput, userID, ipAddress, us
 		Source:      recipeSourceRequest,
 		ImgUploadID: input.ImgUploadID,
 		IPAddress:   ipAddress,
+		Publish:     input.Publish,
 	}, nil
 }
 

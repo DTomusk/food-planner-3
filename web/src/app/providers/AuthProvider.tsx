@@ -19,6 +19,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const signIn = (token: string) => {
         setToken(token);
         setIsAuthenticated(true);
+        void queryClient.invalidateQueries({ refetchType: "active" });
     };
 
     const signOut = () => {

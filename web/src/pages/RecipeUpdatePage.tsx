@@ -1,7 +1,8 @@
 import { Alert, PageTitle, Spinner } from "@/components";
 import Container from "@/components/layout/Container";
 import { useIngredients } from "@/features/ingredients/hooks/useIngredients";
-import { RecipeForm, useRecipe, type RecipeFormValues } from "@/features/recipes";
+import { RecipeForm, type RecipeFormValues } from "@/features/recipes";
+import { useEditRecipe } from "@/features/recipes/hooks/useEditRecipe";
 import { useUpdateRecipe } from "@/features/recipes/hooks/useUpdateRecipe";
 import { mapFormValuesToUpdateRecipeInput } from "@/features/recipes/mappers/recipeFormMapper";
 import { useUploadFileToSignedUrl } from "@/features/upload/hooks/useUploadFileToSignedUrl";
@@ -17,7 +18,7 @@ import { useNavigate, useParams } from "react-router-dom";
 
 export default function RecipeUpdatePage() {
     const { id } = useParams<{ id: string }>();
-    const { data, isLoading, error } = useRecipe(id ?? "");
+    const { data, isLoading, error } = useEditRecipe(id ?? "");
     const { mutate, isPending, error: mutateError } = useUpdateRecipe();
     const { data: ingredientsData } = useIngredients();
     const { mutateAsync: createUploadUrl, isPending: isPreparingImageUpload } = useUploadUrl();
@@ -90,7 +91,7 @@ export default function RecipeUpdatePage() {
         setUploadError(null);
     };
 
-    const handleSubmit = (values: RecipeFormValues) => {
+    const handleSubmit = (values: RecipeFormValues, options: { publish: boolean }) => {
         if (!id) {
             return;
         }
@@ -105,6 +106,7 @@ export default function RecipeUpdatePage() {
         const { input } = mapFormValuesToUpdateRecipeInput(values, {
             imgUploadId: imageUploadPayload?.uploadId,
             removeImage: imageChangedOrRemoved,
+            publish: options.publish,
         });
 
         mutate(
@@ -145,7 +147,6 @@ export default function RecipeUpdatePage() {
                     onImageFileChange={handleImageFileChange}
                     existingImageUrl={hasRemovedExistingImage ? null : existingImageUrl}
                     onRemoveExistingImage={handleRemoveExistingImage}
-                    isCreateForm={false}
                     onDirtyChange={setIsFormDirty}
                 />
             )}

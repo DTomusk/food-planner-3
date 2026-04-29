@@ -3,10 +3,10 @@ package recipe
 import (
 	"context"
 	"database/sql"
+	"foodplanner/internal/correlationid"
 	"foodplanner/internal/db"
 	"foodplanner/internal/events"
 	"foodplanner/internal/ingredient"
-	"foodplanner/internal/correlationid"
 	"foodplanner/internal/logging"
 	"foodplanner/internal/upload"
 	"log/slog"
@@ -97,6 +97,7 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 		imgSrc,
 		maxAnimalProductLevel,
 		containsGluten,
+		request.Publish,
 	)
 	if err != nil {
 		logger.Error("Error creating recipe", "error", err)
@@ -136,6 +137,15 @@ func (s *Service) CreateRecipe(ctx context.Context, request CreateRecipeRequest)
 		err = s.recipeRepo.updateRecipeCurrentVersion(ctx, tx, recipeContainer.ID, recipeContainer.CurrentVersion.ID)
 		if err != nil {
 			return err
+		}
+
+		// Only set draft version if this new recipe is a draft
+		// If published, draft version remains null
+		if !request.Publish {
+			err = s.recipeRepo.updateRecipeDraftVersion(ctx, tx, recipeContainer.ID, &recipeContainer.CurrentVersion.ID)
+			if err != nil {
+				return err
+			}
 		}
 
 		err = s.ingredientUsageRepo.insertIngredientUsages(ctx, tx, ingredientUsages, recipeContainer.CurrentVersion.ID)
@@ -239,10 +249,17 @@ func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest)
 		imgSrc = existingRecipe.CurrentVersion.ImgSrc
 	}
 
+	// The new version number is usually current version + 1 (current version is the number of the previously published version)
+	// Except when the recipe has never been published, in which case it is always 1
+	newVersionNumber := 1
+	if existingRecipe.PublishedAt != nil {
+		newVersionNumber = existingRecipe.CurrentVersion.Version + 1
+	}
+
 	// Instantiate entity
 	recipeVersion, err := NewRecipeVersion(
 		existingRecipe.ID,
-		existingRecipe.CurrentVersion.Version+1,
+		newVersionNumber,
 		request.Request.Name,
 		request.Request.Description,
 		ingredientUsages,
@@ -253,12 +270,34 @@ func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest)
 		imgSrc,
 		maxAnimalProductLevel,
 		containsGluten,
+		request.Request.Publish,
 	)
 	if err != nil {
 		return nil, err
 	}
 	// Persist
 	err = s.txRunner.WithTx(ctx, func(tx *sql.Tx) error {
+		// Delete draft if there is one
+		// Always do this as:
+		// New published version: there won't be a draft
+		// New draft version: draft will be replaced
+		if existingRecipe.DraftVersionID != nil {
+			err := s.ingredientUsageRepo.deleteIngredientUsagesByRecipeVersionID(ctx, tx, *existingRecipe.DraftVersionID)
+			if err != nil {
+				logger.Error("Error deleting ingredient usages for existing draft version", "error", err)
+				return err
+			}
+			err = s.recipeVersionRepo.deleteRecipeSourceByRecipeVersionID(ctx, tx, *existingRecipe.DraftVersionID)
+			if err != nil {
+				logger.Error("Error deleting recipe sources for existing draft version", "error", err)
+				return err
+			}
+			err = s.recipeVersionRepo.deleteRecipeVersionByID(ctx, tx, *existingRecipe.DraftVersionID)
+			if err != nil {
+				logger.Error("Error deleting existing draft version", "error", err)
+				return err
+			}
+		}
 		// Create new recipe version
 		_, err := s.recipeVersionRepo.createRecipeVersion(ctx, tx, recipeVersion)
 		if err != nil {
@@ -288,8 +327,31 @@ func (s *Service) UpdateRecipe(ctx context.Context, request UpdateRecipeRequest)
 		if err != nil {
 			return err
 		}
-		// Update current version id on recipe container
-		err = s.recipeRepo.updateRecipeCurrentVersion(ctx, tx, existingRecipe.ID, recipeVersion.ID)
+		// Update current version id on recipe container if publishing or the recipe has not been published before
+		// We always update the current version if the recipe hasn't been published before, because the current version is effectively the draft version until the first publish
+		// If the recipe has been published before, then we only update the current version if the new version is being published, otherwise we leave the current version as the last published version
+		if request.Request.Publish || existingRecipe.PublishedAt == nil {
+			err = s.recipeRepo.updateRecipeCurrentVersion(ctx, tx, existingRecipe.ID, recipeVersion.ID)
+			if err != nil {
+				return err
+			}
+		}
+
+		if request.Request.Publish && existingRecipe.PublishedAt == nil {
+			// If the recipe is being published for the first time, set the published_at on the container
+			err = s.recipeRepo.setRecipePublishedAt(ctx, tx, existingRecipe.ID, recipeVersion.PublishedAt)
+			if err != nil {
+				return err
+			}
+		}
+
+		var newDraftVersionID *uuid.UUID
+		if !request.Request.Publish {
+			newDraftVersionID = &recipeVersion.ID
+		}
+
+		// If the new version is a draft, set the draft version id on the container
+		err = s.recipeRepo.updateRecipeDraftVersion(ctx, tx, existingRecipe.ID, newDraftVersionID)
 		if err != nil {
 			return err
 		}
@@ -414,9 +476,10 @@ func (s *Service) GetRecipes(ctx context.Context, params RecipeListParams) ([]*R
 	var rows []*RecipeListRow
 	switch mode {
 	case RecipeCursorModeNewest:
-		rows, err = s.recipeRepo.getRecipesByCreatedAt(ctx, s.txRunner.DB(), count+1, c, nf)
+		rows, err = s.recipeRepo.getRecipesByCreatedAt(ctx, s.txRunner.DB(), count+1, c, nf, params.IncludeDrafts)
 	case RecipeCursorModeRelevance:
 		// query can be safely dereferenced as checked above
+		// Don't include drafts in relevance for now, only add if needed to search drafts
 		rows, err = s.recipeRepo.getRecipesByRelevance(ctx, s.txRunner.DB(), *query, count+1, c, nf)
 	default:
 		return nil, nil, ErrInvalidCursor

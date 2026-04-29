@@ -6,13 +6,14 @@ type PageProps = {
     children: React.ReactNode;
     toolbarLeft?: React.ReactNode;
     toolbarActions?: React.ReactNode;
+    toolbarClass?: string;
 }
 
 type CrumbHandle = {
     crumb?: (data?: unknown) => React.ReactNode;
 }
 
-export default function Page({children, toolbarLeft, toolbarActions}: PageProps) {
+export default function Page({children, toolbarLeft, toolbarActions, toolbarClass}: PageProps) {
     const matches = useMatches();
 
     const crumbs = matches
@@ -40,7 +41,7 @@ export default function Page({children, toolbarLeft, toolbarActions}: PageProps)
                         {toolbarLeft && <div>{toolbarLeft}</div>}
                         </div>
 
-                        <Inline justify="end" align="center">
+                        <Inline justify="end" align="center" className={toolbarClass}>
                             {toolbarActions}
                         </Inline>
                     </Inline>

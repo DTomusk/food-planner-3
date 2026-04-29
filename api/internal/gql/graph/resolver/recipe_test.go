@@ -363,6 +363,7 @@ func TestRecipeResolver_UpdateRecipe_WithVersionResolvers(t *testing.T) {
 				Type: 1,
 				URL:  ptrString("https://example.com/chocolate-cake"),
 			},
+			Publish: true,
 		}
 
 		authenticatedCtx := auth.ContextWithClaims(ctx, &auth.Claims{UserID: testUser.ID.String()})
@@ -387,6 +388,7 @@ func TestRecipeResolver_UpdateRecipe_WithVersionResolvers(t *testing.T) {
 					Type:         3,
 					Instructions: ptrString("Grandma's notes"),
 				},
+				Publish: true,
 			},
 		}
 
@@ -432,6 +434,182 @@ func TestRecipeResolver_UpdateRecipe_WithVersionResolvers(t *testing.T) {
 		require.NotNil(t, resolvedSource)
 		require.Equal(t, int32(3), resolvedSource.Type)
 		require.Equal(t, "Grandma's notes", *resolvedSource.Instructions)
+	})
+}
+
+func TestRecipeResolver_DraftVisibility_RestrictedToOwner(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := authContext(nil)
+
+		testIngredient, err := seeds.SeedTestIngredient(ctx, tx)
+		require.NoError(t, err, "Failed to seed test ingredient")
+
+		ownerUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err, "Failed to seed owner user")
+
+		otherUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err, "Failed to seed non-owner user")
+
+		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100)
+		service := newTestRecipeService(t, tx, txRunner, ingredientService)
+		r := &Resolver{
+			RecipeService: service,
+		}
+
+		mutationResolver := &mutationResolver{r}
+		queryResolver := &queryResolver{r}
+		recipeResolver := &recipeResolver{r}
+
+		ownerCtx := auth.ContextWithClaims(ctx, &auth.Claims{UserID: ownerUser.ID.String()})
+		nonOwnerCtx := auth.ContextWithClaims(ctx, &auth.Claims{UserID: otherUser.ID.String()})
+
+		createdRecipe, err := mutationResolver.CreateRecipe(ownerCtx, model.CreateRecipeInput{
+			Name: "Published Cake",
+			IngredientUsages: []*model.CreateIngredientUsageInput{{
+				IngredientID: testIngredient.ID.String(),
+				Quantity:     200,
+				Unit:         1,
+			}},
+			PrepMins: 30,
+			CookMins: 45,
+			Portions: 4,
+			RecipeSource: &model.CreateRecipeSourceInput{
+				Type: 1,
+				URL:  ptrString("https://example.com/published-cake"),
+			},
+			Publish: true,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, createdRecipe)
+
+		_, err = mutationResolver.UpdateRecipe(ownerCtx, model.UpdateRecipeInput{
+			ID: createdRecipe.ID,
+			Details: &model.CreateRecipeInput{
+				Name: "Draft Cake",
+				IngredientUsages: []*model.CreateIngredientUsageInput{{
+					IngredientID: testIngredient.ID.String(),
+					Quantity:     210,
+					Unit:         1,
+				}},
+				PrepMins: 32,
+				CookMins: 46,
+				Portions: 4,
+				RecipeSource: &model.CreateRecipeSourceInput{
+					Type: 1,
+					URL:  ptrString("https://example.com/draft-cake"),
+				},
+				Publish: false,
+			},
+		})
+		require.NoError(t, err)
+
+		fetchedRecipe, err := queryResolver.Recipe(ctx, createdRecipe.ID)
+		require.NoError(t, err)
+		require.NotNil(t, fetchedRecipe)
+
+		nonOwnerDraft, err := recipeResolver.DraftVersion(nonOwnerCtx, fetchedRecipe)
+		require.NoError(t, err)
+		require.Nil(t, nonOwnerDraft, "Expected non-owner to not see draftVersion")
+
+		ownerDraft, err := recipeResolver.DraftVersion(ownerCtx, fetchedRecipe)
+		require.NoError(t, err)
+		require.NotNil(t, ownerDraft, "Expected owner to see draftVersion")
+		require.Equal(t, "Draft Cake", ownerDraft.Name)
+
+		nonOwnerVersions, err := recipeResolver.Versions(nonOwnerCtx, fetchedRecipe)
+		require.NoError(t, err)
+		require.Len(t, nonOwnerVersions, 1, "Expected non-owner to only see published versions")
+		require.Equal(t, int32(1), nonOwnerVersions[0].Version)
+
+		ownerVersions, err := recipeResolver.Versions(ownerCtx, fetchedRecipe)
+		require.NoError(t, err)
+		require.Len(t, ownerVersions, 2, "Expected owner to see published and draft versions")
+
+		nonOwnerDraftByVersion, err := recipeResolver.Version(nonOwnerCtx, fetchedRecipe, 2)
+		require.NoError(t, err)
+		require.Nil(t, nonOwnerDraftByVersion, "Expected non-owner to not resolve draft version by number")
+
+		ownerDraftByVersion, err := recipeResolver.Version(ownerCtx, fetchedRecipe, 2)
+		require.NoError(t, err)
+		require.NotNil(t, ownerDraftByVersion, "Expected owner to resolve draft version by number")
+		require.Equal(t, "Draft Cake", ownerDraftByVersion.Name)
+	})
+}
+
+func TestRecipeResolver_Versions_InvalidBearerTokenReturnsUnauthenticated(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := authContext(nil)
+
+		testIngredient, err := seeds.SeedTestIngredient(ctx, tx)
+		require.NoError(t, err, "Failed to seed test ingredient")
+
+		ownerUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err, "Failed to seed owner user")
+
+		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100)
+		service := newTestRecipeService(t, tx, txRunner, ingredientService)
+		r := &Resolver{RecipeService: service}
+
+		mutationResolver := &mutationResolver{r}
+		queryResolver := &queryResolver{r}
+		recipeResolver := &recipeResolver{r}
+
+		ownerCtx := auth.ContextWithClaims(ctx, &auth.Claims{UserID: ownerUser.ID.String()})
+
+		createdRecipe, err := mutationResolver.CreateRecipe(ownerCtx, model.CreateRecipeInput{
+			Name: "Published Cake",
+			IngredientUsages: []*model.CreateIngredientUsageInput{{
+				IngredientID: testIngredient.ID.String(),
+				Quantity:     200,
+				Unit:         1,
+			}},
+			PrepMins: 30,
+			CookMins: 45,
+			Portions: 4,
+			RecipeSource: &model.CreateRecipeSourceInput{
+				Type: 1,
+				URL:  ptrString("https://example.com/published-cake"),
+			},
+			Publish: true,
+		})
+		require.NoError(t, err)
+
+		_, err = mutationResolver.UpdateRecipe(ownerCtx, model.UpdateRecipeInput{
+			ID: createdRecipe.ID,
+			Details: &model.CreateRecipeInput{
+				Name: "Draft Cake",
+				IngredientUsages: []*model.CreateIngredientUsageInput{{
+					IngredientID: testIngredient.ID.String(),
+					Quantity:     210,
+					Unit:         1,
+				}},
+				PrepMins: 32,
+				CookMins: 46,
+				Portions: 4,
+				RecipeSource: &model.CreateRecipeSourceInput{
+					Type: 1,
+					URL:  ptrString("https://example.com/draft-cake"),
+				},
+				Publish: false,
+			},
+		})
+		require.NoError(t, err)
+
+		fetchedRecipe, err := queryResolver.Recipe(ctx, createdRecipe.ID)
+		require.NoError(t, err)
+		require.NotNil(t, fetchedRecipe)
+
+		invalidTokenCtx := auth.ContextWithInvalidAuthToken(ctx)
+		versions, err := recipeResolver.Versions(invalidTokenCtx, fetchedRecipe)
+		require.Nil(t, versions)
+		require.Error(t, err, "Expected unauthenticated error for invalid bearer token")
+
+		gqlErr, ok := err.(*gqlerror.Error)
+		require.True(t, ok, "Expected GraphQL error type")
+		require.Equal(t, "user is not authenticated", gqlErr.Message)
+		require.Equal(t, "UNAUTHENTICATED", gqlErr.Extensions["code"])
 	})
 }
 
@@ -490,8 +668,8 @@ func TestRecipeResolver_Recipes_PaginatesEdges(t *testing.T) {
 			recipeID := uuid.New()
 			versionID := uuid.New()
 			createdAt := now.Add(-time.Duration(i) * time.Minute)
-			require.NoError(t, seeds.InsertRecipeContainer(ctx, tx, recipeID, testUser.ID))
-			require.NoError(t, seeds.InsertRecipeVersion(ctx, tx, versionID, recipeID, name, 10, 20, 2, 1))
+			require.NoError(t, seeds.InsertPublishedRecipeContainer(ctx, tx, recipeID, testUser.ID))
+			require.NoError(t, seeds.InsertPublishedRecipeVersion(ctx, tx, versionID, recipeID, name, 10, 20, 2, 1))
 			require.NoError(t, seeds.SetRecipeContainerCurrentVersion(ctx, tx, recipeID, versionID))
 			_, err = tx.ExecContext(ctx, `UPDATE recipe_containers SET created_at = $1 WHERE id = $2`, createdAt, recipeID)
 			require.NoError(t, err)
@@ -544,10 +722,10 @@ func TestRecipeVersionResolver_NoDataPaths(t *testing.T) {
 		recipeID := uuid.New()
 		versionID := uuid.New()
 
-		err = seeds.InsertRecipeContainer(ctx, tx, recipeID, testUser.ID)
+		err = seeds.InsertPublishedRecipeContainer(ctx, tx, recipeID, testUser.ID)
 		require.NoError(t, err)
 
-		err = seeds.InsertRecipeVersion(ctx, tx, versionID, recipeID, "Recipe Without Source", 15, 25, 2, 1)
+		err = seeds.InsertPublishedRecipeVersion(ctx, tx, versionID, recipeID, "Recipe Without Source", 15, 25, 2, 1)
 		require.NoError(t, err)
 
 		err = seeds.SetRecipeContainerCurrentVersion(ctx, tx, recipeID, versionID)

@@ -11,9 +11,12 @@ type RecipeContainer struct {
 	UserID           uuid.UUID
 	CurrentVersionID uuid.UUID
 	CurrentVersion   *RecipeVersion
+	DraftVersionID   *uuid.UUID
+	DraftVersion     *RecipeVersion
 
-	CreatedAt time.Time
-	DeletedAt *time.Time
+	CreatedAt   time.Time
+	DeletedAt   *time.Time
+	PublishedAt *time.Time
 }
 
 type RecipeVersion struct {
@@ -32,7 +35,8 @@ type RecipeVersion struct {
 	AnimalProductLevel int
 	ContainsGluten     bool
 
-	CreatedAt time.Time
+	CreatedAt   time.Time
+	PublishedAt *time.Time
 }
 
 func NewRecipe(
@@ -47,13 +51,28 @@ func NewRecipe(
 	imgSrc *string,
 	animalProductLevel int,
 	containsGluten bool,
+	publish bool,
 ) (*RecipeContainer, error) {
 	recipeID := uuid.New()
 	now := time.Now()
 
-	version, err := NewRecipeVersion(recipeID, 1, name, description, ingredients, prepMins, cookMins, portions, source, imgSrc, animalProductLevel, containsGluten)
+	var publishedAt *time.Time
+
+	if publish {
+		publishedAt = &now
+	}
+
+	version, err := NewRecipeVersion(recipeID, 1, name, description, ingredients, prepMins, cookMins, portions, source, imgSrc, animalProductLevel, containsGluten, publish)
 	if err != nil {
 		return nil, err
+	}
+
+	var draftVersionID *uuid.UUID
+	var draftVersion *RecipeVersion
+
+	if !publish {
+		draftVersionID = &version.ID
+		draftVersion = version
 	}
 
 	recipe := &RecipeContainer{
@@ -61,7 +80,10 @@ func NewRecipe(
 		UserID:           userID,
 		CurrentVersionID: version.ID,
 		CurrentVersion:   version,
+		DraftVersionID:   draftVersionID,
+		DraftVersion:     draftVersion,
 		CreatedAt:        now,
+		PublishedAt:      publishedAt,
 	}
 
 	return recipe, nil
@@ -80,6 +102,7 @@ func NewRecipeVersion(
 	imgSrc *string,
 	animalProductLevel int,
 	containsGluten bool,
+	publish bool,
 ) (*RecipeVersion, error) {
 	if name == "" {
 		return nil, ErrEmptyName
@@ -108,6 +131,10 @@ func NewRecipeVersion(
 	}
 
 	now := time.Now()
+	publishedAt := &now
+	if !publish {
+		publishedAt = nil
+	}
 	return &RecipeVersion{
 		ID:                 uuid.New(),
 		RecipeID:           recipeID,
@@ -123,6 +150,7 @@ func NewRecipeVersion(
 		ImgSrc:             imgSrc,
 		AnimalProductLevel: animalProductLevel,
 		ContainsGluten:     containsGluten,
+		PublishedAt:        publishedAt,
 	}, nil
 }
 

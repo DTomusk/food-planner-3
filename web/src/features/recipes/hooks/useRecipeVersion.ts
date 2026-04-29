@@ -10,6 +10,19 @@ type UseRecipeVersionResult = {
     user: User;
 };
 
+export class RecipeVersionUnavailableError extends Error {
+    public readonly code = "RECIPE_VERSION_UNAVAILABLE" as const;
+
+    constructor() {
+        super("Recipe version not found");
+        this.name = "RecipeVersionUnavailableError";
+    }
+}
+
+export function isRecipeVersionUnavailableError(error: unknown): error is RecipeVersionUnavailableError {
+    return error instanceof RecipeVersionUnavailableError;
+}
+
 export function recipeVersionQueryOptions(id: string, version: number) {
     return queryOptions<GetRecipeVersionQuery, ClientError>({
         queryKey: ["recipe", id, "version", version] as const,
@@ -17,17 +30,17 @@ export function recipeVersionQueryOptions(id: string, version: number) {
     });
 }
 
-export function useRecipeVersion(id: string, version: number) {
+export function useRecipeVersion(id: string, version: number, { enabled = true }: { enabled?: boolean } = {}) {
     return useQuery<GetRecipeVersionQuery, ClientError, UseRecipeVersionResult>({
         ...recipeVersionQueryOptions(id, version),
-        enabled: Boolean(id),
+        enabled: Boolean(id) && enabled,
         select: (data) => {
             if (!data.recipe) {
                 throw new Error("Recipe not found");
             }
 
             if (!data.recipe.version) {
-                throw new Error("Recipe version not found")
+                throw new RecipeVersionUnavailableError();
             }
 
             return {

@@ -6,11 +6,11 @@ import SignUpPage from "@/pages/SignUpPage";
 import NotFound from "@/pages/NotFound";
 import RecipeListingPage from "@/pages/RecipeListingPage";
 import RecipeCreatePage from "@/pages/RecipeCreatePage";
-import RecipeVersionPage from "@/pages/RecipeVersionPage";
 import ProtectedLayout from "./ProtectedLayout";
 import MyRecipesPage from "@/pages/MyRecipesPage";
 import UserPage from "@/pages/UserPage";
 import RecipeUpdatePage from "@/pages/RecipeUpdatePage";
+import RecipeOwnerLayout from "@/features/recipes/layouts/RecipeOwnerLayout";
 import { AppLayout } from "@/layout";
 import type { GetRecipeQuery, GetRecipeVersionQuery, GetUserQuery } from "@/lib";
 import { queryClient } from "./queryClient";
@@ -121,15 +121,20 @@ export const router = createBrowserRouter([
                     return "Version";
                   },
                 },
-                element: <RecipeVersionPage />,
+                element: <RecipePage />,
               },
               {
                 element: <ProtectedLayout />,
                 children: [
                   {
-                    path: "edit",
-                    element: <RecipeUpdatePage />,
-                    handle: { crumb: () => "Edit" },
+                    element: <RecipeOwnerLayout />,
+                    children: [
+                      {
+                        path: "edit",
+                        element: <RecipeUpdatePage />,
+                        handle: { crumb: () => "Edit" },
+                      },
+                    ],
                   },
                 ],
               },

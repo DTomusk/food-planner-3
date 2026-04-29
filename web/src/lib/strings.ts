@@ -1,6 +1,7 @@
 export const commonStrings = {
     forms: {
-        create: "Create",
+        save_as_draft: "Save as draft",
+        save_and_publish: "Save and publish",
         update: "Update",
     },
     auth: {

@@ -35,6 +35,7 @@ type CreateRecipeInput struct {
 	Portions         int32                         `json:"portions"`
 	RecipeSource     *CreateRecipeSourceInput      `json:"recipeSource"`
 	ImgUploadID      *string                       `json:"imgUploadId,omitempty"`
+	Publish          bool                          `json:"publish"`
 }
 
 type CreateRecipeSourceInput struct {
@@ -134,7 +135,6 @@ type UpdateRecipeInput struct {
 
 type User struct {
 	ID       string            `json:"id"`
-	Email    string            `json:"email"`
 	Username string            `json:"username"`
 	Recipes  *RecipeConnection `json:"recipes"`
 }

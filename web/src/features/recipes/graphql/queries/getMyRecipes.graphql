@@ -1,7 +1,38 @@
 query GetMyRecipes($input: PaginationInput) {
     me {
         recipes(pagination: $input) {
-            ...RecipeConnectionListFields
+            edges {
+                node {
+                id
+                createdAt
+                currentVersion {
+                    name
+                    imgSrc
+                    description
+                    animalProductLevel
+                    containsGluten
+                    version
+                    publishedAt
+                }
+                draftVersion {
+                    name
+                    imgSrc
+                    description
+                    animalProductLevel
+                    containsGluten
+                    version
+                    publishedAt
+                }
+                author {
+                    id
+                    username
+                }
+                }
+            }
+            pageInfo {
+                hasNextPage
+                endCursor
+            }
         }
     }
 }

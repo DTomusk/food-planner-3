@@ -1,4 +1,4 @@
-import type { CreateRecipeInput, GetRecipeQuery } from "@/lib/graphql.generated";
+import type { CreateRecipeInput, GetEditRecipeQuery } from "@/lib/graphql.generated";
 import { RecipeSourceType, type RecipeFormValues } from "../types";
 
 export const DEFAULT_RECIPE_FORM_VALUES: RecipeFormValues = {
@@ -42,16 +42,18 @@ export function toRecipeSourceTypeValue(sourceType: RecipeSourceType): number {
 
 type MapCreateRecipeInputOptions = {
   imgUploadId?: string | null;
+  publish: boolean;
 };
 
 type MapUpdateRecipeInputOptions = {
   imgUploadId?: string | null;
   removeImage?: boolean;
+  publish: boolean;
 };
 
 export function mapFormValuesToCreateRecipeInput(
   values: RecipeFormValues,
-  options?: MapCreateRecipeInputOptions,
+  options: MapCreateRecipeInputOptions,
 ): CreateRecipeInput {
   return {
     name: values.name,
@@ -72,45 +74,48 @@ export function mapFormValuesToCreateRecipeInput(
       instructions: values.sourceType === RecipeSourceType.Original ? values.instructions : undefined,
     },
     imgUploadId: options?.imgUploadId ?? undefined,
+    publish: options.publish,
   };
 }
 
 export function mapFormValuesToUpdateRecipeInput(
   values: RecipeFormValues,
-  options?: MapUpdateRecipeInputOptions,
+  options: MapUpdateRecipeInputOptions,
 ): { input: CreateRecipeInput; removeImage?: boolean } {
   return {
     input: mapFormValuesToCreateRecipeInput(values, {
       imgUploadId: options?.imgUploadId,
+      publish: options.publish,
     }),
     removeImage: options?.removeImage,
   };
 }
 
 export function mapRecipeToFormValues(
-  recipe: NonNullable<GetRecipeQuery["recipe"]>
+  recipe: NonNullable<GetEditRecipeQuery["recipe"]>
 ): RecipeFormValues {
-  const ingredientUsages = recipe.currentVersion.ingredientUsages.map((usage) => ({
+  var valuesToUse = recipe.draftVersion ?? recipe.currentVersion;
+  const ingredientUsages = valuesToUse.ingredientUsages.map((usage) => ({
     ingredientId: usage.ingredient.id,
     quantity: usage.quantity,
     unit: usage.unit.val,
   }));
 
   return {
-    name: recipe.currentVersion.name,
-    description: recipe.currentVersion.description ?? "",
-    prepMins: recipe.currentVersion.prepMins,
-    cookMins: recipe.currentVersion.cookMins,
-    portions: recipe.currentVersion.portions,
+    name: valuesToUse.name,
+    description: valuesToUse.description ?? "",
+    prepMins: valuesToUse.prepMins,
+    cookMins: valuesToUse.cookMins,
+    portions: valuesToUse.portions,
     ingredientUsages:
       ingredientUsages.length > 0
         ? ingredientUsages
         : [{ ...DEFAULT_RECIPE_FORM_VALUES.ingredientUsages[0] }],
-    sourceType: toRecipeSourceType(recipe.currentVersion.source.type),
-    url: recipe.currentVersion.source.url ?? "",
-    bookTitle: recipe.currentVersion.source.bookTitle ?? "",
-    bookPage: recipe.currentVersion.source.bookPage ?? undefined,
-    instructions: recipe.currentVersion.source.instructions ?? "",
-    imgSrc: recipe.currentVersion.imgSrc ?? undefined,
+    sourceType: toRecipeSourceType(valuesToUse.source.type),
+    url: valuesToUse.source.url ?? "",
+    bookTitle: valuesToUse.source.bookTitle ?? "",
+    bookPage: valuesToUse.source.bookPage ?? undefined,
+    instructions: valuesToUse.source.instructions ?? "",
+    imgSrc: valuesToUse.imgSrc ?? undefined,
   };
 }

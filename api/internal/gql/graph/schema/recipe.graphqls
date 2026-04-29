@@ -2,9 +2,12 @@ type Recipe {
   id: ID!
   author: User! @goField(forceResolver: true)
   createdAt: Time!
+  publishedAt: Time
 
   currentVersion: RecipeVersion! @goField(forceResolver: true)
   versions: [RecipeVersion!]! @goField(forceResolver: true)
+
+  draftVersion: RecipeVersion @goField(forceResolver: true) @auth
 
   version(version: Int!): RecipeVersion
 }
@@ -26,6 +29,7 @@ type RecipeVersion {
   source: RecipeSource! @goField(forceResolver: true)
 
   createdAt: Time!
+  publishedAt: Time
 }
 
 type IngredientUsage {
@@ -84,6 +88,7 @@ input CreateRecipeInput {
   portions: Int!
   recipeSource: CreateRecipeSourceInput!
   imgUploadId: ID
+  publish: Boolean!
 }
 
 input CreateIngredientUsageInput {

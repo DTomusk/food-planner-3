@@ -19,6 +19,8 @@ const meta = {
             },
             animalProductLevel: 1,
             containsGluten: true,
+            version: 1,
+            isDraft: false,
         },
         dietLevel: 1,
         onClick: () => alert("Recipe card clicked!"),

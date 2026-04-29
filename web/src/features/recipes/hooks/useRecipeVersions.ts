@@ -1,14 +1,10 @@
 import { GetRecipeVersionsDocument, graphqlRequest, type GetRecipeVersionsQuery } from "@/lib";
 import { useQuery } from "@tanstack/react-query";
 import type { ClientError } from "graphql-request";
-
-type UseRecipeVersionsResult = {
-    version: number;
-    createdAt: string;
-}
+import type { Version } from "../types";
 
 export function useRecipeVersions(id: string) {
-    return useQuery<GetRecipeVersionsQuery, ClientError, UseRecipeVersionsResult[]>({
+    return useQuery<GetRecipeVersionsQuery, ClientError, Version[]>({
         queryKey: ["recipe", id, "versions"],
         queryFn: () => graphqlRequest(GetRecipeVersionsDocument, { id }),
         enabled: Boolean(id),
@@ -20,6 +16,7 @@ export function useRecipeVersions(id: string) {
             return data.recipe.versions.map((v) => ({
                 version: v.version,
                 createdAt: v.createdAt,
+                draft: v.publishedAt === null,
             }));
         },
     });

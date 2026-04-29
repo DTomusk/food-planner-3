@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"foodplanner/internal/db"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -17,8 +18,8 @@ type recipeRepo struct {
 
 const (
 	selectRecipeContainerWithVersionBaseQuery = `SELECT 
-	rc.id, rc.user_id, rc.created_at, rc.current_version_id,
-	rv.id, rv.recipe_id, rv.name, rv.prep_mins, rv.cook_mins, rv.portions, rv.created_at, rv.version, rv.img_src, rv.description, rv.animal_product_level, rv.contains_gluten
+	rc.id, rc.user_id, rc.created_at, rc.published_at, rc.current_version_id, rc.draft_version_id,
+	rv.id, rv.recipe_id, rv.name, rv.prep_mins, rv.cook_mins, rv.portions, rv.created_at, rv.published_at, rv.version, rv.img_src, rv.description, rv.animal_product_level, rv.contains_gluten
 	FROM recipe_containers rc
 	JOIN recipe_versions rv ON rc.current_version_id = rv.id`
 	selectRecipeContainerWithVersionByIDQuery = selectRecipeContainerWithVersionBaseQuery + `
@@ -40,21 +41,25 @@ func NewRecipeRepo(trigramWeight, fullTextWeight float64) (*recipeRepo, error) {
 	}, nil
 }
 
+// For creating an entirely new recipe we need a new container
 func (r *recipeRepo) createRecipeContainer(ctx context.Context, tx *sql.Tx, recipeContainer *RecipeContainer) (*RecipeContainer, error) {
 	var dbRecipeContainer RecipeContainer
 	containerQuery := `INSERT INTO recipe_containers 
-	(id, user_id) 
-	VALUES ($1, $2) 
-	RETURNING id, user_id, created_at`
+	(id, user_id, created_at, published_at) 
+	VALUES ($1, $2, $3, $4) 
+	RETURNING id, user_id, created_at, published_at`
 	err := tx.QueryRowContext(
 		ctx,
 		containerQuery,
 		recipeContainer.ID,
 		recipeContainer.UserID,
+		recipeContainer.CreatedAt,
+		recipeContainer.PublishedAt,
 	).Scan(
 		&dbRecipeContainer.ID,
 		&dbRecipeContainer.UserID,
 		&dbRecipeContainer.CreatedAt,
+		&dbRecipeContainer.PublishedAt,
 	)
 	if err != nil {
 		return nil, err
@@ -62,9 +67,25 @@ func (r *recipeRepo) createRecipeContainer(ctx context.Context, tx *sql.Tx, reci
 	return &dbRecipeContainer, nil
 }
 
+// When a new version is created, call this to set the current version of the container to the new version id
 func (r *recipeRepo) updateRecipeCurrentVersion(ctx context.Context, tx *sql.Tx, recipeID, versionID uuid.UUID) error {
 	updateQuery := `UPDATE recipe_containers SET current_version_id = $1 WHERE id = $2`
 	_, err := tx.ExecContext(ctx, updateQuery, versionID, recipeID)
+	return err
+}
+
+// When a new draft version is created, call this to set the draft version id on the container. If publish is true, this should be set to null as there won't be a draft version
+func (r *recipeRepo) updateRecipeDraftVersion(ctx context.Context, tx *sql.Tx, recipeID uuid.UUID, draftVersionID *uuid.UUID) error {
+	updateQuery := `UPDATE recipe_containers SET draft_version_id = $1 WHERE id = $2`
+	_, err := tx.ExecContext(ctx, updateQuery, draftVersionID, recipeID)
+	return err
+}
+
+// When a recipe that has had drafts is published for the first time, need to set published on the container as well
+// If a recipe is created published, then we handle that at instantiation
+func (r *recipeRepo) setRecipePublishedAt(ctx context.Context, tx *sql.Tx, recipeID uuid.UUID, publishedAt *time.Time) error {
+	updateQuery := `UPDATE recipe_containers SET published_at = $1 WHERE id = $2`
+	_, err := tx.ExecContext(ctx, updateQuery, publishedAt, recipeID)
 	return err
 }
 
@@ -83,8 +104,13 @@ func (r *recipeRepo) getRecipeByID(ctx context.Context, db db.DBTX, id uuid.UUID
 	return rc, nil
 }
 
-func (r *recipeRepo) getRecipesByCreatedAt(ctx context.Context, db db.DBTX, limit int, cursor *RecipeCursor, filter normalizedRecipeFilter) ([]*RecipeListRow, error) {
+// For recipe listing ordered by created at
+// Must only retrieve published and not deleted recipes
+func (r *recipeRepo) getRecipesByCreatedAt(ctx context.Context, db db.DBTX, limit int, cursor *RecipeCursor, filter normalizedRecipeFilter, includeDrafts bool) ([]*RecipeListRow, error) {
 	conditions := []string{"rc.deleted_on IS NULL"}
+	if !includeDrafts {
+		conditions = append(conditions, "rc.published_at IS NOT NULL")
+	}
 	args := make([]any, 0, 4)
 
 	filterConditions, args := buildFilterConditions(filter, args)
@@ -121,6 +147,8 @@ func (r *recipeRepo) getRecipesByCreatedAt(ctx context.Context, db db.DBTX, limi
 	return recipes, nil
 }
 
+// For recipe listing ordered by relevance to a search query
+// Must only retrieve published and not deleted recipes
 func (r *recipeRepo) getRecipesByRelevance(ctx context.Context, db db.DBTX, query string, limit int, cursor *RecipeCursor, filter normalizedRecipeFilter) ([]*RecipeListRow, error) {
 	// Relevance score is a mix of full-text search ranking and trigram similarity, weighted towards full-text search. Sorting is done by relevance score first, then created_at and id to ensure a deterministic order.
 	// this can be fine tuned in the future
@@ -156,10 +184,12 @@ WITH ranked AS (
 		rv.img_src,
 		rv.animal_product_level,
 		rv.contains_gluten,
+		rv.published_at AS version_published_at,
     ` + scoreExpression + `
     FROM recipe_containers rc
     JOIN recipe_versions rv ON rc.current_version_id = rv.id
     WHERE rc.deleted_on IS NULL
+	AND rc.published_at IS NOT NULL
 ` + userFilterClause + `
       AND (
         to_tsvector('english', coalesce(rv.name, '')) @@ websearch_to_tsquery('english', $3)
@@ -183,6 +213,7 @@ SELECT
     description,
 	animal_product_level,
 	contains_gluten,
+	version_published_at,
     relevance_score
 FROM ranked
 `
@@ -240,6 +271,7 @@ FROM ranked
 			&rv.Description,
 			&rv.AnimalProductLevel,
 			&rv.ContainsGluten,
+			&rv.PublishedAt,
 			score,
 		)
 		if err != nil {
@@ -280,11 +312,15 @@ func scanRecipeContainerWithVersion(
 	var rc RecipeContainer
 	var rv RecipeVersion
 
+	var draftVersionID uuid.NullUUID
+
 	err := scanner.Scan(
 		&rc.ID,
 		&rc.UserID,
 		&rc.CreatedAt,
+		&rc.PublishedAt,
 		&rc.CurrentVersionID,
+		&draftVersionID,
 		&rv.ID,
 		&rv.RecipeID,
 		&rv.Name,
@@ -292,6 +328,7 @@ func scanRecipeContainerWithVersion(
 		&rv.CookMins,
 		&rv.Portions,
 		&rv.CreatedAt,
+		&rv.PublishedAt,
 		&rv.Version,
 		&rv.ImgSrc,
 		&rv.Description,
@@ -303,5 +340,8 @@ func scanRecipeContainerWithVersion(
 	}
 
 	rc.CurrentVersion = &rv
+	if draftVersionID.Valid {
+		rc.DraftVersionID = &draftVersionID.UUID
+	}
 	return &rc, nil
 }

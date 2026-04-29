@@ -3,14 +3,11 @@ import { GetRecipeDocument, type GetRecipeQuery } from "../../../lib/graphql.gen
 import type { ClientError } from "graphql-request";
 import { graphqlRequest } from "@/lib";
 import { mapRecipeDetail } from "../mappers/recipeMapper";
-import { mapRecipeToFormValues } from "../mappers/recipeFormMapper";
 import type { Recipe, User } from "../types";
-import type { RecipeFormValues } from "../types";
 
 type UseRecipeResult = {
     recipe: Recipe;
     user: User;
-    formValues: RecipeFormValues;
 };
 
 export function recipeQueryOptions(id: string) {
@@ -20,10 +17,10 @@ export function recipeQueryOptions(id: string) {
     });
 }
 
-export function useRecipe(id: string) {
+export function useRecipe(id: string, { enabled = true }: { enabled?: boolean } = {}) {
     return useQuery<GetRecipeQuery, ClientError, UseRecipeResult>({
         ...recipeQueryOptions(id),
-        enabled: Boolean(id),
+        enabled: Boolean(id) && enabled,
         select: (data) => {
             if (!data.recipe) {
                 throw new Error("Recipe not found");
@@ -31,7 +28,6 @@ export function useRecipe(id: string) {
 
             return {
                 ...mapRecipeDetail(data.recipe),
-                formValues: mapRecipeToFormValues(data.recipe),
             };
         },
     });

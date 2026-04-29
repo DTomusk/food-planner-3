@@ -99,6 +99,61 @@ func TestCreateRecipe(t *testing.T) {
 		require.Equal(t, 15, recipeVersion.PrepMins, "Expected prep minutes to match the request")
 		require.Equal(t, 0, recipeVersion.CookMins, "Expected cook minutes to match the request")
 		require.Equal(t, 6, recipeVersion.Portions, "Expected portions to match the request")
+		require.Nil(t, recipeContainer.PublishedAt, "Expected container published_at to be nil when publish is false")
+		require.Nil(t, recipeVersion.PublishedAt, "Expected version published_at to be nil when publish is false")
+
+		require.NotNil(t, recipeContainer.DraftVersionID, "Expected draft_version_id to be set when publish is false")
+		require.Equal(t, recipeContainer.CurrentVersionID, *recipeContainer.DraftVersionID, "Expected draft_version_id to equal the current version id for a draft recipe")
+	})
+}
+
+func TestCreateRecipe_WhenPublishTrue_SetsPublishedAtEqualToCreatedAt(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+
+		ingredientID := uuid.New()
+		testIngredient := ingredient.Ingredient{
+			ID:            ingredientID,
+			FileKey:       "test_ingredient_publish_true",
+			Name:          "Test Ingredient Publish True",
+			PreferredUnit: 1,
+		}
+		err := seeds.InsertIngredient(ctx, tx, &testIngredient)
+		require.NoError(t, err)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		s := newTestRecipeService(t, tx, txRunner, repo, nil)
+
+		request := CreateRecipeRequest{
+			Name: "Published Ice Cream",
+			Ingredients: []CreateIngredientUsageRequest{
+				{
+					IngredientID: ingredientID.String(),
+					Quantity:     200,
+					Unit:         1,
+				},
+			},
+			UserID:   testUser.ID.String(),
+			PrepMins: 15,
+			CookMins: 0,
+			Portions: 6,
+			Publish:  true,
+		}
+
+		recipeContainer, err := s.CreateRecipe(ctx, request)
+		require.NoError(t, err)
+		require.NotNil(t, recipeContainer)
+
+		require.NotNil(t, recipeContainer.CurrentVersion)
+		require.NotNil(t, recipeContainer.PublishedAt, "Expected container published_at to be set when publish is true")
+		require.NotNil(t, recipeContainer.CurrentVersion.PublishedAt, "Expected version published_at to be set when publish is true")
+
+		require.Nil(t, recipeContainer.DraftVersionID, "Expected draft_version_id to be null when publish is true")
 	})
 }
 
@@ -433,6 +488,7 @@ func TestUpdateRecipe_WithImageUploadID_PersistsAndRetrievesImageURL(t *testing.
 			PrepMins: 15,
 			CookMins: 0,
 			Portions: 6,
+			Publish:  true,
 		}
 
 		recipeContainer, err := s.CreateRecipe(ctx, baseRequest)
@@ -466,6 +522,7 @@ func TestUpdateRecipe_WithImageUploadID_PersistsAndRetrievesImageURL(t *testing.
 				CookMins:    0,
 				Portions:    6,
 				ImgUploadID: &uploadID,
+				Publish:     true,
 			},
 		}
 
@@ -545,6 +602,7 @@ func TestUpdateRecipe_PersistsDescriptionOnNewVersion(t *testing.T) {
 			PrepMins:    15,
 			CookMins:    0,
 			Portions:    6,
+			Publish:     true,
 		}
 
 		recipeContainer, err := s.CreateRecipe(ctx, baseRequest)
@@ -568,6 +626,7 @@ func TestUpdateRecipe_PersistsDescriptionOnNewVersion(t *testing.T) {
 				PrepMins:    20,
 				CookMins:    0,
 				Portions:    6,
+				Publish:     true,
 			},
 		}
 
@@ -641,6 +700,7 @@ func TestUpdateRecipe_PublishesRecipeUpdatedEvent(t *testing.T) {
 			IPAddress:   "127.0.0.1",
 			UserAgent:   "test-agent/1.0",
 			Description: "Original description",
+			Publish:     true,
 		}
 
 		createdRecipe, err := s.CreateRecipe(ctx, createReq)
@@ -660,6 +720,7 @@ func TestUpdateRecipe_PublishesRecipeUpdatedEvent(t *testing.T) {
 				IPAddress:   "127.0.0.1",
 				UserAgent:   "test-agent/1.0",
 				Description: "Updated description",
+				Publish:     true,
 			},
 		}
 
@@ -727,6 +788,7 @@ func TestUpdateRecipe_SetsAnimalProductLevelOnNewVersionFromIngredients(t *testi
 			PrepMins: 5,
 			CookMins: 0,
 			Portions: 1,
+			Publish:  true,
 		}
 
 		createdRecipe, err := s.CreateRecipe(ctx, createReq)
@@ -746,6 +808,7 @@ func TestUpdateRecipe_SetsAnimalProductLevelOnNewVersionFromIngredients(t *testi
 				PrepMins: 5,
 				CookMins: 0,
 				Portions: 1,
+				Publish:  true,
 			},
 		}
 
@@ -873,6 +936,7 @@ func TestUpdateRecipe_SetsContainsGlutenOnNewVersionFromIngredients(t *testing.T
 			PrepMins: 5,
 			CookMins: 10,
 			Portions: 1,
+			Publish:  true,
 		}
 
 		createdRecipe, err := s.CreateRecipe(ctx, createReq)
@@ -892,6 +956,7 @@ func TestUpdateRecipe_SetsContainsGlutenOnNewVersionFromIngredients(t *testing.T
 				PrepMins: 5,
 				CookMins: 10,
 				Portions: 1,
+				Publish:  true,
 			},
 		}
 
@@ -949,6 +1014,7 @@ func TestUpdateRecipe_WithUsedImageUploadID_ReturnsErrorAndDoesNotCreateNewVersi
 			PrepMins: 15,
 			CookMins: 0,
 			Portions: 6,
+			Publish:  true,
 		}
 
 		recipeContainer, err := s.CreateRecipe(ctx, baseRequest)
@@ -1065,6 +1131,7 @@ func TestUpdateRecipe_WithoutImageChanges_PreservesImageFromPreviousVersion(t *t
 			CookMins:    45,
 			Portions:    8,
 			ImgUploadID: &initialUploadID,
+			Publish:     true,
 		}
 
 		recipeContainer, err := s.CreateRecipe(ctx, createReq)
@@ -1174,6 +1241,7 @@ func TestUpdateRecipe_WithRemoveImageFlag_RemovesImage(t *testing.T) {
 			CookMins:    15,
 			Portions:    4,
 			ImgUploadID: &initialUploadID,
+			Publish:     true,
 		}
 
 		recipeContainer, err := s.CreateRecipe(ctx, createReq)
@@ -1200,6 +1268,8 @@ func TestUpdateRecipe_WithRemoveImageFlag_RemovesImage(t *testing.T) {
 				CookMins:    20,
 				Portions:    4,
 				ImgUploadID: nil,
+				// If publish isn't true, current version will be the previous version
+				Publish: true,
 			},
 			RemoveImage: &trueFlag,
 		}
@@ -1269,6 +1339,7 @@ func TestUpdateRecipe_RecipeWithoutImage_RemainsWithoutImage(t *testing.T) {
 			CookMins:    0,
 			Portions:    2,
 			ImgUploadID: nil,
+			Publish:     true,
 		}
 
 		recipeContainer, err := s.CreateRecipe(ctx, createReq)
@@ -1316,6 +1387,361 @@ func TestUpdateRecipe_RecipeWithoutImage_RemainsWithoutImage(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, retrievedVersion)
 		require.Nil(t, retrievedVersion.ImgSrc)
+	})
+}
+
+func TestUpdateRecipe_UnpublishedRecipe_DraftUpdateAdvancesCurrentVersion(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+
+		ingredientID := uuid.New()
+		testIngredient := ingredient.Ingredient{
+			ID:            ingredientID,
+			FileKey:       "test_ingredient_unpublished_draft_update",
+			Name:          "Test Ingredient",
+			PreferredUnit: 1,
+		}
+		err := seeds.InsertIngredient(ctx, tx, &testIngredient)
+		require.NoError(t, err)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		s := newTestRecipeService(t, tx, txRunner, repo, nil)
+
+		createReq := CreateRecipeRequest{
+			Name: "Draft Recipe",
+			Ingredients: []CreateIngredientUsageRequest{
+				{IngredientID: ingredientID.String(), Quantity: 100, Unit: 1},
+			},
+			UserID:   testUser.ID.String(),
+			PrepMins: 10,
+			CookMins: 10,
+			Portions: 2,
+			Publish:  false,
+		}
+
+		createdRecipe, err := s.CreateRecipe(ctx, createReq)
+		require.NoError(t, err)
+		require.NotNil(t, createdRecipe)
+		require.Nil(t, createdRecipe.PublishedAt)
+		firstDraftID := createdRecipe.CurrentVersionID
+
+		require.NotNil(t, createdRecipe.DraftVersionID, "Expected draft_version_id to be set after creating a draft recipe")
+		require.Equal(t, firstDraftID, *createdRecipe.DraftVersionID, "Expected draft_version_id to equal the current version id")
+
+		updateReq := UpdateRecipeRequest{
+			RecipeId: createdRecipe.ID.String(),
+			Request: CreateRecipeRequest{
+				Name: "Draft Recipe Updated",
+				Ingredients: []CreateIngredientUsageRequest{
+					{IngredientID: ingredientID.String(), Quantity: 120, Unit: 1},
+				},
+				UserID:   testUser.ID.String(),
+				PrepMins: 12,
+				CookMins: 10,
+				Portions: 2,
+				Publish:  false,
+			},
+		}
+
+		updatedRecipe, err := s.UpdateRecipe(ctx, updateReq)
+		require.NoError(t, err)
+		require.NotNil(t, updatedRecipe)
+		require.NotEqual(t, firstDraftID, updatedRecipe.CurrentVersionID)
+		require.Equal(t, 1, updatedRecipe.CurrentVersion.Version)
+		require.Nil(t, updatedRecipe.PublishedAt)
+		require.Nil(t, updatedRecipe.CurrentVersion.PublishedAt)
+
+		deletedFirstDraft, err := s.GetRecipeVersionByID(ctx, firstDraftID)
+		require.NoError(t, err)
+		require.Nil(t, deletedFirstDraft)
+
+		var versionCount int
+		err = tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM recipe_versions WHERE recipe_id = $1`, createdRecipe.ID).Scan(&versionCount)
+		require.NoError(t, err)
+		require.Equal(t, 1, versionCount)
+
+		require.NotNil(t, updatedRecipe.DraftVersionID, "Expected draft_version_id to be set after updating a draft recipe")
+		require.Equal(t, updatedRecipe.CurrentVersionID, *updatedRecipe.DraftVersionID, "Expected draft_version_id to equal the new draft version id")
+	})
+}
+
+func TestUpdateRecipe_PublishedRecipe_DraftKeepsCurrentVersionOnLatestPublished(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+
+		ingredientID := uuid.New()
+		testIngredient := ingredient.Ingredient{
+			ID:            ingredientID,
+			FileKey:       "test_ingredient_published_keeps_current",
+			Name:          "Test Ingredient",
+			PreferredUnit: 1,
+		}
+		err := seeds.InsertIngredient(ctx, tx, &testIngredient)
+		require.NoError(t, err)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		s := newTestRecipeService(t, tx, txRunner, repo, nil)
+
+		createReq := CreateRecipeRequest{
+			Name: "Published Recipe",
+			Ingredients: []CreateIngredientUsageRequest{
+				{IngredientID: ingredientID.String(), Quantity: 100, Unit: 1},
+			},
+			UserID:   testUser.ID.String(),
+			PrepMins: 10,
+			CookMins: 10,
+			Portions: 2,
+			Publish:  true,
+		}
+
+		createdRecipe, err := s.CreateRecipe(ctx, createReq)
+		require.NoError(t, err)
+		require.NotNil(t, createdRecipe)
+		require.NotNil(t, createdRecipe.PublishedAt)
+		publishedVersionID := createdRecipe.CurrentVersionID
+
+		updateReq := UpdateRecipeRequest{
+			RecipeId: createdRecipe.ID.String(),
+			Request: CreateRecipeRequest{
+				Name: "Draft From Published",
+				Ingredients: []CreateIngredientUsageRequest{
+					{IngredientID: ingredientID.String(), Quantity: 150, Unit: 1},
+				},
+				UserID:   testUser.ID.String(),
+				PrepMins: 15,
+				CookMins: 10,
+				Portions: 2,
+				Publish:  false,
+			},
+		}
+
+		updatedRecipe, err := s.UpdateRecipe(ctx, updateReq)
+		require.NoError(t, err)
+		require.NotNil(t, updatedRecipe)
+		require.Equal(t, publishedVersionID, updatedRecipe.CurrentVersionID)
+		require.Equal(t, 1, updatedRecipe.CurrentVersion.Version)
+		require.NotNil(t, updatedRecipe.CurrentVersion.PublishedAt)
+
+		draftVersion, err := s.GetRecipeVersionByRecipeIDAndVersion(ctx, createdRecipe.ID, 2)
+		require.NoError(t, err)
+		require.NotNil(t, draftVersion)
+		require.Nil(t, draftVersion.PublishedAt)
+		require.NotEqual(t, publishedVersionID, draftVersion.ID)
+
+		require.NotNil(t, updatedRecipe.DraftVersionID, "Expected draft_version_id to be set after creating a draft for a published recipe")
+		require.Equal(t, draftVersion.ID, *updatedRecipe.DraftVersionID, "Expected draft_version_id to equal the draft version id")
+	})
+}
+
+func TestUpdateRecipe_PublishedRecipe_ReplacesExistingDraftAndDeletesOldDraftData(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+
+		ingredientID := uuid.New()
+		testIngredient := ingredient.Ingredient{
+			ID:            ingredientID,
+			FileKey:       "test_ingredient_replace_draft",
+			Name:          "Test Ingredient",
+			PreferredUnit: 1,
+		}
+		err := seeds.InsertIngredient(ctx, tx, &testIngredient)
+		require.NoError(t, err)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		s := newTestRecipeService(t, tx, txRunner, repo, nil)
+
+		createReq := CreateRecipeRequest{
+			Name: "Published Base",
+			Ingredients: []CreateIngredientUsageRequest{
+				{IngredientID: ingredientID.String(), Quantity: 100, Unit: 1},
+			},
+			UserID:   testUser.ID.String(),
+			PrepMins: 10,
+			CookMins: 10,
+			Portions: 2,
+			Publish:  true,
+		}
+
+		createdRecipe, err := s.CreateRecipe(ctx, createReq)
+		require.NoError(t, err)
+		require.NotNil(t, createdRecipe)
+		publishedVersionID := createdRecipe.CurrentVersionID
+
+		firstDraftReq := UpdateRecipeRequest{
+			RecipeId: createdRecipe.ID.String(),
+			Request: CreateRecipeRequest{
+				Name: "Draft One",
+				Ingredients: []CreateIngredientUsageRequest{
+					{IngredientID: ingredientID.String(), Quantity: 110, Unit: 1},
+				},
+				UserID:   testUser.ID.String(),
+				PrepMins: 11,
+				CookMins: 10,
+				Portions: 2,
+				Source: CreateRecipeSourceRequest{
+					Type: 1,
+					URL:  testutil.PtrString("https://example.com/draft-one"),
+				},
+				Publish: false,
+			},
+		}
+
+		firstDraftResult, err := s.UpdateRecipe(ctx, firstDraftReq)
+		require.NoError(t, err)
+		require.NotNil(t, firstDraftResult)
+		require.Equal(t, publishedVersionID, firstDraftResult.CurrentVersionID)
+
+		firstDraftVersion, err := s.GetRecipeVersionByRecipeIDAndVersion(ctx, createdRecipe.ID, 2)
+		require.NoError(t, err)
+		require.NotNil(t, firstDraftVersion)
+		firstDraftID := firstDraftVersion.ID
+
+		require.NotNil(t, firstDraftResult.DraftVersionID, "Expected draft_version_id to be set after creating first draft")
+		require.Equal(t, firstDraftID, *firstDraftResult.DraftVersionID, "Expected draft_version_id to equal first draft version id")
+
+		var firstDraftUsageCount int
+		err = tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM ingredient_usages WHERE recipe_version_id = $1`, firstDraftID).Scan(&firstDraftUsageCount)
+		require.NoError(t, err)
+		require.Greater(t, firstDraftUsageCount, 0)
+
+		var firstDraftSourceCount int
+		err = tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM recipe_sources WHERE recipe_version_id = $1`, firstDraftID).Scan(&firstDraftSourceCount)
+		require.NoError(t, err)
+		require.Equal(t, 1, firstDraftSourceCount)
+
+		secondDraftReq := UpdateRecipeRequest{
+			RecipeId: createdRecipe.ID.String(),
+			Request: CreateRecipeRequest{
+				Name: "Draft Two",
+				Ingredients: []CreateIngredientUsageRequest{
+					{IngredientID: ingredientID.String(), Quantity: 125, Unit: 1},
+				},
+				UserID:   testUser.ID.String(),
+				PrepMins: 12,
+				CookMins: 10,
+				Portions: 2,
+				Source: CreateRecipeSourceRequest{
+					Type: 1,
+					URL:  testutil.PtrString("https://example.com/draft-two"),
+				},
+				Publish: false,
+			},
+		}
+
+		secondDraftResult, err := s.UpdateRecipe(ctx, secondDraftReq)
+		require.NoError(t, err)
+		require.NotNil(t, secondDraftResult)
+		require.Equal(t, publishedVersionID, secondDraftResult.CurrentVersionID)
+
+		secondDraftVersion, err := s.GetRecipeVersionByRecipeIDAndVersion(ctx, createdRecipe.ID, 2)
+		require.NoError(t, err)
+		require.NotNil(t, secondDraftVersion)
+		require.NotEqual(t, firstDraftID, secondDraftVersion.ID)
+
+		require.NotNil(t, secondDraftResult.DraftVersionID, "Expected draft_version_id to be set after creating second draft")
+		require.Equal(t, secondDraftVersion.ID, *secondDraftResult.DraftVersionID, "Expected draft_version_id to equal second draft version id")
+
+		deletedFirstDraft, err := s.GetRecipeVersionByID(ctx, firstDraftID)
+		require.NoError(t, err)
+		require.Nil(t, deletedFirstDraft)
+
+		var remainingOldUsageCount int
+		err = tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM ingredient_usages WHERE recipe_version_id = $1`, firstDraftID).Scan(&remainingOldUsageCount)
+		require.NoError(t, err)
+		require.Equal(t, 0, remainingOldUsageCount)
+
+		var remainingOldSourceCount int
+		err = tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM recipe_sources WHERE recipe_version_id = $1`, firstDraftID).Scan(&remainingOldSourceCount)
+		require.NoError(t, err)
+		require.Equal(t, 0, remainingOldSourceCount)
+
+		var draftCount int
+		err = tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM recipe_versions WHERE recipe_id = $1 AND published_at IS NULL`, createdRecipe.ID).Scan(&draftCount)
+		require.NoError(t, err)
+		require.Equal(t, 1, draftCount)
+	})
+}
+
+func TestUpdateRecipe_PublishAfterDraft_ClearsDraftVersionID(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		txRunner := testutil.NewTestTxRunner(tx)
+		ctx := context.Background()
+
+		ingredientID := uuid.New()
+		testIngredient := ingredient.Ingredient{
+			ID:            ingredientID,
+			FileKey:       "test_ingredient_publish_clears_draft",
+			Name:          "Test Ingredient",
+			PreferredUnit: 1,
+		}
+		err := seeds.InsertIngredient(ctx, tx, &testIngredient)
+		require.NoError(t, err)
+
+		testUser, err := seeds.SeedTestUser(ctx, tx)
+		require.NoError(t, err)
+
+		repo, err := NewRecipeRepo(0.15, 0.85)
+		require.NoError(t, err)
+		s := newTestRecipeService(t, tx, txRunner, repo, nil)
+
+		createdRecipe, err := s.CreateRecipe(ctx, CreateRecipeRequest{
+			Name:        "Published Recipe",
+			Ingredients: []CreateIngredientUsageRequest{{IngredientID: ingredientID.String(), Quantity: 100, Unit: 1}},
+			UserID:      testUser.ID.String(),
+			PrepMins:    10,
+			CookMins:    10,
+			Portions:    2,
+			Publish:     true,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, createdRecipe)
+
+		draftRecipe, err := s.UpdateRecipe(ctx, UpdateRecipeRequest{
+			RecipeId: createdRecipe.ID.String(),
+			Request: CreateRecipeRequest{
+				Name:        "Draft Update",
+				Ingredients: []CreateIngredientUsageRequest{{IngredientID: ingredientID.String(), Quantity: 120, Unit: 1}},
+				UserID:      testUser.ID.String(),
+				PrepMins:    10,
+				CookMins:    10,
+				Portions:    2,
+				Publish:     false,
+			},
+		})
+		require.NoError(t, err)
+
+		require.NotNil(t, draftRecipe.DraftVersionID, "Expected draft_version_id to be set after saving a draft")
+
+		publishedRecipe, err := s.UpdateRecipe(ctx, UpdateRecipeRequest{
+			RecipeId: createdRecipe.ID.String(),
+			Request: CreateRecipeRequest{
+				Name:        "Published Update",
+				Ingredients: []CreateIngredientUsageRequest{{IngredientID: ingredientID.String(), Quantity: 130, Unit: 1}},
+				UserID:      testUser.ID.String(),
+				PrepMins:    10,
+				CookMins:    10,
+				Portions:    2,
+				Publish:     true,
+			},
+		})
+		require.NoError(t, err)
+
+		require.Nil(t, publishedRecipe.DraftVersionID, "Expected draft_version_id to be null after publishing")
 	})
 }
 
@@ -1521,9 +1947,9 @@ func TestGetRecipes_PaginatesAcrossPages(t *testing.T) {
 		middleCreatedAt := newestCreatedAt.Add(-1 * time.Minute)
 		oldestCreatedAt := newestCreatedAt.Add(-2 * time.Minute)
 
-		newest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "Newest", newestCreatedAt, nil, nil)
-		middle := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "Middle", middleCreatedAt, nil, nil)
-		oldest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "Oldest", oldestCreatedAt, nil, nil)
+		newest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "Newest", newestCreatedAt, nil, nil, true)
+		middle := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "Middle", middleCreatedAt, nil, nil, true)
+		oldest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "Oldest", oldestCreatedAt, nil, nil, true)
 
 		params := RecipeListParams{
 			Pagination: RecipePagination{
@@ -1842,9 +2268,9 @@ func TestGetRecipes_FiltersByUserID(t *testing.T) {
 		require.NoError(t, err)
 
 		base := time.Date(2026, time.March, 17, 11, 42, 48, 147630000, time.UTC)
-		aNewest := seedRecipeForListTests(t, ctx, tx, userA.ID, uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "A Newest", base, nil, nil)
-		aOlder := seedRecipeForListTests(t, ctx, tx, userA.ID, uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "A Older", base.Add(-1*time.Minute), nil, nil)
-		_ = seedRecipeForListTests(t, ctx, tx, userB.ID, uuid.MustParse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "B Recipe", base.Add(-2*time.Minute), nil, nil)
+		aNewest := seedRecipeForListTests(t, ctx, tx, userA.ID, uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "A Newest", base, nil, nil, true)
+		aOlder := seedRecipeForListTests(t, ctx, tx, userA.ID, uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "A Older", base.Add(-1*time.Minute), nil, nil, true)
+		_ = seedRecipeForListTests(t, ctx, tx, userB.ID, uuid.MustParse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "B Recipe", base.Add(-2*time.Minute), nil, nil, true)
 
 		userAID := userA.ID
 		params := RecipeListParams{
@@ -1886,9 +2312,9 @@ func TestGetRecipes_FiltersByAnimalProductLevel(t *testing.T) {
 		vegetarianLevel := 1
 		meatLevel := 2
 
-		vegan := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("12345678-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "Vegan Bowl", base, nil, &veganLevel)
-		vegetarian := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("12345678-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "Vegetarian Bowl", base.Add(-1*time.Minute), nil, &vegetarianLevel)
-		meat := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("12345678-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "Meat Bowl", base.Add(-2*time.Minute), nil, &meatLevel)
+		vegan := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("12345678-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "Vegan Bowl", base, nil, &veganLevel, true)
+		vegetarian := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("12345678-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "Vegetarian Bowl", base.Add(-1*time.Minute), nil, &vegetarianLevel, true)
+		meat := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("12345678-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "Meat Bowl", base.Add(-2*time.Minute), nil, &meatLevel, true)
 
 		veganFilter := 0
 		recipes, nextCursor, err := s.GetRecipes(ctx, RecipeListParams{
@@ -2015,9 +2441,9 @@ func setupRecipeListFixture(t *testing.T, tx *sql.Tx) (context.Context, *Service
 	middleCreatedAt := newestCreatedAt.Add(-1 * time.Minute)
 	oldestCreatedAt := newestCreatedAt.Add(-2 * time.Minute)
 
-	newest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "Newest", newestCreatedAt, nil, nil)
-	middle := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "Middle", middleCreatedAt, nil, nil)
-	oldest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "Oldest", oldestCreatedAt, nil, nil)
+	newest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), uuid.New(), "Newest", newestCreatedAt, nil, nil, true)
+	middle := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), uuid.New(), "Middle", middleCreatedAt, nil, nil, true)
+	oldest := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), uuid.New(), "Oldest", oldestCreatedAt, nil, nil, true)
 
 	return ctx, s, newest, middle, oldest
 }
@@ -2037,10 +2463,10 @@ func setupRecipeSearchFixture(t *testing.T, tx *sql.Tx) (context.Context, *Servi
 	sameCreatedAt := time.Date(2026, time.March, 17, 11, 40, 48, 147630000, time.UTC)
 	olderCreatedAt := sameCreatedAt.Add(-1 * time.Minute)
 
-	exactHigh := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("ffffffff-ffff-ffff-ffff-fffffffffff1"), uuid.New(), "Chicken Soup", sameCreatedAt, nil, nil)
-	exactLow := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("00000000-0000-0000-0000-000000000002"), uuid.New(), "Chicken Soup", sameCreatedAt, nil, nil)
-	fuzzy := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("11111111-1111-1111-1111-111111111111"), uuid.New(), "Chikcen Soup", olderCreatedAt, nil, nil)
-	seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("22222222-2222-2222-2222-222222222222"), uuid.New(), "Beef Chili", olderCreatedAt, nil, nil)
+	exactHigh := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("ffffffff-ffff-ffff-ffff-fffffffffff1"), uuid.New(), "Chicken Soup", sameCreatedAt, nil, nil, true)
+	exactLow := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("00000000-0000-0000-0000-000000000002"), uuid.New(), "Chicken Soup", sameCreatedAt, nil, nil, true)
+	fuzzy := seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("11111111-1111-1111-1111-111111111111"), uuid.New(), "Chikcen Soup", olderCreatedAt, nil, nil, true)
+	seedRecipeForListTests(t, ctx, tx, testUser.ID, uuid.MustParse("22222222-2222-2222-2222-222222222222"), uuid.New(), "Beef Chili", olderCreatedAt, nil, nil, true)
 
 	return ctx, s, exactHigh, exactLow, fuzzy
 }

@@ -3,13 +3,16 @@ package model
 import "time"
 
 type Recipe struct {
-	ID        string
-	CreatedAt time.Time
+	ID          string
+	CreatedAt   time.Time
+	PublishedAt *time.Time
 
 	AuthorID         string
 	CurrentVersionID string
+	CurrentVersion   *RecipeVersion
 
-	CurrentVersion *RecipeVersion
+	DraftVersionID *string
+	DraftVersion   *RecipeVersion
 }
 
 type RecipeVersion struct {
@@ -23,6 +26,7 @@ type RecipeVersion struct {
 	CookMins           int32
 	Portions           int32
 	CreatedAt          time.Time
+	PublishedAt        *time.Time
 	ImgSrc             *string
 	AnimalProductLevel int32
 	ContainsGluten     bool

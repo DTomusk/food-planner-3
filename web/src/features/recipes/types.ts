@@ -14,6 +14,7 @@ export type Recipe = {
     imageUrl: string | null;
     animalProductLevel: number;
     containsGluten: boolean;
+    isDraft: boolean;
 };
 
 // TODO: move to user feature
@@ -54,6 +55,8 @@ export type RecipeSummary = {
     author: User;
     animalProductLevel: number;
     containsGluten: boolean;
+    version: number;
+    isDraft: boolean;
 };
 
 export type RecipeFormValues = z.infer<typeof recipeFormSchema>;
@@ -66,3 +69,9 @@ export const RecipeSourceType = {
 } as const;
 
 export type RecipeSourceType = typeof RecipeSourceType[keyof typeof RecipeSourceType];
+
+export type Version = {
+    version: number;
+    createdAt: string;
+    draft: boolean;
+}

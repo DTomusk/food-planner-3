@@ -21,7 +21,9 @@ const meta = {
             <Form
                 onSubmit={(event) => {
                     event.preventDefault();
-                    args.onSubmit(event);
+                    if (args.onSubmit) {
+                        args.onSubmit(event);
+                    }
                 }}
             >
                 <div className="space-y-3">

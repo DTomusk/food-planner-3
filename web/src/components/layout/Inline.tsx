@@ -5,6 +5,7 @@ interface InlineProps {
     justify?: "start" | "center" | "end" | "between" | "around" | "evenly";
     align?: "start" | "center" | "end" | "none";
     wrap?: boolean;
+    wrapReverse?: boolean;
     gap?: "none" | "sm" | "md" | "lg";
     className?: string;
 }
@@ -14,6 +15,7 @@ export default function Inline({
     justify = "center",
     align = "none",
     wrap = false,
+    wrapReverse = false,
     gap = "sm",
     className,
 }: InlineProps) {
@@ -45,6 +47,7 @@ export default function Inline({
             className={clsx(
                 "flex",
                 wrap ? "flex-wrap sm:flex-row flex-col" : "flex-nowrap flex-row",
+                wrapReverse ? "flex-wrap-reverse" : "",
                 justifyClasses[justify],
                 alignClasses[align],
                 gapClasses[gap],

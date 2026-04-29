@@ -8,7 +8,9 @@ package resolver
 import (
 	"context"
 	"fmt"
+	"foodplanner/internal/auth"
 	"foodplanner/internal/gql/graph"
+	grapherrors "foodplanner/internal/gql/graph/errors"
 	"foodplanner/internal/gql/graph/model"
 	"foodplanner/internal/logging"
 	"foodplanner/internal/recipe"
@@ -87,7 +89,7 @@ func (r *mutationResolver) UpdateRecipe(ctx context.Context, input model.UpdateR
 // Recipes is the resolver for the recipes field.
 func (r *queryResolver) Recipes(ctx context.Context, pagination *model.PaginationInput, filter *model.RecipeFilterInput) (*model.RecipeConnection, error) {
 	logger := logging.FromContext(ctx)
-	connection, err := r.listRecipes(ctx, pagination, filter)
+	connection, err := r.listRecipes(ctx, pagination, filter, false)
 	if err != nil {
 		logger.Error("Failed to get all recipes", "error", err)
 		return nil, err
@@ -137,15 +139,54 @@ func (r *recipeResolver) CurrentVersion(ctx context.Context, obj *model.Recipe) 
 
 // Versions is the resolver for the versions field.
 func (r *recipeResolver) Versions(ctx context.Context, obj *model.Recipe) ([]*model.RecipeVersion, error) {
+	claims, isAuthenticated := auth.ClaimsFromContext(ctx)
+	if !isAuthenticated && auth.InvalidAuthTokenFromContext(ctx) {
+		return nil, grapherrors.NewUnauthenticatedError("user is not authenticated")
+	}
+	isOwner := isAuthenticated && claims.UserID == obj.AuthorID
+
 	versions, err := r.RecipeService.GetRecipeVersionsByRecipeID(ctx, uuid.MustParse(obj.ID))
 	if err != nil {
 		return nil, err
 	}
 	var result []*model.RecipeVersion
 	for _, version := range versions {
+		if !isOwner && version.PublishedAt == nil {
+			continue
+		}
 		result = append(result, mapRecipeVersion(version))
 	}
 	return result, nil
+}
+
+// DraftVersion is the resolver for the draftVersion field.
+func (r *recipeResolver) DraftVersion(ctx context.Context, obj *model.Recipe) (*model.RecipeVersion, error) {
+	claims, err := RequireAuth(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if claims.UserID != obj.AuthorID {
+		return nil, nil
+	}
+
+	if obj.DraftVersion != nil {
+		return obj.DraftVersion, nil
+	}
+
+	if obj.DraftVersionID == nil {
+		return nil, nil
+	}
+
+	recipeVersion, err := r.RecipeService.GetRecipeVersionByID(ctx, uuid.MustParse(*obj.DraftVersionID))
+	if err != nil {
+		return nil, err
+	}
+	if recipeVersion == nil {
+		return nil, nil
+	}
+
+	return mapRecipeVersion(recipeVersion), nil
 }
 
 // Version is the resolver for the version field.
@@ -159,6 +200,18 @@ func (r *recipeResolver) Version(ctx context.Context, obj *model.Recipe, version
 	if recipeVersion == nil {
 		return nil, nil
 	}
+
+	if recipeVersion.PublishedAt == nil {
+		claims, isAuthenticated := auth.ClaimsFromContext(ctx)
+		if !isAuthenticated && auth.InvalidAuthTokenFromContext(ctx) {
+			return nil, grapherrors.NewUnauthenticatedError("user is not authenticated")
+		}
+		isOwner := isAuthenticated && claims.UserID == obj.AuthorID
+		if !isOwner {
+			return nil, nil
+		}
+	}
+
 	recipeVersionModel := mapRecipeVersion(recipeVersion)
 	return recipeVersionModel, nil
 }

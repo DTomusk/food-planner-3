@@ -3,6 +3,7 @@ query GetRecipeVersions($id: ID!) {
         versions {
             version
             createdAt
+            publishedAt
         }
     }
 }
