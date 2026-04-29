@@ -2,7 +2,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Alert, Inline, Spinner } from "@/components";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useRecipe } from "@/features/recipes";
-import { useRecipeVersion } from "@/features/recipes/hooks/useRecipeVersion";
+import { isRecipeVersionUnavailableError, useRecipeVersion } from "@/features/recipes/hooks/useRecipeVersion";
 import { useMe } from "@/features/users/hooks/useMe";
 import { Page } from "@/layout";
 import Container from "@/components/layout/Container";
@@ -56,6 +56,18 @@ export default function RecipePage() {
         navigate(location.pathname, { replace: true, state: {} });
     }, [successMessage, location.pathname, navigate]);
 
+    useEffect(() => {
+        if (!isViewingSpecificVersion) {
+            return;
+        }
+
+        if (!recipeVersionQuery.error || !isRecipeVersionUnavailableError(recipeVersionQuery.error)) {
+            return;
+        }
+
+        navigate(`/recipes/${recipeId}`, { replace: true });
+    }, [isViewingSpecificVersion, navigate, recipeId, recipeVersionQuery.error]);
+
     const toolbarActions = (
         <>
             {versions?.length ? (
@@ -95,7 +107,7 @@ export default function RecipePage() {
                 <Stack space="xl">
                     {!recipeId && <Alert message="No recipe ID provided." />}
                     {activeRecipeQuery.isLoading && <Spinner />}
-                    {activeRecipeQuery.error && <Alert message={extractErrorMessage(activeRecipeQuery.error)} closable />}
+                    {activeRecipeQuery.error && !isRecipeVersionUnavailableError(activeRecipeQuery.error) && <Alert message={extractErrorMessage(activeRecipeQuery.error)} closable />}
                     {successMessage && <Alert message={successMessage} type="success" closable duration={3000} onClose={() => setSuccessMessage(undefined)} />}
                     {recipe ? (
                         <Inline align="start" justify="center" className="w-full" gap="lg">
