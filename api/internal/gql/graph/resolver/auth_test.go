@@ -70,8 +70,8 @@ func assertRefreshTokenCookie(t *testing.T, recorder *httptest.ResponseRecorder)
 	require.NotEmpty(t, cookie.Value)
 	require.Equal(t, "/", cookie.Path)
 	require.True(t, cookie.HttpOnly)
-	require.False(t, cookie.Secure)
-	require.Equal(t, http.SameSiteLaxMode, cookie.SameSite)
+	require.True(t, cookie.Secure)
+	require.Equal(t, http.SameSiteNoneMode, cookie.SameSite)
 	require.Greater(t, cookie.MaxAge, 0)
 }
 
@@ -87,8 +87,8 @@ func assertRefreshTokenCookieCleared(t *testing.T, recorder *httptest.ResponseRe
 	require.Empty(t, cookie.Value)
 	require.Equal(t, "/", cookie.Path)
 	require.True(t, cookie.HttpOnly)
-	require.False(t, cookie.Secure)
-	require.Equal(t, http.SameSiteLaxMode, cookie.SameSite)
+	require.True(t, cookie.Secure)
+	require.Equal(t, http.SameSiteNoneMode, cookie.SameSite)
 	require.Less(t, cookie.MaxAge, 0)
 	require.True(t, cookie.Expires.Before(time.Now()))
 }
