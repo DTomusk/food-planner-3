@@ -253,14 +253,17 @@ ingredients:
     taxonomy_parent_key: "allium"
   - id: "shallot"
     name: "Shallot"
+    plural: "Shallots"
     preferred_unit: 1
     taxonomy_parent_key: "allium"
-  - id: "chives"
-    name: "Chives"
+  - id: "chive"
+    name: "Chive"
+    plural: "Chives"
     preferred_unit: 1
     taxonomy_parent_key: "allium"
   - id: "scallion"
     name: "Scallion"
+    plural: "Scallions"
     preferred_unit: 1
     taxonomy_parent_key: "allium"
   #### Sub category nightshades
@@ -271,46 +274,57 @@ ingredients:
     taxonomy_parent_key: "vegetables"
   - id: "tomato"
     name: "Tomato"
+    plural: "Tomatoes"
     preferred_unit: 1
     taxonomy_parent_key: "nightshades"
   - id: "tomato_cherry"
     name: "Cherry tomato"
+    plural: "Cherry tomatoes"
     preferred_unit: 1
     taxonomy_parent_key: "tomato"
   - id: "tomato_heirloom"
     name: "Heirloom tomato"
+    plural: "Heirloom tomatoes"
     preferred_unit: 1
     taxonomy_parent_key: "tomato"
   - id: "tomato_plum"
     name: "Plum tomato"
+    plural: "Plum tomatoes"
     preferred_unit: 1
     taxonomy_parent_key: "tomato"
   - id: "potato"
     name: "Potato"
+    plural: "Potatoes"
     preferred_unit: 1
     taxonomy_parent_key: "nightshades"
   - id: "potato_white"
     name: "White potato"
+    plural: "White potatoes"
     preferred_unit: 1
     taxonomy_parent_key: "potato"
   - id: "potato_red"
     name: "Red potato"
+    plural: "Red potatoes"
     preferred_unit: 1
     taxonomy_parent_key: "potato"
   - id: "potato_yellow"
     name: "Yellow potato"
+    plural: "Yellow potatoes"
     preferred_unit: 1
     taxonomy_parent_key: "potato"
   - id: "potato_baking"
     name: "Baking potato"
+    plural: "Baking potatoes"
     preferred_unit: 1
     taxonomy_parent_key: "potato"
   - id: "potato_waxy"
     name: "Waxy potato"
+    plural: "Waxy potatoes"
     preferred_unit: 1
     taxonomy_parent_key: "potato"
-  - id: "eggplant"
-    name: "Eggplant"
+  - id: "aubergine"
+    name: "Aubergine"
+    plural: "Aubergines"
     preferred_unit: 1
     taxonomy_parent_key: "nightshades"
   ### Category fruits
