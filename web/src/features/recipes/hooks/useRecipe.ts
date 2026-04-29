@@ -20,10 +20,10 @@ export function recipeQueryOptions(id: string) {
     });
 }
 
-export function useRecipe(id: string) {
+export function useRecipe(id: string, { enabled = true }: { enabled?: boolean } = {}) {
     return useQuery<GetRecipeQuery, ClientError, UseRecipeResult>({
         ...recipeQueryOptions(id),
-        enabled: Boolean(id),
+        enabled: Boolean(id) && enabled,
         select: (data) => {
             if (!data.recipe) {
                 throw new Error("Recipe not found");

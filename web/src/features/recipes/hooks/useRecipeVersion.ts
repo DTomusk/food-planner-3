@@ -17,10 +17,10 @@ export function recipeVersionQueryOptions(id: string, version: number) {
     });
 }
 
-export function useRecipeVersion(id: string, version: number) {
+export function useRecipeVersion(id: string, version: number, { enabled = true }: { enabled?: boolean } = {}) {
     return useQuery<GetRecipeVersionQuery, ClientError, UseRecipeVersionResult>({
         ...recipeVersionQueryOptions(id, version),
-        enabled: Boolean(id),
+        enabled: Boolean(id) && enabled,
         select: (data) => {
             if (!data.recipe) {
                 throw new Error("Recipe not found");

@@ -6,7 +6,6 @@ import SignUpPage from "@/pages/SignUpPage";
 import NotFound from "@/pages/NotFound";
 import RecipeListingPage from "@/pages/RecipeListingPage";
 import RecipeCreatePage from "@/pages/RecipeCreatePage";
-import RecipeVersionPage from "@/pages/RecipeVersionPage";
 import ProtectedLayout from "./ProtectedLayout";
 import MyRecipesPage from "@/pages/MyRecipesPage";
 import UserPage from "@/pages/UserPage";
@@ -122,7 +121,7 @@ export const router = createBrowserRouter([
                     return "Version";
                   },
                 },
-                element: <RecipeVersionPage />,
+                element: <RecipePage />,
               },
               {
                 element: <ProtectedLayout />,

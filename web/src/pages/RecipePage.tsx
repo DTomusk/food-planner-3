@@ -2,6 +2,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Alert, Button, Inline, Spinner } from "@/components";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useRecipe } from "@/features/recipes";
+import { useRecipeVersion } from "@/features/recipes/hooks/useRecipeVersion";
 import { useMe } from "@/features/users/hooks/useMe";
 import { Page } from "@/layout";
 import Container from "@/components/layout/Container";
@@ -21,24 +22,31 @@ type RecipePageLocationState = {
 
 export default function RecipePage() {
     const { isAuthenticated } = useAuth();
-    const { id } = useParams<{ id: string }>();
+    const { id, version } = useParams<{ id: string; version?: string }>();
     const recipeId = id ?? "";
+    const selectedVersionParam = version ? Number.parseInt(version, 10) : undefined;
+    const isViewingSpecificVersion =
+        selectedVersionParam !== undefined && !Number.isNaN(selectedVersionParam);
     const location = useLocation();
     const navigate = useNavigate();
     const locationState = location.state as RecipePageLocationState | null;
     const [successMessage, setSuccessMessage] = useState<string | undefined>(locationState?.successMessage);
 
-    const recipeQuery = useRecipe(recipeId);
-    const recipe = recipeQuery.data?.recipe;
-    const user = recipeQuery.data?.user;
+    const recipeQuery = useRecipe(recipeId, { enabled: !isViewingSpecificVersion });
+    const recipeVersionQuery = useRecipeVersion(recipeId, selectedVersionParam ?? 0, {
+        enabled: isViewingSpecificVersion,
+    });
+    const activeRecipeQuery = isViewingSpecificVersion ? recipeVersionQuery : recipeQuery;
+    const recipe = activeRecipeQuery.data?.recipe;
+    const user = activeRecipeQuery.data?.user;
     const meQuery = useMe({ enabled: isAuthenticated });
     const canEditRecipe = Boolean(user?.id && meQuery.data?.id && user.id === meQuery.data.id);
 
     const versionsQuery = useRecipeVersions(recipeId);
     const versions = versionsQuery.data;
-    const currentVersionNumber = versions?.length
-        ? Math.max(...versions.map((version) => version.version))
-        : undefined;
+    const selectedVersionNumber = isViewingSpecificVersion
+        ? selectedVersionParam
+        : recipe?.version;
 
     useEffect(() => {
         if (!successMessage) {
@@ -61,7 +69,7 @@ export default function RecipePage() {
                         {
                             title: "Recipe versions",
                             items: versions.map((version) => {
-                                const isCurrentVersion = version.version === currentVersionNumber;
+                                const isCurrentVersion = version.version === selectedVersionNumber;
 
                                 return {
                                     label: `Version ${version.version} - ${new Date(version.createdAt).toLocaleString()}${isCurrentVersion ? " (current)" : ""}`,
@@ -86,8 +94,8 @@ export default function RecipePage() {
             <Container size="xl">
                 <Stack space="xl">
                     {!recipeId && <Alert message="No recipe ID provided." />}
-                    {recipeQuery.isLoading && <Spinner />}
-                    {recipeQuery.error && <Alert message={extractErrorMessage(recipeQuery.error)} closable />}
+                    {activeRecipeQuery.isLoading && <Spinner />}
+                    {activeRecipeQuery.error && <Alert message={extractErrorMessage(activeRecipeQuery.error)} closable />}
                     {successMessage && <Alert message={successMessage} type="success" closable duration={3000} onClose={() => setSuccessMessage(undefined)} />}
                     {recipe ? (
                         <Inline align="start" justify="center" className="w-full" gap="lg">
@@ -97,7 +105,7 @@ export default function RecipePage() {
                                     <VersionSelector
                                         recipeId={recipeId}
                                         versions={versions}
-                                        currentVersionNumber={currentVersionNumber}
+                                        currentVersionNumber={selectedVersionNumber}
                                     />
                                     {canEditRecipe ? (
                                         <Button variant="secondary" onClick={() => navigate(`/recipes/${recipeId}/edit`)}>
@@ -108,7 +116,7 @@ export default function RecipePage() {
                             ) : null}
                         </Inline>
                 ) : (
-                    !recipeQuery.isLoading && recipeId && !recipeQuery.error && <Alert message="Recipe not found." />
+                    !activeRecipeQuery.isLoading && recipeId && !activeRecipeQuery.error && <Alert message="Recipe not found." />
                 )}
                 </Stack>
             </Container>
