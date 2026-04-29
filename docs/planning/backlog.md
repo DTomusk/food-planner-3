@@ -4,6 +4,27 @@
 
 ## Planning 
 
+- [ ] Easily accessible search bar
+    - Priority: 
+    - Area: 
+    - Type: (bug, tech debt, feature)
+    - Why: 
+    - DoD: 
+
+- [ ] Allow username or email login
+    - Priority: 
+    - Area: 
+    - Type: (bug, tech debt, feature)
+    - Why: 
+    - DoD: 
+
+- [ ] Better auth errors
+    - Priority: 
+    - Area: 
+    - Type: (bug, tech debt, feature)
+    - Why: 
+    - DoD: 
+
 - [ ] Bring back backlink 
     - Priority: 
     - Area: 
