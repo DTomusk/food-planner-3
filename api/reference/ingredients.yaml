@@ -21,8 +21,6 @@
 
 # Counters are for unit 1 ingredients that are typically counted in specific units (e.g. slices of bread, rasher of bacon, clove of garlic). The counter field specifies the singular form of the unit, and counter_plural specifies the plural form
 
-# Taxonomy parent key is used to build the ingredient taxonomy. It should point to the most specific parent category (e.g. chicken breast's taxonomy parent is chicken, not meat or origin_animal)
-
 ingredients:
   # Raw ingredients
   - id: "origin_animal"
@@ -442,104 +440,217 @@ ingredients:
     name: "Flour"
     preferred_unit: 2
     contains_gluten: true
-    processed_level: 2
+    processed_level: 1
+    children: 
+    - id: "flour_all_purpose"
+      name: "All-purpose flour"
+      preferred_unit: 2
+      contains_gluten: true
+      processed_level: 1
+    - id: "flour_whole_wheat"
+      name: "Whole wheat flour"
+      preferred_unit: 2
+      contains_gluten: true
+      processed_level: 1
+    - id: "flour_rice"
+      name: "Rice flour"
+      preferred_unit: 2
+      contains_gluten: false
+      processed_level: 1
+    - id: "flour_chickpea"
+      name: "Chickpea flour"
+      preferred_unit: 2
+      contains_gluten: false
+      processed_level: 1
+    - id: "flour_gluten_free"
+      name: "Gluten-free flour"
+      preferred_unit: 2
+      contains_gluten: false
+      processed_level: 1
   - id: "bacon_rasher"
     name: "Bacon"
     preferred_unit: 1
     counter: "rasher"
     counter_plural: "rashers"
     animal_product_level: 2
-    taxonomy_parent_key: "pork"
-    processed_level: 2
+    processed_level: 1
   - id: "cheese"
     name: "Cheese"
     preferred_unit: 2
-    animal_product_level: 2
-    taxonomy_parent_key: "milk"
-    processed_level: 2
-  - id: "cheese_cheddar"
-    name: "Cheddar cheese"
-    preferred_unit: 2
-    animal_product_level: 2
-    taxonomy_parent_key: "cheese"
-    processed_level: 2
-  - id: "cheese_cheddar_mature"
-    name: "Mature cheddar cheese"
-    preferred_unit: 2
-    animal_product_level: 2
-    taxonomy_parent_key: "cheese_cheddar"
-    processed_level: 2
+    animal_product_level: 1
+    processed_level: 1
+    children:
+    - id: "cheese_soft"
+      name: "Soft cheese"
+      preferred_unit: 0
+      is_searchable: false
+      animal_product_level: 1
+      processed_level: 1
+      children:
+      - id: "cheese_ricotta"
+        name: "Ricotta"
+        preferred_unit: 2
+        animal_product_level: 1
+        processed_level: 1
+      - id: "cheese_mascarpone"
+        name: "Mascarpone"
+        preferred_unit: 2
+        animal_product_level: 1
+        processed_level: 1
+      - id: "cheese_cream_cheese"
+        name: "Cream cheese"
+        preferred_unit: 2
+        animal_product_level: 1
+        processed_level: 1
+      - id: "cheese_fresh_mozzarella"
+        name: "Fresh mozzarella"
+        preferred_unit: 2
+        animal_product_level: 1
+        processed_level: 1
+      - id: "cheese_goat"
+        name: "Goat cheese"
+        preferred_unit: 2
+        animal_product_level: 1
+        processed_level: 1
+      - id: "cheese_cottage"
+        name: "Cottage cheese"
+        preferred_unit: 2
+        animal_product_level: 1
+        processed_level: 1
+      - id: "cheese_brie"
+        name: "Brie"
+        preferred_unit: 2
+        animal_product_level: 1
+        processed_level: 1
+    - id: "cheese_semi_soft"
+      name: "Semi-soft cheese"
+      preferred_unit: 0
+      is_searchable: false
+      animal_product_level: 1
+      processed_level: 1
+      children:
+      - id: "cheese_mozzarella"
+        name: "Mozzarella"
+        preferred_unit: 2
+        animal_product_level: 1
+        processed_level: 1
+        children:
+        - id: "cheese_mozzarella_fior_di_latte"
+          name: "Fior di latte mozzarella"
+          preferred_unit: 2
+          animal_product_level: 1
+          processed_level: 1
+        - id: "cheese_mozzarella_buffalo"
+          name: "Buffalo mozzarella"
+          preferred_unit: 2
+          animal_product_level: 1
+          processed_level: 1
+    - id: "cheese_semi_hard"
+      name: "Semi-hard cheese"
+      preferred_unit: 0
+      is_searchable: false
+      animal_product_level: 1
+      processed_level: 1
+      children:
+      - id: "cheese_cheddar"
+        name: "Cheddar"
+        preferred_unit: 2
+        animal_product_level: 1
+        processed_level: 1
+        children:
+        - id: "cheese_cheddar_mature"
+          name: "Mature cheddar"
+          preferred_unit: 2
+          animal_product_level: 1
+          processed_level: 1
+    - id: "cheese_hard"
+      name: "Hard cheese"
+      preferred_unit: 0
+      is_searchable: false
+      animal_product_level: 1
+      processed_level: 1
+      children:
+      # Note: these are made with rennet, so not vegetarian friendly
+      - id: "parmegiano_reggiano"
+        name: "Parmegiano Reggiano"
+        preferred_unit: 2
+        animal_product_level: 2
+        processed_level: 1
+      - id: "pecorino"
+        name: "Pecorino"
+        preferred_unit: 2
+        animal_product_level: 2
+        processed_level: 1
+      - id: "grana_padano"
+        name: "Grana Padano"
+        preferred_unit: 2
+        animal_product_level: 2
+        processed_level: 1
   ## Category oils
   - id: "oil" 
     name: "Oil"
     preferred_unit: 0
     is_searchable: false
-    processed_level: 2
-  - id: "oil_vegetable"
-    name: "Vegetable oil"
-    preferred_unit: 3
-    taxonomy_parent_key: "oil"
-    processed_level: 2
-  - id: "oil_olive"
-    name: "Olive oil"
-    preferred_unit: 3
-    taxonomy_parent_key: "oil"
-    processed_level: 2
-  - id: "oil_olive_extra_virgin"
-    name: "Extra virgin olive oil"
-    preferred_unit: 3
-    taxonomy_parent_key: "oil_olive"
-    processed_level: 2
-  - id: "oil_avocado"
-    name: "Avocado oil"
-    preferred_unit: 3
-    taxonomy_parent_key: "oil"
-    processed_level: 2
-  - id: "oil_canola"
-    name: "Canola oil"
-    preferred_unit: 3
-    taxonomy_parent_key: "oil"
-    processed_level: 2
-  - id: "oil_coconut"
-    name: "Coconut oil"
-    preferred_unit: 3
-    taxonomy_parent_key: "oil"
-    processed_level: 2
-  - id: "oil_sunflower"
-    name: "Sunflower oil"
-    preferred_unit: 3
-    taxonomy_parent_key: "oil"
-    processed_level: 2
+    processed_level: 1
+    children:
+    - id: "oil_vegetable"
+      name: "Vegetable oil"
+      preferred_unit: 3
+      processed_level: 1
+    - id: "oil_olive"
+      name: "Olive oil"
+      preferred_unit: 3
+      processed_level: 1
+      children:
+      - id: "oil_olive_extra_virgin"
+        name: "Extra virgin olive oil"
+        preferred_unit: 3
+        processed_level: 1
+    - id: "oil_avocado"
+      name: "Avocado oil"
+      preferred_unit: 3
+      processed_level: 1
+    - id: "oil_canola"
+      name: "Canola oil"
+      preferred_unit: 3
+      processed_level: 1
+    - id: "oil_coconut"
+      name: "Coconut oil"
+      preferred_unit: 3
+      processed_level: 1
+    - id: "oil_sunflower"
+      name: "Sunflower oil"
+      preferred_unit: 3
+      processed_level: 1
   ## Category sauces and condiments
   - id: "tomatoes_tinned"
     name: "Tinned tomatoes"
     preferred_unit: 2
-    processed_level: 2
+    processed_level: 1
   ## Spice powders
   - id: "chilli_powder"
     name: "Chilli powder"
     preferred_unit: 5
-    processed_level: 2
+    processed_level: 1
   - id: "coriander_ground"
     name: "Ground coriander"
     preferred_unit: 5
-    processed_level: 2
+    processed_level: 1
   - id: "turmeric_ground"
     name: "Ground turmeric"
     preferred_unit: 5
-    taxonomy_parent_key: "turmeric"
-    processed_level: 2
+    processed_level: 1
 
   # Composite ingredients
   - id: "pasta"
     name: "Pasta"
     preferred_unit: 2
     contains_gluten: true
-    processed_level: 3
+    processed_level: 2
   - id: "bread"
     name: "Bread"
     preferred_unit: 1
     counter: "slice"
     counter_plural: "slices"
     contains_gluten: true
-    processed_level: 3
+    processed_level: 2
