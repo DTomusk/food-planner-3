@@ -339,6 +339,7 @@ ingredients:
     name: "Legumes"
     preferred_unit: 0
     is_searchable: false
+    taxonomy_parent_key: "origin_plant"
   - id: "chickpeas"
     name: "Chickpeas"
     preferred_unit: 2

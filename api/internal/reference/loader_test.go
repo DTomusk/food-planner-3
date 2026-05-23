@@ -19,7 +19,7 @@ func TestLoadTestData(t *testing.T) {
 
 	// Assert
 	require.NoError(t, err)
-	require.Len(t, ingredients, 3)
+	require.Len(t, ingredients, 4)
 
 	testIngredient := *ingredients[0]
 	require.Equal(t, testIngredient.FileKey, "test_ingredient")
@@ -28,6 +28,7 @@ func TestLoadTestData(t *testing.T) {
 	require.Equal(t, testIngredient.Plural, testutil.PtrString("Test Ingredients"))
 	require.Nil(t, testIngredient.Counter, "Expected Counter to be nil for test_ingredient")
 	require.Nil(t, testIngredient.CounterPlural, "Expected CounterPlural to be nil for test_ingredient")
+	require.Nil(t, testIngredient.Children, "Expected Children to be nil for test_ingredient")
 
 	testIngredientGrams := *ingredients[1]
 	require.Equal(t, testIngredientGrams.FileKey, "test_ingredient_grams")
@@ -36,6 +37,7 @@ func TestLoadTestData(t *testing.T) {
 	require.Nil(t, testIngredientGrams.Plural)
 	require.Nil(t, testIngredientGrams.Counter, "Expected Counter to be nil for test_ingredient_grams")
 	require.Nil(t, testIngredientGrams.CounterPlural, "Expected CounterPlural to be nil for test_ingredient_grams")
+	require.Nil(t, testIngredientGrams.Children, "Expected Children to be nil for test_ingredient_grams")
 
 	testIngredientWithCounter := *ingredients[2]
 	require.Equal(t, testIngredientWithCounter.FileKey, "test_ingredient_with_counter")
@@ -44,4 +46,36 @@ func TestLoadTestData(t *testing.T) {
 	require.Nil(t, testIngredientWithCounter.Plural)
 	require.Equal(t, testIngredientWithCounter.Counter, testutil.PtrString("piece"))
 	require.Equal(t, testIngredientWithCounter.CounterPlural, testutil.PtrString("pieces"))
+	require.Nil(t, testIngredientWithCounter.Children, "Expected Children to be nil for test_ingredient_with_counter")
+
+	testIngredientParent := *ingredients[3]
+	require.Equal(t, testIngredientParent.FileKey, "test_ingredient_parent")
+	require.Equal(t, testIngredientParent.Name, "Test Ingredient Parent")
+	require.Equal(t, testIngredientParent.PreferredUnit, 1)
+	require.Equal(t, testIngredientParent.Plural, testutil.PtrString("Test Ingredient Parents"))
+	require.Nil(t, testIngredientParent.Counter)
+	require.Nil(t, testIngredientParent.CounterPlural)
+	require.Len(t, testIngredientParent.Children, 2)
+
+	testIngredientChild := *testIngredientParent.Children[0]
+	require.Equal(t, testIngredientChild.FileKey, "test_ingredient_child")
+	require.Equal(t, testIngredientChild.Name, "Test Ingredient Child")
+	require.Equal(t, testIngredientChild.PreferredUnit, 1)
+	require.Equal(t, testIngredientChild.Plural, testutil.PtrString("Test Ingredient Children"))
+	require.Len(t, testIngredientChild.Children, 1)
+
+	testIngredientGrandchild := *testIngredientChild.Children[0]
+	require.Equal(t, testIngredientGrandchild.FileKey, "test_ingredient_grandchild")
+	require.Equal(t, testIngredientGrandchild.Name, "Test Ingredient Grandchild")
+	require.Equal(t, testIngredientGrandchild.PreferredUnit, 1)
+	require.Equal(t, testIngredientGrandchild.Plural, testutil.PtrString("Test Ingredient Grandchildren"))
+	require.Nil(t, testIngredientGrandchild.Children, "Expected Children to be nil for test_ingredient_grandchild")
+
+	testIngredientChild2 := *testIngredientParent.Children[1]
+	require.Equal(t, testIngredientChild2.FileKey, "test_ingredient_child_2")
+	require.Equal(t, testIngredientChild2.Name, "Test Ingredient Child 2")
+	require.Equal(t, testIngredientChild2.PreferredUnit, 1)
+	require.Equal(t, testIngredientChild2.Plural, testutil.PtrString("Test Ingredient Children 2"))
+	require.Nil(t, testIngredientChild2.Children, "Expected Children to be nil for test_ingredient_child_2")
+
 }
