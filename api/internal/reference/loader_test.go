@@ -79,3 +79,18 @@ func TestLoadTestData(t *testing.T) {
 	require.Nil(t, testIngredientChild2.Children, "Expected Children to be nil for test_ingredient_child_2")
 
 }
+
+// This test verifies that the loader can successfully load the actual reference file without errors and that it contains data.
+func TestLoadingReferenceFile(t *testing.T) {
+	// Arrange
+	filePath := "../../reference/ingredients.yaml"
+	loader := NewLoader(filePath)
+	logger := logging.FromContext(t.Context())
+
+	// Act
+	ingredients, err := loader.LoadIngredientData(logger)
+
+	// Assert
+	require.NoError(t, err)
+	require.NotEmpty(t, ingredients)
+}
