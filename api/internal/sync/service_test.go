@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TODO: these tests are brittle because they depend on sql order, which isn't guaranteed
 func TestSyncIngredientData(t *testing.T) {
 	testutil.WithTx(t, func(tx *sql.Tx) {
 		// Arrange
@@ -90,5 +91,50 @@ func TestSyncIngredientData(t *testing.T) {
 		require.Equal(t, testIngredientChild2.PreferredUnit, unit.Quantum)
 		require.Equal(t, testIngredientChild2.Plural, testutil.PtrString("Test Ingredient Children 2"))
 		require.Equal(t, *testIngredientChild2.TaxonomyParentID, testIngredientParent.ID, "Expected TaxonomyParentID to be set to parent ID for test_ingredient_child_2")
+	})
+}
+
+func TestSyncIngredientData_Idempotent(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		// Arrange
+		ctx := t.Context()
+		logger := logging.FromContext(ctx)
+		filePath := "../../reference/ingredients_test.yaml"
+		loader := reference.NewLoader(filePath)
+		txRunner := testutil.NewTestTxRunner(tx)
+		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100)
+		service := NewSyncService(ingredientService, loader)
+
+		// Act
+		err := service.SyncIngredientData(ctx)
+
+		// Assert
+		require.NoError(t, err)
+
+		// Fetch ingredient via ingredient service to ensure it's populate
+		ingredients_first_fetch, err := ingredientService.GetAllIngredients(ctx, logger)
+		require.NoError(t, err)
+		require.Len(t, ingredients_first_fetch, 7)
+
+		// Act again
+		err = service.SyncIngredientData(ctx)
+
+		// Assert no error and no duplicates
+		require.NoError(t, err)
+
+		ingredients_second_fetch, err := ingredientService.GetAllIngredients(ctx, logger)
+		require.NoError(t, err)
+		require.Len(t, ingredients_second_fetch, 7)
+
+		for i := range ingredients_first_fetch {
+			require.Equal(t, ingredients_first_fetch[i].ID, ingredients_second_fetch[i].ID, "Expected ingredient IDs to be the same after second sync")
+			require.Equal(t, ingredients_first_fetch[i].FileKey, ingredients_second_fetch[i].FileKey, "Expected ingredient FileKeys to be the same after second sync")
+			require.Equal(t, ingredients_first_fetch[i].Name, ingredients_second_fetch[i].Name, "Expected ingredient Names to be the same after second sync")
+			require.Equal(t, ingredients_first_fetch[i].PreferredUnit, ingredients_second_fetch[i].PreferredUnit, "Expected ingredient PreferredUnits to be the same after second sync")
+			require.Equal(t, ingredients_first_fetch[i].Plural, ingredients_second_fetch[i].Plural, "Expected ingredient Plurals to be the same after second sync")
+			require.Equal(t, ingredients_first_fetch[i].Counter, ingredients_second_fetch[i].Counter, "Expected ingredient Counters to be the same after second sync")
+			require.Equal(t, ingredients_first_fetch[i].CounterPlural, ingredients_second_fetch[i].CounterPlural, "Expected ingredient CounterPlurals to be the same after second sync")
+			require.Equal(t, ingredients_first_fetch[i].TaxonomyParentID, ingredients_second_fetch[i].TaxonomyParentID, "Expected ingredient TaxonomyParentIDs to be the same after second sync")
+		}
 	})
 }
