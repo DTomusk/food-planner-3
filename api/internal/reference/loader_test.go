@@ -19,6 +19,8 @@ func TestLoadTestData(t *testing.T) {
 
 	// Assert
 	require.NoError(t, err)
+
+	// Note: the length is of the parent ingredients (tree roots), not counting others
 	require.Len(t, ingredients, 4)
 
 	testIngredient := *ingredients[0]
@@ -77,7 +79,6 @@ func TestLoadTestData(t *testing.T) {
 	require.Equal(t, testIngredientChild2.PreferredUnit, 1)
 	require.Equal(t, testIngredientChild2.Plural, testutil.PtrString("Test Ingredient Children 2"))
 	require.Nil(t, testIngredientChild2.Children, "Expected Children to be nil for test_ingredient_child_2")
-
 }
 
 // This test verifies that the loader can successfully load the actual reference file without errors and that it contains data.
