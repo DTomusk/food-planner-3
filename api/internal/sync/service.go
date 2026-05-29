@@ -60,16 +60,12 @@ func (s *SyncService) SyncIngredientData(ctx context.Context) error {
 	// Flatten trees into one list
 	// Ensure parents come before children by appending then walking
 	for _, fileIngredient := range fileIngredients {
-		logger.Info("Walking ingredient tree", "fileKey", fileIngredient.FileKey, "name", fileIngredient.Name)
+		logger.Debug("Walking ingredient tree", "fileKey", fileIngredient.FileKey, "name", fileIngredient.Name)
 		// Children always have a parent, so pass uuid instead of *uuid
 		domainIngredients, err = s.walkIngredientTree(fileIngredient, domainIngredients, nil, existingIDsByFileKey, logger)
 		if err != nil {
 			return err
 		}
-	}
-
-	for i, ingredient := range domainIngredients {
-		logger.Info("", "number", i, "id", ingredient.ID, "name", ingredient.Name, "parent id", ingredient.TaxonomyParentID)
 	}
 
 	if err := s.ingredientService.SyncIngredientData(ctx, logger, domainIngredients); err != nil {
@@ -112,7 +108,7 @@ func (s *SyncService) walkIngredientTree(
 	domainIngredients = append(domainIngredients, domainIngredient)
 
 	for _, childFileIngredient := range fileIngredient.Children {
-		logger.Info("Walking child ingredient", "fileKey", childFileIngredient.FileKey, "name", childFileIngredient.Name)
+		logger.Debug("Walking child ingredient", "fileKey", childFileIngredient.FileKey, "name", childFileIngredient.Name)
 		var err error
 		domainIngredients, err = s.walkIngredientTree(childFileIngredient, domainIngredients, &domainIngredient.ID, keyIDMap, logger)
 		if err != nil {
