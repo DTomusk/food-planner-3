@@ -138,3 +138,40 @@ func TestSyncIngredientData_Idempotent(t *testing.T) {
 		}
 	})
 }
+
+func TestSyncIngredientData_Idempotent_WithNonSearchableParentChild(t *testing.T) {
+	testutil.WithTx(t, func(tx *sql.Tx) {
+		ctx := t.Context()
+		logger := logging.FromContext(ctx)
+		filePath := "../../reference/ingredients_non_searchable_parent_test.yaml"
+		loader := reference.NewLoader(filePath)
+		txRunner := testutil.NewTestTxRunner(tx)
+		ingredientService := ingredient.NewIngredientService(txRunner, ingredient.NewIngredientRepo(), 100)
+		service := NewSyncService(ingredientService, loader)
+
+		err := service.SyncIngredientData(ctx)
+		require.NoError(t, err)
+
+		err = service.SyncIngredientData(ctx)
+		require.NoError(t, err)
+
+		ingredients, err := ingredientService.GetAllIngredientsUnfiltered(ctx, logger)
+		require.NoError(t, err)
+		require.Len(t, ingredients, 2)
+
+		var parent, child *ingredient.Ingredient
+		for _, synced := range ingredients {
+			switch synced.FileKey {
+			case "test_parent_non_searchable":
+				parent = synced
+			case "test_child_non_searchable":
+				child = synced
+			}
+		}
+
+		require.NotNil(t, parent)
+		require.NotNil(t, child)
+		require.NotNil(t, child.TaxonomyParentID)
+		require.Equal(t, parent.ID, *child.TaxonomyParentID)
+	})
+}

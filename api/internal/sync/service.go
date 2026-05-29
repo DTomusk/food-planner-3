@@ -40,8 +40,9 @@ func (s *SyncService) SyncIngredientData(ctx context.Context) error {
 
 	logger.Info("Retrieved reference ingredient data")
 
-	// Get existing ingredients
-	existingIngredients, err := s.ingredientService.GetAllIngredients(ctx, logger)
+	// Get all existing ingredients (including non-searchable taxonomy parents) so
+	// we can preserve stable IDs across sync runs for every file key.
+	existingIngredients, err := s.ingredientService.GetAllIngredientsUnfiltered(ctx, logger)
 	if err != nil {
 		logger.Error("Failed to fetch existing ingredients", "error", err)
 		return err
