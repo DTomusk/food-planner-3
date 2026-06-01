@@ -21,8 +21,8 @@ func setRefreshTokenCookie(w http.ResponseWriter, token string, expiresAt int64)
 		MaxAge:   maxAge,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false, // make sure to set this to true in production
-		SameSite: http.SameSiteLaxMode,
+		Secure:   true, // make sure to set this to true in production
+		SameSite: http.SameSiteNoneMode,
 	})
 }
 
@@ -38,7 +38,7 @@ func clearRefreshTokenCookie(w http.ResponseWriter) {
 		Expires:  time.Unix(0, 0),
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false, // make sure to set this to true in production
-		SameSite: http.SameSiteLaxMode,
+		Secure:   true, // make sure to set this to true in production
+		SameSite: http.SameSiteNoneMode,
 	})
 }

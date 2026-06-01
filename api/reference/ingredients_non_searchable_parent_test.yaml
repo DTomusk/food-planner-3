@@ -1,0 +1,12 @@
+ingredients:
+  - id: "test_parent_non_searchable"
+    name: "Test Parent Non Searchable"
+    preferred_unit: 0
+    is_searchable: false
+    animal_product_level: 0
+    children:
+      - id: "test_child_non_searchable"
+        name: "Test Child Non Searchable"
+        preferred_unit: 0
+        is_searchable: false
+        animal_product_level: 0

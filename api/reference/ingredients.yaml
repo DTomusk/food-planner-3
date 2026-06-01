@@ -10,7 +10,7 @@
 # Animal product level reference
 # 0 = Not an animal product (vegan)
 # 1 = Animal product but not from muscle meat (e.g. milk, egg, cheese) vegetarian
-# 2 = Muscle meat (e.g. beef, chicken, pork) not vegetarian
+# 2 = Muscle meat (e.g. beef, chicken, pork, fish) not vegetarian
 
 # Is searchable should be true for ingredients that can be added to recipes
 # Not searchable ingredients are used for categorization and don't have sufficient meaning in the context of a recipe (e.g. allium, origin_animal)
@@ -21,596 +21,636 @@
 
 # Counters are for unit 1 ingredients that are typically counted in specific units (e.g. slices of bread, rasher of bacon, clove of garlic). The counter field specifies the singular form of the unit, and counter_plural specifies the plural form
 
-# Taxonomy parent key is used to build the ingredient taxonomy. It should point to the most specific parent category (e.g. chicken breast's taxonomy parent is chicken, not meat or origin_animal)
-
 ingredients:
   # Raw ingredients
-  ## Origin animal
   - id: "origin_animal"
     name: "Animal origin"
     preferred_unit: 0
     animal_product_level: 1
     is_searchable: false
-
-  ### Category meat
-  - id: "meat"
-    name: "Meat"
-    preferred_unit: 0
-    animal_product_level: 2
-    is_searchable: false
-    taxonomy_parent_key: "origin_animal"
-  #### Sub category red meat
-  - id: "meat_red"
-    name: "Red meat"
-    preferred_unit: 0
-    animal_product_level: 2
-    is_searchable: false
-    taxonomy_parent_key: "meat"
-  - id: "beef"
-    name: "Beef"
-    preferred_unit: 0
-    animal_product_level: 2
-    is_searchable: false
-    taxonomy_parent_key: "meat_red"
-  - id: "beef_steak"
-    name: "Steak"
-    preferred_unit: 2
-    animal_product_level: 2
-    taxonomy_parent_key: "beef"
-  - id: "beef_brisket"
-    name: "Beef brisket"
-    preferred_unit: 2
-    animal_product_level: 2
-    taxonomy_parent_key: "beef"
-  - id: "lamb"
-    name: "Lamb"
-    preferred_unit: 0
-    animal_product_level: 2
-    is_searchable: false
-    taxonomy_parent_key: "meat_red"
-  - id: "lamb_chop"
-    name: "Lamb chop"
-    preferred_unit: 2
-    animal_product_level: 2
-    taxonomy_parent_key: "lamb"
-  - id: "lamb_shoulder"
-    name: "Lamb shoulder"
-    preferred_unit: 2
-    animal_product_level: 2
-    taxonomy_parent_key: "lamb"
-  - id: "lamb_leg"
-    name: "Lamb leg"
-    preferred_unit: 2
-    animal_product_level: 2
-    taxonomy_parent_key: "lamb"
-  - id: "pork"
-    name: "Pork"
-    preferred_unit: 0
-    animal_product_level: 2
-    is_searchable: false
-    taxonomy_parent_key: "meat_red"
-  - id: "pork_belly"
-    name: "Pork belly"
-    preferred_unit: 2
-    animal_product_level: 2
-    taxonomy_parent_key: "pork"
-  - id: "pork_chop"
-    name: "Pork chop"
-    preferred_unit: 2
-    animal_product_level: 2
-    taxonomy_parent_key: "pork"
-  - id: "pork_shoulder"
-    name: "Pork shoulder"
-    preferred_unit: 2
-    animal_product_level: 2
-    taxonomy_parent_key: "pork"
-  - id: "pork_ribs"
-    name: "Pork ribs"
-    preferred_unit: 2
-    animal_product_level: 2
-    taxonomy_parent_key: "pork"
-  - id: "venison"
-    name: "Venison"
-    preferred_unit: 0
-    animal_product_level: 2
-    is_searchable: false
-    taxonomy_parent_key: "meat_red"
-  #### Sub category poultry
-  - id: "meat_poultry"
-    name: "Poultry"
-    preferred_unit: 0
-    animal_product_level: 2
-    is_searchable: false
-    taxonomy_parent_key: "meat"
-  - id: "chicken"
-    name: "Chicken"
-    preferred_unit: 0
-    animal_product_level: 2
-    is_searchable: false
-    taxonomy_parent_key: "meat_poultry"
-  - id: "chicken_whole"
-    name: "Whole chicken"
-    preferred_unit: 1
-    animal_product_level: 2
-    taxonomy_parent_key: "chicken"
-  - id: "chicken_breast"
-    name: "Chicken breast"
-    preferred_unit: 2
-    animal_product_level: 2
-    taxonomy_parent_key: "chicken"
-  - id: "chicken_thigh"
-    name: "Chicken thigh"
-    preferred_unit: 2
-    animal_product_level: 2
-    taxonomy_parent_key: "chicken"
-  - id: "chicken_wings"
-    name: "Chicken wings"
-    preferred_unit: 1
-    animal_product_level: 2
-    taxonomy_parent_key: "chicken"
-
-  ### Category seafood
-  - id: "seafood"
-    name: "Seafood"
-    preferred_unit: 0
-    animal_product_level: 2
-    is_searchable: false
-    taxonomy_parent_key: "origin_animal"
-
-  ### Category animal products
-  - id: "animal_product_other"
-    name: "Other animal product"
-    preferred_unit: 0
-    animal_product_level: 1
-    is_searchable: false
-    taxonomy_parent_key: "origin_animal"
-  - id: "egg"
-    name: "Egg"
-    preferred_unit: 1
-    plural: "Eggs"
-    animal_product_level: 1
-    taxonomy_parent_key: "animal_product_other"
-  - id: "egg_white"
-    name: "Egg white"
-    preferred_unit: 1
-    plural: "Egg whites"
-    animal_product_level: 1
-    taxonomy_parent_key: "egg"
-  - id: "egg_yolk"
-    name: "Egg yolk"
-    preferred_unit: 1
-    plural: "Egg yolks"
-    animal_product_level: 1
-    taxonomy_parent_key: "egg"
-  - id: "milk"
-    name: "Milk"
-    preferred_unit: 3
-    animal_product_level: 1
-    taxonomy_parent_key: "animal_product_other"
-
-  ## Origin plant
+    children:
+    - id: "meat"
+      name: "Meat"
+      preferred_unit: 0
+      animal_product_level: 2
+      is_searchable: false
+      children:
+      - id: "meat_red"
+        name: "Red meat"
+        preferred_unit: 0
+        animal_product_level: 2
+        is_searchable: false
+        children:
+        - id: "beef"
+          name: "Beef"
+          preferred_unit: 0
+          animal_product_level: 2
+          is_searchable: false
+          children:
+          - id: "beef_steak"
+            name: "Steak"
+            preferred_unit: 2
+            animal_product_level: 2
+          - id: "beef_brisket"
+            name: "Beef brisket"
+            preferred_unit: 2
+            animal_product_level: 2
+        - id: "lamb"
+          name: "Lamb"
+          preferred_unit: 0
+          animal_product_level: 2
+          is_searchable: false
+          children:
+          - id: "lamb_chop"
+            name: "Lamb chop"
+            preferred_unit: 2
+            animal_product_level: 2
+          - id: "lamb_shoulder"
+            name: "Lamb shoulder"
+            preferred_unit: 2
+            animal_product_level: 2
+          - id: "lamb_leg"
+            name: "Lamb leg"
+            preferred_unit: 2
+            animal_product_level: 2
+        - id: "pork"
+          name: "Pork"
+          preferred_unit: 0
+          animal_product_level: 2
+          is_searchable: false
+          children:
+          - id: "pork_belly"
+            name: "Pork belly"
+            preferred_unit: 2
+            animal_product_level: 2
+          - id: "pork_chop"
+            name: "Pork chop"
+            preferred_unit: 2
+            animal_product_level: 2
+          - id: "pork_shoulder"
+            name: "Pork shoulder"
+            preferred_unit: 2
+            animal_product_level: 2
+          - id: "pork_ribs"
+            name: "Pork ribs"
+            preferred_unit: 2
+            animal_product_level: 2
+        - id: "venison"
+          name: "Venison"
+          preferred_unit: 0
+          animal_product_level: 2
+          is_searchable: false
+      - id: "meat_poultry"
+        name: "Poultry"
+        preferred_unit: 0
+        animal_product_level: 2
+        is_searchable: false
+        children:
+        - id: "chicken"
+          name: "Chicken"
+          preferred_unit: 0
+          animal_product_level: 2
+          is_searchable: false
+          children:
+          - id: "chicken_whole"
+            name: "Whole chicken"
+            preferred_unit: 1
+            animal_product_level: 2
+          - id: "chicken_breast"
+            name: "Chicken breast"
+            preferred_unit: 2
+            animal_product_level: 2
+          - id: "chicken_thigh"
+            name: "Chicken thigh"
+            preferred_unit: 2
+            animal_product_level: 2
+          - id: "chicken_wings"
+            name: "Chicken wings"
+            preferred_unit: 1
+            animal_product_level: 2
+    - id: "seafood"
+      name: "Seafood"
+      preferred_unit: 0
+      animal_product_level: 2
+      is_searchable: false
+    - id: "animal_product_other"
+      name: "Other animal product"
+      preferred_unit: 0
+      animal_product_level: 1
+      is_searchable: false
+      children:
+      - id: "egg"
+        name: "Egg"
+        preferred_unit: 1
+        plural: "Eggs"
+        animal_product_level: 1
+        children:
+        - id: "egg_white"
+          name: "Egg white"
+          preferred_unit: 1
+          plural: "Egg whites"
+          animal_product_level: 1
+        - id: "egg_yolk"
+          name: "Egg yolk"
+          preferred_unit: 1
+          plural: "Egg yolks"
+          animal_product_level: 1
+      - id: "milk"
+        name: "Milk"
+        preferred_unit: 3
+        animal_product_level: 1
   - id: "origin_plant"
     name: "Plant origin"
     preferred_unit: 0
     is_searchable: false
-  ### Category vegetables
-  - id: "vegetables"
-    name: "Vegetables"
+    children:
+    - id: "vegetables"
+      name: "Vegetables"
+      preferred_unit: 0
+      is_searchable: false
+      children:
+      - id: "allium"
+        name: "Allium"
+        preferred_unit: 0
+        is_searchable: false
+        animal_product_level: 0
+        children:
+        - id: "onion"
+          name: "Onion"
+          plural: "Onions"
+          preferred_unit: 1
+          children:
+          - id: "onion_brown"
+            name: "Brown onion"
+            plural: "Brown onions"
+            preferred_unit: 1
+          - id: "onion_red"
+            name: "Red onion"
+            plural: "Red onions"
+            preferred_unit: 1
+          - id: "onion_white"
+            name: "White onion"
+            plural: "White onions"
+            preferred_unit: 1
+        - id: "garlic"
+          name: "Garlic"
+          preferred_unit: 0
+          is_searchable: false
+          children:
+          - id: "garlic_bulb"
+            name: "Garlic"
+            preferred_unit: 1
+            counter: "bulb"
+            counter_plural: "bulbs"
+          - id: "garlic_clove"
+            name: "Garlic"
+            preferred_unit: 1
+            counter: "clove"
+            counter_plural: "cloves"
+        - id: "onion_spring"
+          name: "Spring onion"
+          plural: "Spring onions"
+          preferred_unit: 1
+        - id: "leek"
+          name: "Leek"
+          preferred_unit: 1
+        - id: "shallot"
+          name: "Shallot"
+          plural: "Shallots"
+          preferred_unit: 1
+        - id: "chive"
+          name: "Chive"
+          plural: "Chives"
+          preferred_unit: 1
+        - id: "scallion"
+          name: "Scallion"
+          plural: "Scallions"
+          preferred_unit: 1
+      - id: "nightshades"
+        name: "Nightshades"
+        preferred_unit: 0
+        is_searchable: false
+        children:
+        - id: "tomato"
+          name: "Tomato"
+          plural: "Tomatoes"
+          preferred_unit: 1
+          children:
+          - id: "tomato_cherry"
+            name: "Cherry tomato"
+            plural: "Cherry tomatoes"
+            preferred_unit: 1
+          - id: "tomato_heirloom"
+            name: "Heirloom tomato"
+            plural: "Heirloom tomatoes"
+            preferred_unit: 1
+          - id: "tomato_plum"
+            name: "Plum tomato"
+            plural: "Plum tomatoes"
+            preferred_unit: 1
+        - id: "potato"
+          name: "Potato"
+          plural: "Potatoes"
+          preferred_unit: 1
+          children:
+          - id: "potato_white"
+            name: "White potato"
+            plural: "White potatoes"
+            preferred_unit: 1
+          - id: "potato_red"
+            name: "Red potato"
+            plural: "Red potatoes"
+            preferred_unit: 1
+          - id: "potato_yellow"
+            name: "Yellow potato"
+            plural: "Yellow potatoes"
+            preferred_unit: 1
+          - id: "potato_baking"
+            name: "Baking potato"
+            plural: "Baking potatoes"
+            preferred_unit: 1
+          - id: "potato_waxy"
+            name: "Waxy potato"
+            plural: "Waxy potatoes"
+            preferred_unit: 1
+        - id: "aubergine"
+          name: "Aubergine"
+          plural: "Aubergines"
+          preferred_unit: 1
+    - id: "fruits"
+      name: "Fruits"
+      preferred_unit: 0
+      is_searchable: false
+    - id: "legumes"
+      name: "Legumes"
+      preferred_unit: 0
+      is_searchable: false
+      children:
+      - id: "chickpeas"
+        name: "Chickpeas"
+        preferred_unit: 2
+      - id: "lentils"
+        name: "Lentils"
+        preferred_unit: 2
+        children:
+        - id: "lentils_red"
+          name: "Red lentils"
+          preferred_unit: 2
+        - id: "lentils_green"
+          name: "Green lentils"
+          preferred_unit: 2
+        - id: "lentils_brown"
+          name: "Brown lentils"
+          preferred_unit: 2
+        - id: "lentils_puy"
+          name: "Puy lentils"
+          preferred_unit: 2
+        - id: "lentils_black"
+          name: "Black lentils"
+          preferred_unit: 2
+    - id: "grains"
+      name: "Grains"
+      preferred_unit: 0
+      is_searchable: false
+      children:
+      - id: "rice"
+        name: "Rice"
+        preferred_unit: 2
+        children:
+        - id: "rice_white"
+          name: "White rice"
+          preferred_unit: 2
+        - id: "rice_brown"
+          name: "Brown rice"
+          preferred_unit: 2
+        - id: "rice_jasmine"
+          name: "Jasmine rice"
+          preferred_unit: 2
+        - id: "rice_basmati"
+          name: "Basmati rice"
+          preferred_unit: 2
+      - id: "wheat"
+        name: "Wheat"
+        preferred_unit: 2
+      - id: "oats"
+        name: "Oats"
+        preferred_unit: 2
+      - id: "barley"
+        name: "Barley"
+        preferred_unit: 2
+      - id: "quinoa"
+        name: "Quinoa"
+        preferred_unit: 2
+      - id: "bulgur"
+        name: "Bulgur"
+        preferred_unit: 2
+    - id: "nuts_and_seeds"
+      name: "Nuts and seeds"
+      preferred_unit: 0
+      is_searchable: false
+    - id: "herbs_and_spices"
+      name: "Herbs and spices"
+      preferred_unit: 0
+      is_searchable: false
+      children:
+      - id: "herbs"
+        name: "Herbs"
+        preferred_unit: 0
+        is_searchable: false
+        children:
+        - id: "basil"
+          name: "Basil"
+          preferred_unit: 1
+          counter: "leaf"
+          counter_plural: "leaves"
+        - id: "parsley"
+          name: "Parsley"
+          preferred_unit: 1
+          counter: "bunch"
+          counter_plural: "bunches"
+        - id: "coriander"
+          name: "Coriander"
+          preferred_unit: 2
+        - id: "sage"
+          name: "Sage"
+          preferred_unit: 1
+          counter: "leaf"
+          counter_plural: "leaves"
+      - id: "spices"
+        name: "Spices"
+        preferred_unit: 0
+        is_searchable: false
+        children:
+        - id: "peppercorns"
+          name: "Peppercorn"
+          plural: "Peppercorns"
+          preferred_unit: 1
+        - id: "cloves"
+          name: "Clove"
+          plural: "Cloves"
+          preferred_unit: 1
+        - id: "cinnamon_stick"
+          name: "Cinnamon stick"
+          plural: "Cinnamon sticks"
+          preferred_unit: 1
+        - id: "rhizomes"
+          name: "Rhizomes"
+          preferred_unit: 0
+          is_searchable: false
+          children:
+          - id: "ginger"
+            name: "Ginger"
+            preferred_unit: 6
+          - id: "galangal"
+            name: "Galangal"
+            preferred_unit: 2
+          - id: "lemongrass"
+            name: "Lemongrass"
+            preferred_unit: 2
+          - id: "turmeric"
+            name: "Turmeric"
+            preferred_unit: 2
+  - id: "origin_mineral"
+    name: "Mineral origin"
     preferred_unit: 0
     is_searchable: false
-    taxonomy_parent_key: "origin_plant"
-  #### Sub category allium
-  - id: "allium"
-    name: "Allium"
-    preferred_unit: 0
-    is_searchable: false
-    animal_product_level: 0
-    taxonomy_parent_key: "vegetables"
-  - id: "onion"
-    name: "Onion"
-    plural: "Onions"
-    preferred_unit: 1
-    taxonomy_parent_key: "allium"
-  - id: "onion_brown"
-    name: "Brown onion"
-    plural: "Brown onions"
-    preferred_unit: 1
-    taxonomy_parent_key: "onion"
-  - id: "onion_red"
-    name: "Red onion"
-    plural: "Red onions"
-    preferred_unit: 1
-    taxonomy_parent_key: "onion"
-  - id: "onion_white"
-    name: "White onion"
-    plural: "White onions"
-    preferred_unit: 1
-    taxonomy_parent_key: "onion"
-  - id: "garlic"
-    name: "Garlic"
-    preferred_unit: 0
-    is_searchable: false
-  - id: "garlic_bulb"
-    name: "Garlic"
-    preferred_unit: 1
-    counter: "bulb"
-    counter_plural: "bulbs"
-    taxonomy_parent_key: "garlic"
-  - id: "garlic_clove"
-    name: "Garlic"
-    preferred_unit: 1
-    counter: "clove"
-    counter_plural: "cloves"
-    taxonomy_parent_key: "garlic"
-  - id: "onion_spring"
-    name: "Spring onion"
-    plural: "Spring onions"
-    preferred_unit: 1
-    taxonomy_parent_key: "allium"
-  - id: "leek"
-    name: "Leek"
-    preferred_unit: 1
-    taxonomy_parent_key: "allium"
-  - id: "shallot"
-    name: "Shallot"
-    preferred_unit: 1
-    taxonomy_parent_key: "allium"
-  - id: "chives"
-    name: "Chives"
-    preferred_unit: 1
-    taxonomy_parent_key: "allium"
-  - id: "scallion"
-    name: "Scallion"
-    preferred_unit: 1
-    taxonomy_parent_key: "allium"
-  #### Sub category nightshades
-  - id: "nightshades"
-    name: "Nightshades"
-    preferred_unit: 0
-    is_searchable: false
-    taxonomy_parent_key: "vegetables"
-  - id: "tomato"
-    name: "Tomato"
-    preferred_unit: 1
-    taxonomy_parent_key: "nightshades"
-  - id: "tomato_cherry"
-    name: "Cherry tomato"
-    preferred_unit: 1
-    taxonomy_parent_key: "tomato"
-  - id: "tomato_heirloom"
-    name: "Heirloom tomato"
-    preferred_unit: 1
-    taxonomy_parent_key: "tomato"
-  - id: "tomato_plum"
-    name: "Plum tomato"
-    preferred_unit: 1
-    taxonomy_parent_key: "tomato"
-  - id: "potato"
-    name: "Potato"
-    preferred_unit: 1
-    taxonomy_parent_key: "nightshades"
-  - id: "potato_white"
-    name: "White potato"
-    preferred_unit: 1
-    taxonomy_parent_key: "potato"
-  - id: "potato_red"
-    name: "Red potato"
-    preferred_unit: 1
-    taxonomy_parent_key: "potato"
-  - id: "potato_yellow"
-    name: "Yellow potato"
-    preferred_unit: 1
-    taxonomy_parent_key: "potato"
-  - id: "potato_baking"
-    name: "Baking potato"
-    preferred_unit: 1
-    taxonomy_parent_key: "potato"
-  - id: "potato_waxy"
-    name: "Waxy potato"
-    preferred_unit: 1
-    taxonomy_parent_key: "potato"
-  - id: "eggplant"
-    name: "Eggplant"
-    preferred_unit: 1
-    taxonomy_parent_key: "nightshades"
-  ### Category fruits
-  - id: "fruits"
-    name: "Fruits"
-    preferred_unit: 0
-    is_searchable: false
-    animal_product_level: 0
-    taxonomy_parent_key: "origin_plant"
-  ### Category legumes
-  - id: "legumes"
-    name: "Legumes"
-    preferred_unit: 0
-    is_searchable: false
-  - id: "chickpeas"
-    name: "Chickpeas"
-    preferred_unit: 2
-    taxonomy_parent_key: "legumes"
-  #### Sub category lentils
-  - id: "lentils"
-    name: "Lentils"
-    preferred_unit: 2
-    taxonomy_parent_key: "legumes"
-  - id: "lentils_red"
-    name: "Red lentils"
-    preferred_unit: 2
-    taxonomy_parent_key: "lentils"
-  - id: "lentils_green"
-    name: "Green lentils"
-    preferred_unit: 2
-    taxonomy_parent_key: "lentils"
-  - id: "lentils_brown"
-    name: "Brown lentils"
-    preferred_unit: 2
-    taxonomy_parent_key: "lentils"
-  - id: "lentils_puy"
-    name: "Puy lentils"
-    preferred_unit: 2
-    taxonomy_parent_key: "lentils"
-  - id: "lentils_black"
-    name: "Black lentils"
-    preferred_unit: 2
-    taxonomy_parent_key: "lentils"
-  ### Category grains 
-  - id: "grains"
-    name: "Grains"
-    preferred_unit: 0
-    is_searchable: false
-    taxonomy_parent_key: "origin_plant"
-  #### Rices
-  - id: "rice"
-    name: "Rice"
-    preferred_unit: 2
-    taxonomy_parent_key: "grains"
-  - id: "rice_white"
-    name: "White rice"
-    preferred_unit: 2
-    taxonomy_parent_key: "rice"
-  - id: "rice_brown"
-    name: "Brown rice"
-    preferred_unit: 2
-    taxonomy_parent_key: "rice"
-  - id: "rice_jasmine"
-    name: "Jasmine rice"
-    preferred_unit: 2
-    taxonomy_parent_key: "rice"
-  - id: "rice_basmati"
-    name: "Basmati rice"
-    preferred_unit: 2
-    taxonomy_parent_key: "rice"
-  - id: "wheat"
-    name: "Wheat"
-    preferred_unit: 2
-    taxonomy_parent_key: "grains"
-  - id: "oats"
-    name: "Oats"
-    preferred_unit: 2
-    taxonomy_parent_key: "grains"
-  - id: "barley"
-    name: "Barley"
-    preferred_unit: 2
-    taxonomy_parent_key: "grains"
-  - id: "quinoa"
-    name: "Quinoa"
-    preferred_unit: 2
-    taxonomy_parent_key: "grains"
-  - id: "bulgur"
-    name: "Bulgur"
-    preferred_unit: 2
-    taxonomy_parent_key: "grains"
-  ### Category nuts and seeds
-  - id: "nuts_and_seeds"
-    name: "Nuts and seeds"
-    preferred_unit: 0
-    is_searchable: false
-    taxonomy_parent_key: "origin_plant"
-  ### Category herbs and spices
-  - id: "herbs_and_spices"
-    name: "Herbs and spices"
-    preferred_unit: 0
-    is_searchable: false
-    taxonomy_parent_key: "origin_plant"
-  #### Sub category herbs
-  - id: "herbs"
-    name: "Herbs"
-    preferred_unit: 0
-    is_searchable: false
-    taxonomy_parent_key: "herbs_and_spices"
-  - id: "basil"
-    name: "Basil"
-    preferred_unit: 1
-    counter: "leaf"
-    counter_plural: "leaves"
-    taxonomy_parent_key: "herbs"
-  - id: "parsley"
-    name: "Parsley"
-    preferred_unit: 1
-    counter: "bunch"
-    counter_plural: "bunches"
-    taxonomy_parent_key: "herbs"
-  - id: "coriander"
-    name: "Coriander"
-    preferred_unit: 2
-    taxonomy_parent_key: "herbs"
-  - id: "sage"
-    name: "Sage"
-    preferred_unit: 1
-    counter: "leaf"
-    counter_plural: "leaves"
-    taxonomy_parent_key: "herbs"
-  #### Sub category spices 
-  - id: "spices"
-    name: "Spices"
-    preferred_unit: 0
-    is_searchable: false
-    taxonomy_parent_key: "herbs_and_spices"
-  - id: "peppercorns"
-    name: "Peppercorn"
-    plural: "Peppercorns"
-    preferred_unit: 1
-    taxonomy_parent_key: "spices"
-  - id: "cloves"
-    name: "Clove"
-    plural: "Cloves"
-    preferred_unit: 1
-    taxonomy_parent_key: "spices"
-  - id: "cinnamon_stick"
-    name: "Cinnamon stick"
-    plural: "Cinnamon sticks"
-    preferred_unit: 1
-    taxonomy_parent_key: "spices"
-  ##### Rhizomes
-  - id: "rhizomes"
-    name: "Rhizomes"
-    preferred_unit: 0
-    is_searchable: false
-    taxonomy_parent_key: "spices"
-  - id: "ginger"
-    name: "Ginger"
-    preferred_unit: 6
-    taxonomy_parent_key: "rhizomes"
-  - id: "galangal"
-    name: "Galangal"
-    preferred_unit: 2
-    taxonomy_parent_key: "rhizomes"
-  - id: "lemongrass"
-    name: "Lemongrass"
-    preferred_unit: 2
-    taxonomy_parent_key: "rhizomes"
-  - id: "turmeric"
-    name: "Turmeric"
-    preferred_unit: 2
-    taxonomy_parent_key: "rhizomes"
-
-  ## Origin mineral
-  - id: "salt"
-    name: "Salt"
-    preferred_unit: 5
-  - id: "salt_sea"
-    name: "Sea salt"
-    preferred_unit: 5
-    taxonomy_parent_key: "salt"
-  - id: "salt_table"
-    name: "Table salt"
-    preferred_unit: 5
-    taxonomy_parent_key: "salt"
-  - id: "salt_kosher"
-    name: "Kosher salt"
-    preferred_unit: 5
-    taxonomy_parent_key: "salt"
-  - id: "baking_powder"
-    name: "Baking powder"
-    preferred_unit: 5
-  - id: "baking_soda"
-    name: "Baking soda"
-    preferred_unit: 5
+    children:
+    - id: "salt"
+      name: "Salt"
+      preferred_unit: 5
+      children:
+      - id: "salt_sea"
+        name: "Sea salt"
+        preferred_unit: 5
+      - id: "salt_table"
+        name: "Table salt"
+        preferred_unit: 5
+      - id: "salt_kosher"
+        name: "Kosher salt"
+        preferred_unit: 5
+    - id: "baking_powder"
+      name: "Baking powder"
+      preferred_unit: 5
+    - id: "baking_soda"
+      name: "Baking soda"
+      preferred_unit: 5
 
   # Derived ingredients
   - id: "flour"
     name: "Flour"
     preferred_unit: 2
     contains_gluten: true
-    processed_level: 2
+    processed_level: 1
+    children: 
+    - id: "flour_all_purpose"
+      name: "All-purpose flour"
+      preferred_unit: 2
+      contains_gluten: true
+      processed_level: 1
+    - id: "flour_whole_wheat"
+      name: "Whole wheat flour"
+      preferred_unit: 2
+      contains_gluten: true
+      processed_level: 1
+    - id: "flour_rice"
+      name: "Rice flour"
+      preferred_unit: 2
+      contains_gluten: false
+      processed_level: 1
+    - id: "flour_chickpea"
+      name: "Chickpea flour"
+      preferred_unit: 2
+      contains_gluten: false
+      processed_level: 1
+    - id: "flour_gluten_free"
+      name: "Gluten-free flour"
+      preferred_unit: 2
+      contains_gluten: false
+      processed_level: 1
   - id: "bacon_rasher"
     name: "Bacon"
     preferred_unit: 1
     counter: "rasher"
     counter_plural: "rashers"
     animal_product_level: 2
-    taxonomy_parent_key: "pork"
-    processed_level: 2
+    processed_level: 1
   - id: "cheese"
     name: "Cheese"
     preferred_unit: 2
-    animal_product_level: 2
-    taxonomy_parent_key: "milk"
-    processed_level: 2
-  - id: "cheese_cheddar"
-    name: "Cheddar cheese"
-    preferred_unit: 2
-    animal_product_level: 2
-    taxonomy_parent_key: "cheese"
-    processed_level: 2
-  - id: "cheese_cheddar_mature"
-    name: "Mature cheddar cheese"
-    preferred_unit: 2
-    animal_product_level: 2
-    taxonomy_parent_key: "cheese_cheddar"
-    processed_level: 2
+    animal_product_level: 1
+    processed_level: 1
+    children:
+    - id: "cheese_soft"
+      name: "Soft cheese"
+      preferred_unit: 0
+      is_searchable: false
+      animal_product_level: 1
+      processed_level: 1
+      children:
+      - id: "cheese_ricotta"
+        name: "Ricotta"
+        preferred_unit: 2
+        animal_product_level: 1
+        processed_level: 1
+      - id: "cheese_mascarpone"
+        name: "Mascarpone"
+        preferred_unit: 2
+        animal_product_level: 1
+        processed_level: 1
+      - id: "cheese_cream_cheese"
+        name: "Cream cheese"
+        preferred_unit: 2
+        animal_product_level: 1
+        processed_level: 1
+      - id: "cheese_fresh_mozzarella"
+        name: "Fresh mozzarella"
+        preferred_unit: 2
+        animal_product_level: 1
+        processed_level: 1
+      - id: "cheese_goat"
+        name: "Goat cheese"
+        preferred_unit: 2
+        animal_product_level: 1
+        processed_level: 1
+      - id: "cheese_cottage"
+        name: "Cottage cheese"
+        preferred_unit: 2
+        animal_product_level: 1
+        processed_level: 1
+      - id: "cheese_brie"
+        name: "Brie"
+        preferred_unit: 2
+        animal_product_level: 1
+        processed_level: 1
+    - id: "cheese_semi_soft"
+      name: "Semi-soft cheese"
+      preferred_unit: 0
+      is_searchable: false
+      animal_product_level: 1
+      processed_level: 1
+      children:
+      - id: "cheese_mozzarella"
+        name: "Mozzarella"
+        preferred_unit: 2
+        animal_product_level: 1
+        processed_level: 1
+        children:
+        - id: "cheese_mozzarella_fior_di_latte"
+          name: "Fior di latte mozzarella"
+          preferred_unit: 2
+          animal_product_level: 1
+          processed_level: 1
+        - id: "cheese_mozzarella_buffalo"
+          name: "Buffalo mozzarella"
+          preferred_unit: 2
+          animal_product_level: 1
+          processed_level: 1
+    - id: "cheese_semi_hard"
+      name: "Semi-hard cheese"
+      preferred_unit: 0
+      is_searchable: false
+      animal_product_level: 1
+      processed_level: 1
+      children:
+      - id: "cheese_cheddar"
+        name: "Cheddar"
+        preferred_unit: 2
+        animal_product_level: 1
+        processed_level: 1
+        children:
+        - id: "cheese_cheddar_mature"
+          name: "Mature cheddar"
+          preferred_unit: 2
+          animal_product_level: 1
+          processed_level: 1
+    - id: "cheese_hard"
+      name: "Hard cheese"
+      preferred_unit: 0
+      is_searchable: false
+      animal_product_level: 1
+      processed_level: 1
+      children:
+      # Note: these are made with rennet, so not vegetarian friendly
+      - id: "parmegiano_reggiano"
+        name: "Parmegiano Reggiano"
+        preferred_unit: 2
+        animal_product_level: 2
+        processed_level: 1
+      - id: "pecorino"
+        name: "Pecorino"
+        preferred_unit: 2
+        animal_product_level: 2
+        processed_level: 1
+      - id: "grana_padano"
+        name: "Grana Padano"
+        preferred_unit: 2
+        animal_product_level: 2
+        processed_level: 1
   ## Category oils
   - id: "oil" 
     name: "Oil"
     preferred_unit: 0
     is_searchable: false
-    processed_level: 2
-  - id: "oil_vegetable"
-    name: "Vegetable oil"
-    preferred_unit: 3
-    taxonomy_parent_key: "oil"
-    processed_level: 2
-  - id: "oil_olive"
-    name: "Olive oil"
-    preferred_unit: 3
-    taxonomy_parent_key: "oil"
-    processed_level: 2
-  - id: "oil_olive_extra_virgin"
-    name: "Extra virgin olive oil"
-    preferred_unit: 3
-    taxonomy_parent_key: "oil_olive"
-    processed_level: 2
-  - id: "oil_avocado"
-    name: "Avocado oil"
-    preferred_unit: 3
-    taxonomy_parent_key: "oil"
-    processed_level: 2
-  - id: "oil_canola"
-    name: "Canola oil"
-    preferred_unit: 3
-    taxonomy_parent_key: "oil"
-    processed_level: 2
-  - id: "oil_coconut"
-    name: "Coconut oil"
-    preferred_unit: 3
-    taxonomy_parent_key: "oil"
-    processed_level: 2
-  - id: "oil_sunflower"
-    name: "Sunflower oil"
-    preferred_unit: 3
-    taxonomy_parent_key: "oil"
-    processed_level: 2
+    processed_level: 1
+    children:
+    - id: "oil_vegetable"
+      name: "Vegetable oil"
+      preferred_unit: 3
+      processed_level: 1
+    - id: "oil_olive"
+      name: "Olive oil"
+      preferred_unit: 3
+      processed_level: 1
+      children:
+      - id: "oil_olive_extra_virgin"
+        name: "Extra virgin olive oil"
+        preferred_unit: 3
+        processed_level: 1
+    - id: "oil_avocado"
+      name: "Avocado oil"
+      preferred_unit: 3
+      processed_level: 1
+    - id: "oil_canola"
+      name: "Canola oil"
+      preferred_unit: 3
+      processed_level: 1
+    - id: "oil_coconut"
+      name: "Coconut oil"
+      preferred_unit: 3
+      processed_level: 1
+    - id: "oil_sunflower"
+      name: "Sunflower oil"
+      preferred_unit: 3
+      processed_level: 1
   ## Category sauces and condiments
   - id: "tomatoes_tinned"
     name: "Tinned tomatoes"
     preferred_unit: 2
-    processed_level: 2
+    processed_level: 1
   ## Spice powders
   - id: "chilli_powder"
     name: "Chilli powder"
     preferred_unit: 5
-    processed_level: 2
+    processed_level: 1
   - id: "coriander_ground"
     name: "Ground coriander"
     preferred_unit: 5
-    processed_level: 2
+    processed_level: 1
   - id: "turmeric_ground"
     name: "Ground turmeric"
     preferred_unit: 5
-    taxonomy_parent_key: "turmeric"
-    processed_level: 2
+    processed_level: 1
 
   # Composite ingredients
   - id: "pasta"
     name: "Pasta"
     preferred_unit: 2
     contains_gluten: true
-    processed_level: 3
+    processed_level: 2
   - id: "bread"
     name: "Bread"
     preferred_unit: 1
     counter: "slice"
     counter_plural: "slices"
     contains_gluten: true
-    processed_level: 3
+    processed_level: 2

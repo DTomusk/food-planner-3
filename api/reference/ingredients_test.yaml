@@ -14,3 +14,25 @@ ingredients:
     counter: "piece"
     counter_plural: "pieces"
     animal_product_level: 2
+  - id: "test_ingredient_parent"
+    name: "Test Ingredient Parent"
+    preferred_unit: 1
+    plural: "Test Ingredient Parents"
+    animal_product_level: 0
+    children:
+      - id: "test_ingredient_child"
+        name: "Test Ingredient Child"
+        preferred_unit: 1
+        plural: "Test Ingredient Children"
+        animal_product_level: 0
+        children:
+          - id: "test_ingredient_grandchild"
+            name: "Test Ingredient Grandchild"
+            preferred_unit: 1
+            plural: "Test Ingredient Grandchildren"
+            animal_product_level: 0
+      - id: "test_ingredient_child_2"
+        name: "Test Ingredient Child 2"
+        preferred_unit: 1
+        plural: "Test Ingredient Children 2"
+        animal_product_level: 0
